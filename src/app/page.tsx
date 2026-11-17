@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const pillars = [
   { number: "01", title: "Product Intelligence", description: "Pesquisa, avaliação e comparação de produtos e ofertas." },
   { number: "02", title: "Content & Rights", description: "Conteúdo, versões, ativos, licenças e aprovação editorial." },
@@ -10,7 +12,7 @@ export default function Home() {
   return (
     <main className="shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="SMKON início"><span className="brand-mark">S</span><span>SMKON</span></a>
+        <Link className="brand" href="/" aria-label="SMKON início"><span className="brand-mark">S</span><span>SMKON</span></Link>
         <span className="environment"><i /> FOUNDATION / SPRINT 0</span>
       </header>
 
