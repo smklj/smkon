@@ -39,6 +39,8 @@ export default function StudioClient() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
+      // Hydrate browser-only drafts after mount to keep the server/client HTML identical.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (stored) setDrafts(JSON.parse(stored) as Draft[]);
     } catch {
       setNotice("Não foi possível ler os rascunhos salvos neste navegador.");
