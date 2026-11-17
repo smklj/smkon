@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { signIn, signUp } from "./actions";
 
 type LoginPageProps = {
@@ -17,7 +18,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="auth-shell">
       <section className="auth-panel">
-        <a className="auth-brand" href="/">SMKON</a>
+        <Link className="auth-brand" href="/">SMKON</Link>
         <p className="eyebrow">CONTROL CENTER</p>
         <h1>Acesse sua operação.</h1>
         <p className="auth-copy">Entre na sua conta para continuar no ambiente privado da SMKON.</p>
