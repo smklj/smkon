@@ -6,7 +6,7 @@ Plataforma interna da SMKON para curadoria de produtos, gestão de conteúdo, di
 
 ## Status
 
-Sprint 0 — fundação técnica iniciada. A aplicação Next.js e o pipeline inicial de qualidade estão versionados na branch `main`.
+Sprint 0 — fundação técnica criada. Split 01 em revisão no PR #1: separação de mídia/anúncios, vendas próprias e afiliados/comissões; migration SQL e testes estruturais adicionados na branch `feature/revenue-stream-split`. A migration ainda não foi aplicada ao Supabase hospedado.
 
 ## Stack
 
