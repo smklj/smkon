@@ -1,55 +1,90 @@
 import Link from "next/link";
 
-const streams = [
-  { id: "01", name: "Mídia e anúncios", type: "CUSTO DE AQUISIÇÃO", description: "Investimento, campanhas, alcance, cliques e conversões atribuídas. Custos ficam separados de faturamento.", sources: ["Meta Ads", "Google Ads · fase posterior"], metric: "Gasto · CPC · CPM · CPA · ROAS" },
-  { id: "02", name: "Vendas próprias", type: "RECEITA DE OPERAÇÃO", description: "Pedidos, pagamentos, taxas, frete, cancelamentos e margem de produtos vendidos pela própria SMKON.", sources: ["Mercado Livre · OAuth/API", "TikTok Shop · integração"], metric: "Pedidos · receita líquida · margem" },
-  { id: "03", name: "Afiliados e comissões", type: "RECEITA DE PARCERIA", description: "Cliques rastreados, conversões atribuídas, comissão prevista, aprovada e efetivamente recebida.", sources: ["Amazon Associados", "TikTok Shop · afiliados"], metric: "Cliques · conversão · comissão · EPC" }
+const areas = [
+  { id: "01", name: "Estratégia e gestão", type: "DIREÇÃO", description: "Metas, prioridades, roadmap, indicadores executivos e decisões do Owner.", scope: ["OKRs", "Roadmap", "Decisões"], state: "BASE A DEFINIR" },
+  { id: "02", name: "Inteligência de produtos", type: "PESQUISA", description: "Descoberta, comparação e avaliação de produtos, ofertas, vendedores, preço e potencial de conteúdo.", scope: ["Catálogo", "Ofertas", "Scoring"], state: "EM MODELAGEM" },
+  { id: "03", name: "Conteúdo e distribuição", type: "MÍDIA PRÓPRIA", description: "Pautas, roteiros, ativos, direitos, versões, aprovação, calendário e publicação permitida.", scope: ["Conteúdo", "Direitos", "Canais"], state: "EM MODELAGEM" },
+  { id: "04", name: "IA e agentes", type: "AUTOMAÇÃO CONTROLADA", description: "Agentes, tarefas, ferramentas allowlist, execução verificável, limites, logs e aprovação humana.", scope: ["Planner", "Executor", "Verifier"], state: "EM MODELAGEM" },
+  { id: "05", name: "Financeiro", type: "CONTROLE FINANCEIRO", description: "Conciliação, ledger, custos, receita, comissões, caixa e relatórios por domínio e consolidados.", scope: ["Ledger", "Conciliação", "Relatórios"], state: "3 DOMÍNIOS DEFINIDOS" },
+  { id: "06", name: "Jurídico e conformidade", type: "GOVERNANÇA", description: "Regras de plataforma, contratos, direitos de uso, disclosure, privacidade e obrigações fiscais.", scope: ["Licenças", "Disclosure", "Políticas"], state: "REQUISITOS MAPEADOS" },
+  { id: "07", name: "Audiência e relacionamento", type: "CRESCIMENTO ORGÂNICO", description: "Comunidade, relacionamento, feedback, atendimento, parcerias e análise de audiência.", scope: ["Audiência", "Feedback", "CRM"], state: "EM MODELAGEM" },
+  { id: "08", name: "Segurança e infraestrutura", type: "PLATAFORMA", description: "Identidade, permissões, RLS, integrações, segredos, observabilidade, backup e kill switch.", scope: ["Supabase", "Vercel", "RLS"], state: "FUNDAÇÃO INICIAL" }
+];
+const revenueDomains = [
+  { id: "R1", name: "Mídia e anúncios", type: "CUSTO DE AQUISIÇÃO", description: "Investimento e desempenho de campanhas. Gasto é custo, não receita.", sources: ["Meta Ads", "Google Ads", "GA4"], metric: "Spend · CPC · CPM · CPA · ROAS" },
+  { id: "R2", name: "Vendas próprias", type: "RECEITA DE OPERAÇÃO", description: "Pedidos em que a SMKON é a vendedora, com taxas, frete, reembolsos e liquidação.", sources: ["Mercado Livre", "TikTok Shop Seller", "Shopify"], metric: "Pedidos · líquido · margem" },
+  { id: "R3", name: "Afiliados e comissões", type: "RECEITA DE PARCERIA", description: "Cliques, conversões atribuídas e comissões pendentes, aprovadas, revertidas e pagas.", sources: ["Shopee", "Amazon Associados", "TikTok Shop Affiliate"], metric: "Cliques · conversão · comissão · EPC" }
+];
+const connectionStatus = [
+  { name: "GitHub", detail: "Repositório privado e branch de trabalho conectados; PR aberto.", state: "CONECTADO" },
+  { name: "Vercel", detail: "Projeto SMKON criado; deployment está READY, sem alias e sem vínculo Git.", state: "DEPLOY READY" },
+  { name: "Supabase", detail: "Projeto ativo; schema público ainda sem tabelas. Nenhuma migration aplicada.", state: "PENDENTE" },
+  { name: "Metricool", detail: "Perfis registrados; publicação ainda não validada por teste funcional.", state: "PARCIAL" },
+  { name: "Supermetrics", detail: "Instagram Insights, TikTok Organic e Pinterest autenticados; YouTube precisa validação final. Meta Ads e Amazon Ads não autenticados.", state: "PARCIAL" }
 ];
 const controls = [
-  "Cada origem mantém seus próprios identificadores e regras de atribuição.",
-  "Receita bruta, taxas, custos, comissão prevista e comissão recebida não serão somadas como se fossem a mesma coisa.",
-  "Eventos importados terão chave de idempotência para evitar duplicidade.",
-  "Dados de integração só serão considerados ativos após OAuth, permissões e sincronização serem testados."
+  "As oito áreas são módulos operacionais; não representam oito fontes de receita.",
+  "Os três domínios financeiros ficam dentro da área Financeiro e mantêm natureza contábil independente.",
+  "Nenhuma integração recebe status conectado sem autenticação, escopos, leitura de dados e teste funcional.",
+  "Eventos importados terão chave de idempotência, origem, timestamp e trilha de auditoria.",
+  "Gastos, campanhas, pagamentos, assinaturas e publicação externa permanecem bloqueados sem autorização explícita."
 ];
-
 export default function Home() {
   return (
     <main className="shell">
       <header className="topbar">
         <Link className="brand" href="/" aria-label="SMKON início"><span className="brand-mark">S</span><span>SMKON</span></Link>
-        <span className="environment"><i /> CONTROL CENTER / SPLIT 01</span>
+        <span className="environment"><i /> CONTROL CENTER / 8 ÁREAS</span>
       </header>
       <section className="hero">
-        <p className="eyebrow">CONTROL CENTER · REVENUE ARCHITECTURE</p>
-        <h1>Três operações.<br /><span>Uma visão central.</span></h1>
-        <p className="intro">A operação SMKON agora está organizada em três frentes independentes. Cada uma tem seus próprios eventos, indicadores e regras financeiras; o painel consolida os resultados sem misturar conceitos.</p>
-        <div className="hero-meta"><span>SPRINT 1 · MODELAGEM INICIAL</span><span>v0.2.0</span></div>
+        <p className="eyebrow">SMKON · OPERATING SYSTEM</p>
+        <h1>Oito áreas.<br /><span>Uma operação integrada.</span></h1>
+        <p className="intro">O Control Center organiza a SMKON em oito áreas operacionais. Dentro do Financeiro, três domínios separam custos de mídia, vendas próprias e comissões — sem misturar receita, custo e caixa.</p>
+        <div className="hero-meta"><span>ARQUITETURA · VERSÃO 0.3</span><span>8 ÁREAS / 3 DOMÍNIOS FINANCEIROS</span></div>
       </section>
       <section className="section-heading">
-        <div><p className="eyebrow">OPERATIONAL SPLIT / 01</p><h2>Frentes de operação</h2></div>
-        <span className="status">03 DOMÍNIOS SEPARADOS</span>
+        <div><p className="eyebrow">OPERATING MODEL / 01—08</p><h2>Áreas principais</h2></div>
+        <span className="status">08 MÓDULOS</span>
       </section>
-      <section className="streams" aria-label="Frentes de operação">
-        {streams.map((stream) => (
-          <article className="stream" key={stream.id}>
-            <div className="stream-top"><span className="module-number">{stream.id}</span><span className="stream-type">{stream.type}</span></div>
-            <h3>{stream.name}</h3>
-            <p className="stream-description">{stream.description}</p>
-            <div className="stream-sources"><span className="field-label">FONTES PLANEJADAS</span><div className="source-list">{stream.sources.map((source) => <span className="source-chip" key={source}>{source}</span>)}</div></div>
-            <div className="stream-bottom"><span>{stream.metric}</span><span className="module-state">ESTRUTURA DEFINIDA</span></div>
+      <section className="area-grid" aria-label="Oito áreas operacionais">
+        {areas.map((area) => (
+          <article className="area-card" key={area.id}>
+            <div className="stream-top"><span className="module-number">{area.id}</span><span className="stream-type">{area.type}</span></div>
+            <h3>{area.name}</h3>
+            <p className="stream-description">{area.description}</p>
+            <div className="source-list">{area.scope.map((item) => <span className="source-chip" key={item}>{item}</span>)}</div>
+            <div className="stream-bottom"><span className="module-state">{area.state}</span></div>
           </article>
         ))}
       </section>
       <section className="section-heading integration-heading">
-        <div><p className="eyebrow">DATA GOVERNANCE</p><h2>Regras de separação</h2></div>
+        <div><p className="eyebrow">AREA 05 · FINANCE</p><h2>Três domínios financeiros</h2></div>
+        <span className="status">CUSTO / VENDA / COMISSÃO</span>
+      </section>
+      <section className="streams" aria-label="Domínios financeiros">
+        {revenueDomains.map((domain) => (
+          <article className="stream" key={domain.id}>
+            <div className="stream-top"><span className="module-number">{domain.id}</span><span className="stream-type">{domain.type}</span></div>
+            <h3>{domain.name}</h3>
+            <p className="stream-description">{domain.description}</p>
+            <div className="stream-sources"><span className="field-label">FONTES PLANEJADAS</span><div className="source-list">{domain.sources.map((source) => <span className="source-chip" key={source}>{source}</span>)}</div></div>
+            <div className="stream-bottom"><span>{domain.metric}</span><span className="module-state">MODELAGEM INICIAL</span></div>
+          </article>
+        ))}
+      </section>
+      <section className="section-heading integration-heading">
+        <div><p className="eyebrow">PLATFORM CONNECTIVITY</p><h2>Estado das conexões</h2></div>
+        <span className="status">STATUS VALIDADO</span>
+      </section>
+      <section className="connections">
+        {connectionStatus.map((item) => <div className="connection-row" key={item.name}><div><h3>{item.name}</h3><p>{item.detail}</p></div><span className="module-state">{item.state}</span></div>)}
+      </section>
+      <section className="section-heading integration-heading">
+        <div><p className="eyebrow">DATA GOVERNANCE</p><h2>Regras de operação</h2></div>
         <span className="status">SEM DADOS FICTÍCIOS</span>
       </section>
       <section className="controls">
         {controls.map((control, index) => <div className="control-row" key={control}><span>{String(index + 1).padStart(2, "0")}</span><p>{control}</p></div>)}
-      </section>
-      <section className="integration-note">
-        <span className="eyebrow">INTEGRAÇÕES</span>
-        <p>Este split é a estrutura funcional inicial. Meta Ads, Amazon Associados, Mercado Livre e TikTok Shop ainda precisam de credenciais, permissões e testes específicos antes de qualquer dado ser marcado como sincronizado. Nenhuma campanha, compra ou gasto foi autorizado.</p>
       </section>
       <footer><span>SMKON © {new Date().getFullYear()}</span><span>UTILITY FIRST · EVIDENCE ALWAYS</span></footer>
     </main>
