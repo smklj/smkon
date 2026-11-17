@@ -57,7 +57,13 @@ create table public.source_connections (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (organization_id, provider, external_account_id),
-  unique (id, organization_id, domain)
+  unique (id, organization_id, domain),
+  check (
+    (provider in ('meta_ads', 'google_ads') and domain = 'paid_media')
+    or (provider = 'mercado_livre' and domain = 'owned_sales')
+    or (provider = 'tiktok_shop_seller' and domain = 'owned_sales')
+    or (provider in ('tiktok_shop_affiliate', 'amazon_associates') and domain = 'affiliate')
+  )
 );
 
 create table public.external_events (
