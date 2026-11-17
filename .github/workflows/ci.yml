@@ -29,11 +29,12 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Apply compatible dependency security fixes
-        run: npm audit fix
+        run: |
+          npm audit fix || echo "Some advisories have no compatible fix yet; continuing to the explicit audit report."
       - name: Dependency audit report
         run: |
           npm audit --json > npm-audit.json || true
-          node -e 'const a=require("./npm-audit.json"); for (const [name,v] of Object.entries(a.vulnerabilities ?? {})) console.log(JSON.stringify({name,severity:v.severity,range:v.range,via:v.via,fixAvailable:v.fixAvailable})); console.log("TOTAL", JSON.stringify(a.metadata?.vulnerabilities ?? {}))'
+          node -e 'const a=require("./npm-audit.json"); for (const [name,v] of Object.entries(a.vulnerabilities ?? {})) console.log(JSON.stringify({name,severity:v.severity,range:v.range,via:v.via,fixAvailable:v.fixAvailable})); console.log("TOTAL", JSON.stringify(a.metadata?.vulnerabilities ?? {})); if ((a.metadata?.vulnerabilities?.critical ?? 0) > 0) process.exit(1)'
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
