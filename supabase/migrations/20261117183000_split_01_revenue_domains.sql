@@ -81,7 +81,8 @@ create table public.external_events (
   created_at timestamptz not null default now(),
   foreign key (connection_id, organization_id, domain)
     references public.source_connections(id, organization_id, domain) on delete restrict,
-  unique (organization_id, provider, external_id, event_type)
+  unique (organization_id, provider, external_id, event_type),
+  unique (id, organization_id, domain)
 );
 
 create table public.ad_campaign_daily_metrics (
@@ -89,7 +90,7 @@ create table public.ad_campaign_daily_metrics (
   organization_id uuid not null references public.organizations(id) on delete cascade,
   connection_id uuid not null,
   domain public.smkon_revenue_domain not null default 'paid_media' check (domain = 'paid_media'),
-  external_event_id uuid references public.external_events(id) on delete set null,
+  external_event_id uuid,
   campaign_external_id text not null,
   metric_date date not null,
   currency char(3) not null,
@@ -100,6 +101,8 @@ create table public.ad_campaign_daily_metrics (
   created_at timestamptz not null default now(),
   foreign key (connection_id, organization_id, domain)
     references public.source_connections(id, organization_id, domain) on delete restrict,
+  foreign key (external_event_id, organization_id, domain)
+    references public.external_events(id, organization_id, domain) on delete set null (external_event_id),
   unique (organization_id, connection_id, campaign_external_id, metric_date, currency)
 );
 
@@ -123,19 +126,24 @@ create table public.sales_orders (
   created_at timestamptz not null default now(),
   foreign key (connection_id, organization_id, domain)
     references public.source_connections(id, organization_id, domain) on delete restrict,
-  unique (organization_id, provider, external_order_id)
+  foreign key (external_event_id, organization_id, domain)
+    references public.external_events(id, organization_id, domain) on delete set null (external_event_id),
+  unique (organization_id, provider, external_order_id),
+  unique (id, organization_id)
 );
 
 create table public.sales_order_adjustments (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
-  sales_order_id uuid not null references public.sales_orders(id) on delete cascade,
+  sales_order_id uuid not null,
   adjustment_type text not null check (adjustment_type in ('discount', 'platform_fee', 'payment_fee', 'shipping', 'refund', 'chargeback', 'other')),
   amount numeric(18, 4) not null check (amount >= 0),
   currency char(3) not null,
   external_adjustment_id text,
   occurred_at timestamptz not null,
   created_at timestamptz not null default now(),
+  foreign key (sales_order_id, organization_id)
+    references public.sales_orders(id, organization_id) on delete cascade,
   unique (organization_id, sales_order_id, adjustment_type, external_adjustment_id)
 );
 
@@ -172,6 +180,8 @@ create table public.affiliate_conversions (
   created_at timestamptz not null default now(),
   foreign key (connection_id, organization_id, domain)
     references public.source_connections(id, organization_id, domain) on delete restrict,
+  foreign key (external_event_id, organization_id, domain)
+    references public.external_events(id, organization_id, domain) on delete set null (external_event_id),
   unique (organization_id, provider, external_conversion_id)
 );
 
