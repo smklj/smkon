@@ -43,8 +43,7 @@
 - `sales_orders`: pedidos próprios, moeda, status, valores brutos e líquidos.
 - `sales_order_adjustments`: descontos, taxas, frete, reembolsos e estornos.
 - `affiliate_clicks`: click ID, tracking ID, origem e destino, respeitando privacidade e políticas da plataforma.
-- `affiliate_conversions`: conversões atribuídas e status.
-- `affiliate_commissions`: comissão prevista, aprovada, revertida e paga.
+- `affiliate_conversions`: conversões atribuídas, valor do pedido, valor da comissão e estado (`pending`, `approved`, `reversed`, `paid`). A comissão é registrada nesta tabela nesta primeira versão; uma tabela separada só será criada se a conciliação exigir múltiplas parcelas por conversão.
 - `financial_ledger_entries`: lançamentos normalizados e vinculados ao evento original; não substituir os registros específicos dos domínios.
 
 Valores monetários devem usar decimal de precisão fixa e moeda explícita (ISO 4217). Datas externas devem preservar timestamp original e timezone normalizado.
