@@ -2,7 +2,7 @@
 -- Run with Supabase CLI against a disposable local database after applying migrations.
 begin;
 
-select plan(26);
+select plan(25);
 
 select has_table('public', 'organizations', 'organizations table exists');
 select has_table('public', 'organization_members', 'organization_members table exists');
