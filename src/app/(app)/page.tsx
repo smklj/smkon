@@ -4,6 +4,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { NAV_ITEMS, STATUS_LABEL } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { errorFields, log } from "@/lib/observability/log";
 import { findWorkspace } from "@/lib/tenancy/workspace";
 
 export const metadata: Metadata = { title: "Visão geral" };
@@ -43,13 +44,7 @@ async function loadOverview(): Promise<Overview> {
       queue: rows.filter((row) => row.status === "draft").slice(0, 5) as QueueItem[],
     };
   } catch (error) {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        scope: "page.overview",
-        message: error instanceof Error ? error.message : (error as { message?: string })?.message ?? "unknown",
-      }),
-    );
+    log("error", "page.overview", errorFields(error));
     return { state: "error" };
   }
 }

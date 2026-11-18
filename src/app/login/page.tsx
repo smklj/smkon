@@ -12,6 +12,8 @@ type LoginPageProps = {
 const errorMessages: Record<string, string> = {
   "invalid-input": "Confira o e-mail e use uma senha entre 8 e 128 caracteres.",
   "invalid-credentials": "E-mail ou senha inválidos.",
+  "rate-limited": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+  "workspace-setup": "Não foi possível preparar seu workspace. Tente novamente em instantes.",
   "callback-failed": "O link de acesso expirou ou já foi usado. Peça um novo convite ou redefinição de senha.",
 };
 

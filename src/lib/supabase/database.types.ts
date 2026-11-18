@@ -1021,6 +1021,14 @@ export type Database = {
           workspace_id: string
         }[]
       }
+      rate_limit_consume: {
+        Args: { p_scope: string; p_subject?: string }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_seconds: number
+        }[]
+      }
       revoke_invitation: {
         Args: { p_invitation_id: string }
         Returns: undefined

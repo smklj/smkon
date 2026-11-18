@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/content/server";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { siteUrl } from "@/lib/http/site-url";
+import { consumeRateLimit } from "@/lib/http/rate-limit";
 import { generateInviteToken, isInvitableRole, isValidEmail, normalizeEmail } from "@/lib/invitations/token";
 import { findWorkspace } from "@/lib/tenancy/workspace";
 
@@ -52,6 +53,14 @@ export async function POST(request: Request) {
     if (!isValidEmail(email)) return jsonError(400, "invalid_email", "E-mail inválido.");
     const role = body?.role;
     if (!isInvitableRole(role)) return jsonError(400, "invalid_role", "Papel inválido para convite.");
+
+    const limit = await consumeRateLimit(ctx.supabase, "invite_create");
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Muitos convites em pouco tempo. Tente novamente mais tarde.", code: "rate_limited" },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
 
     // O workspace vem da sessão, nunca do corpo da requisição.
     const { token, tokenHash } = generateInviteToken();
