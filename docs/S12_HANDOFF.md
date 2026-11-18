@@ -16,7 +16,7 @@
 ## Arquivos
 
 - `supabase/migrations/20261119010000_workspace_overview.sql` (nova)
-- `supabase/tests/011_workspace_overview.test.sql` (novo, 27 checagens)
+- `supabase/tests/011_workspace_overview.test.sql` (novo, 28 checagens)
 - `src/lib/overview/types.ts`, `src/lib/overview/server.ts` (novos)
 - `src/app/(app)/page.tsx`, `src/app/(app)/admin/page.tsx`
 - `src/components/admin/ConnectionsPanel.tsx` (novo), `src/components/admin/AreaCard.tsx`, `src/lib/admin/constants.ts`
@@ -27,15 +27,15 @@
 
 | Verificação | Ambiente | Resultado |
 |---|---|---|
-| `npm run test:db` | PostgreSQL 16.15 local + shim Supabase | ✅ 10/10 arquivos; `011_workspace_overview` 27/27 |
-| `npm run test:unit` | Node 22 | ✅ 50/50 (4 novos) |
+| `npm run test:db` | PostgreSQL 16.15 local + shim Supabase | ✅ 11/11 arquivos (inclui `010` do S10b); `011_workspace_overview` 28/28 |
+| `npm run test:unit` | Node 22 | ✅ 56/56 (4 novos; inclui os de mídia do S10b) |
 | `npm run typecheck` | local (npm disponível nesta execução) | ✅ sem erros |
 | `npm run lint` | local | ✅ sem avisos |
 | `npm run build` | local, sem variáveis do Supabase | ✅ rotas listadas, Proxy presente |
 | CI GitHub Actions | após push | ver PR |
-| E2E no Preview | staging | ⚠️ staging ainda não tem a migration; a visão geral deve abrir com o aviso informativo (sem `.feedback-error`) |
+| E2E no Preview | staging | 1ª execução: 14/15. A visão geral abriu com o aviso informativo, sem `.feedback-error`. A falha foi em `calendar.spec` porque a branch ainda não tinha o S10b, que já estava no staging (dry-run exige mídia). Corrigido com o merge da branch de integração; resultado do novo run no PR |
 
-Cobertura do teste SQL: workspace vazio (zeros e `[]`, nunca null); contagens por estado; fila de aprovação só com rascunhos; produto sem evidência verificada fica sem score; job cancelado e job fora da janela fora da contagem de 7 dias; ordem e título das próximas publicações; comissões só do próprio workspace; vendas próprias excluem cancelado e pedido com mais de 30 dias; mídia paga em 30 dias; conexões por estado sem expor conta externa e escopos; viewer lê; membro de A não lê B; usuário sem workspace e sessão ausente recusados; `anon` sem execução; função `security invoker` e `stable`.
+Cobertura do teste SQL: workspace vazio (zeros e `[]`, nunca null); contagens por estado; fila de aprovação só com rascunhos; produto sem evidência verificada fica sem score; job cancelado e job fora da janela fora da contagem de 7 dias; dry-run sem mídia reprova e é contado como reprovado (regra do S10b); ordem e título das próximas publicações; comissões só do próprio workspace; vendas próprias excluem cancelado e pedido com mais de 30 dias; mídia paga em 30 dias; conexões por estado sem expor conta externa e escopos; viewer lê; membro de A não lê B; usuário sem workspace e sessão ausente recusados; `anon` sem execução; função `security invoker` e `stable`.
 
 ## Decisões
 
@@ -50,7 +50,7 @@ Cobertura do teste SQL: workspace vazio (zeros e `[]`, nunca null); contagens po
 - 🔐 Aplicar `20261119010000_workspace_overview.sql` no **staging** (`xoyasrizivadxnpmzzno`) para o E2E exercitar o painel completo, e depois em **produção** (`hpplboyysmfcjsnjrdmw`) junto da publicação na main. Esta execução não aplicou migrations remotas.
 - Vendas próprias e mídia paga só terão números quando o primeiro conector existir (S11, 🔐).
 - Fuso: a janela de 30 dias usa `now()`; a data das métricas de mídia é convertida para Brasília.
-- A PR #22 (S10b) usa a migration `20261119000000` e o teste `010`; este split usa `20261119010000` e `011` para não colidir.
+- O S10b (PR #22, já integrado) usa a migration `20261119000000` e o teste `010`. Este split usa `20261119010000` e `011` e já foi mesclado com ele.
 
 ## Próxima etapa
 

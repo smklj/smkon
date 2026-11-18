@@ -118,17 +118,19 @@ select tests.ok(
 
 -- 4. Publicação: cancelado fica fora; janela de 7 dias
 select tests.ok((:'ov'::jsonb #>> '{publication,next_7_days}')::int = 1, '4a só o job dentro de 7 dias');
+-- Desde o S10b o dry-run exige mídia licenciada: sem mídia, o job reprova.
+select tests.ok(:'job_status' = 'dry_run_failed', '4b dry-run sem mídia reprova (regra S10b)');
 select tests.ok(
-  (:'ov'::jsonb #>> '{publication,dry_run_passed}')::int = 1
+  (:'ov'::jsonb #>> '{publication,dry_run_failed}')::int = 1
   and (:'ov'::jsonb #>> '{publication,awaiting_dry_run}')::int = 1
-  and (:'ov'::jsonb #>> '{publication,dry_run_failed}')::int = 0,
-  '4b estados do dry-run'
+  and (:'ov'::jsonb #>> '{publication,dry_run_passed}')::int = 0,
+  '4c estados do dry-run contados'
 );
 select tests.ok(
   jsonb_array_length(:'ov'::jsonb #> '{publication,upcoming}') = 2
   and (:'ov'::jsonb #>> '{publication,upcoming,0,id}') = :'job_soon'
   and (:'ov'::jsonb #>> '{publication,upcoming,0,title}') = 'Aprovado',
-  '4c próximas publicações em ordem, com título, sem a cancelada'
+  '4d próximas publicações em ordem, com título, sem a cancelada'
 );
 
 -- 5. Financeiro: domínios separados, sem vazamento entre workspaces
