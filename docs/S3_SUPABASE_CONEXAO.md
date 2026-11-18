@@ -19,7 +19,13 @@
 | SMTP Supabase / Resend | Pendente de domínio próprio verificado |
 | Auth invite-only e redirect URLs | Requer conferência/configuração no painel |
 
-As versões de migration registradas no Supabase refletem o horário real de aplicação. Não habilitar deploy automático de migrations pelo GitHub antes de alinhar o histórico com os arquivos versionados.
+As versões de migration registradas no Supabase refletem o horário real de aplicação. **Alinhado em 18/11 (S3.1):** os arquivos locais foram renomeados para as mesmas versões do remoto (`20261118155856`, `20261118160203`, `20261118160207`, `20261118160210`), na mesma ordem. Migrations novas usam versões posteriores.
+
+### Pendentes de aplicação no remoto (exigem autorização)
+| Arquivo | Conteúdo | Testes |
+|---|---|---|
+| `20261118170000_hardening_rls_indexes_audit.sql` | Políticas por comando (sem `FOR ALL`), 17 índices de FK, auditoria nas 4 tabelas restantes | `003_hardening_regression.test.sql` |
+| `20261118180000_revoke_internal_functions.sql` | Remove `content_canonical_hash` e `reject_mutation` da API RPC | `004_internal_functions.test.sql` |
 
 ## Advisors pós-migration
 
@@ -67,4 +73,4 @@ Projeto `smkon`, domínio `smkon-smkon.vercel.app`, Node `22.x`. As variáveis p
 
 ## Integração GitHub ↔ Supabase
 
-Não habilitar deploy automático de migrations até configurar proteção da `main` e alinhar o histórico remoto com os nomes/versões versionados. Por enquanto, migrations são aplicadas de forma controlada e verificadas manualmente.
+Histórico local alinhado ao remoto (S3.1). Ainda assim, não habilitar deploy automático de migrations até configurar a proteção da `main`. Por enquanto, migrations são aplicadas de forma controlada e verificadas manualmente.
