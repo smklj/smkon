@@ -17,7 +17,8 @@ concurrency:
 jobs:
   browser:
     name: Playwright · Staging
-    runs-on: ubuntu-latest
+    # Fixo em 24.04: ubuntu-latest virou 26.04, ainda sem suporte do Playwright 1.56.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     # Só Previews concluídos com sucesso; nunca o deploy de produção.
     if: >-
