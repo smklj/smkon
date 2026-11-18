@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/http/safe-redirect";
+import { ensureWorkspace } from "@/lib/tenancy/workspace";
 
 // Acesso somente por convite (decisão do Owner): não existe cadastro público.
 
@@ -17,8 +18,19 @@ export async function signIn(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) redirect(`/login?error=invalid-credentials${back}`);
+  if (signInError) redirect(`/login?error=invalid-credentials${back}`);
+
+  // Bootstrap idempotente: o primeiro usuário sem membership vira owner;
+  // usuários que já pertencem a um workspace mantêm o papel existente.
+  try {
+    await ensureWorkspace(supabase);
+  } catch {
+    // Não deixa uma sessão autenticada sem o contexto de tenant obrigatório.
+    await supabase.auth.signOut();
+    redirect(`/login?error=workspace-setup${back}`);
+  }
+
   redirect(next);
 }
