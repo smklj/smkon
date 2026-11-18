@@ -40,8 +40,12 @@
 - **Rejeição registrada, não erro.** Uma tentativa de usar ferramenta proibida fica na trilha (`rejected` / `tool_not_allowed`), para auditoria.
 - **Publicação continua impossível para agentes:** nenhuma ferramenta publica, e a publicação real (fora do dry-run) nem existe no banco.
 
-## Pendências e autorizações 🔐
+## Ambientes (autorizado pelo Owner em 18/11/2026)
 
-- Aplicar `20261119020000_agent_runs.sql` no **staging** e depois na **produção** (não aplicado nesta execução). Sem a migration, `/agentes` mostra erro de carregamento; por isso a rota ainda não entrou no E2E de navegação.
-- Depois do staging: incluir `/agentes` no `navigation.spec.mjs` e um E2E do kill switch.
-- S14: executor do servidor (worker com `service_role`, provedor de IA, custo), ferramentas reais conectadas às tabelas e `draft_content` gerando rascunho no Studio.
+- **Staging** (`xoyasrizivadxnpmzzno`): migration aplicada via MCP. As 13 funções `agent_*` conferem por md5 com um banco local montado a partir do Git; as 4 tabelas estão com RLS e 1 política de leitura cada; `anon` não executa `agent_start_run`, `authenticated` não executa `agent_record_step` e `service_role` não faz UPDATE direto em `agent_runs`.
+- **E2E:** `/agentes` entrou no `navigation.spec.mjs`, e o novo `agents.spec.mjs` cobre limites, execução na fila, kill switch interrompendo e bloqueando, e o desligamento.
+- **Produção** (`hpplboyysmfcjsnjrdmw`) e **main**: ver `ROADMAP_SPLITS.md`.
+
+## Pendências
+
+- S14: executor do servidor (worker com `service_role`, provedor de IA, custo 🔐), ferramentas reais conectadas às tabelas e `draft_content` gerando rascunho no Studio.

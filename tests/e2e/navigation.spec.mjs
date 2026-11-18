@@ -4,6 +4,7 @@ const MODULES = [
   { path: "/", heading: "Operação SMKON", name: "01-overview" },
   { path: "/produtos", heading: "Inteligência de produtos", name: "02-produtos" },
   { path: "/studio", heading: "Content Studio", name: "03-studio" },
+  { path: "/agentes", heading: "Agentes de IA", name: "04-agentes" },
   { path: "/financeiro", heading: "Financeiro", name: "05-financeiro" },
   { path: "/calendario", heading: "Calendário editorial", name: "04-calendario" },
   { path: "/midia", heading: "Mídia e licenças", name: "06-midia" },
