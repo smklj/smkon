@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -273,7 +274,12 @@ export default function StudioClient() {
         eyebrow="03 · Content Studio"
         title="Content Studio"
         description="Crie uma peça central, adapte para YouTube, Instagram e TikTok e aprove a versão exata. Aprovar não publica nada."
-        actions={<button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>}
+        actions={
+          <>
+            <Link className="link" href="/calendario">Calendário</Link>
+            <button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>
+          </>
+        }
       />
 
       {error && <p className="feedback feedback-error" role="alert">{error}</p>}

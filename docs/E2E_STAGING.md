@@ -57,6 +57,7 @@ Suítes:
 | `navigation.spec.mjs` | os 5 módulos carregam sem erro, visitante vai ao login com `next`, API sem sessão responde 401, headers de segurança |
 | `products.spec.mjs` | cadastro, validação de link, evidências, revisão (rejeição exige motivo), score 40 → 50, rejeitada não conta, arquivar; API ignora score do cliente |
 | `studio.spec.mjs` | rascunho, aprovação da versão exata, exclusão bloqueada após aprovação, arquivar |
+| `calendar.spec.mjs` | agendar versão aprovada, dry-run aprovado, edição reprova, cancelar exige motivo |
 | `admin-finance.spec.mjs` | convite criado, link exibido uma vez, revogar; Financeiro sem valores inventados |
 
 Os dados criados usam um sufixo por execução (`runId`) e ficam só no workspace QA do staging.
@@ -74,6 +75,11 @@ As variáveis com escopo na branch `qa-e2e-staging` continuam válidas e apontam
 - Automaticamente no evento `deployment_status` da Vercel: quando o Preview de um commit fica pronto, a suíte roda contra a URL desse deployment. O resultado aparece como check no commit e no PR.
 - Manualmente (workflow_dispatch), contra `E2E_BASE_URL`.
 - Nunca roda contra o deploy de produção. Mesmo assim, `auth.setup.mjs` aborta se a CSP do deployment não apontar para o Supabase de staging.
+
+## Primeira execução (18/11/2026)
+- 14/14 testes passando no Preview com staging (1,4 min).
+- Corrigido no caminho: runner fixado em `ubuntu-24.04`; falhas publicadas como anotações; confirmação "Status atualizado." na tela de produto; contexto anônimo explícito no teste da API.
+- Isolamento conferido nos bancos: dados E2E só no staging; produção sem dados de teste.
 
 ## Limitações atuais
 - Previews usam o banco de staging: migrations novas precisam ser aplicadas no staging antes de o Preview funcionar com elas.
