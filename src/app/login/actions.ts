@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/http/safe-redirect";
 import { clientIp, consumeRateLimit, rateLimitSubject } from "@/lib/http/rate-limit";
 import { log } from "@/lib/observability/log";
+import { ensureWorkspace } from "@/lib/tenancy/workspace";
 
 // Acesso somente por convite (decisão do Owner): não existe cadastro público.
 
@@ -33,8 +34,20 @@ export async function signIn(formData: FormData) {
     redirect(`/login?error=rate-limited${back}`);
   }
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) redirect(`/login?error=invalid-credentials${back}`);
+  if (signInError) redirect(`/login?error=invalid-credentials${back}`);
+
+  // Bootstrap idempotente: o primeiro usuário sem membership vira owner;
+  // usuários que já pertencem a um workspace mantêm o papel existente.
+  try {
+    await ensureWorkspace(supabase);
+  } catch (error) {
+    log("error", "auth.signIn.workspace_setup", { message: error instanceof Error ? error.message : String(error) });
+    // Não deixa uma sessão autenticada sem o contexto de tenant obrigatório.
+    await supabase.auth.signOut();
+    redirect(`/login?error=workspace-setup${back}`);
+  }
+
   redirect(next);
 }
