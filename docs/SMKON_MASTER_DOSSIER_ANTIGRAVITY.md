@@ -766,3 +766,49 @@ A lista de plugins inclui ferramentas disponíveis no ambiente ChatGPT, e não a
 Antes de qualquer execução, o Antigravity deve revalidar o estado atual diretamente nos serviços e no repositório.
 
 **Fim do dossiê mestre SMKON.**
+
+
+---
+
+# 15. Atualização operacional — auditoria e preparação de produção (18/11/2026)
+
+## 15.1 Estado confirmado nesta sessão
+- Branches existentes revalidadas: `main`, `feature/admin-panel`, `feature/product-intelligence-mvp`, `feature/content-growth-studio-mvp`, `feature/revenue-stream-split`, `fix/sprint-1-security-auth-foundation`, `feature/admin-dashboard-mvp` e `feat/fila-status-machine`.
+- `feature/admin-panel` está 58 commits à frente de `main`, sem commits atrás na comparação consultada.
+- `feature/product-intelligence-mvp` diverge de `feature/admin-panel`: 2 commits próprios e 58 commits atrás. Não fazer merge automático.
+- Criada branch de integração controlada `feature/smkon-production-readiness` a partir de `feature/admin-panel`.
+- Nessa branch foram adicionados tipos, scoring, geração de preview de conteúdo e endpoint autenticado de Product Intelligence. O endpoint continua sem persistência; GET retorna lista vazia e POST retorna preview HTTP 202.
+- Migration de Product Intelligence foi versionada como draft e permanece não aplicada.
+- Criado `docs/PRODUCTION_READINESS.md` com evidências e bloqueadores.
+- Mantidos `main` e os PRs existentes sem merge.
+
+## 15.2 Supabase — estado real consultado
+- Projeto `hpplboyysmfcjsnjrdmw`, região `us-west-2`, status `ACTIVE_HEALTHY`.
+- Histórico remoto de migrations retornou vazio.
+- Advisors de segurança e performance retornaram zero lints na consulta; isso não valida migrations não aplicadas nem substitui testes de RLS.
+- A migration base `20261117183000_split_01_revenue_domains.sql` cria organizações, membros e domínios financeiros. Content Studio e Product Intelligence dependem dessa base.
+- Não foi aplicada migration hospedada nesta sessão.
+- Antes de habilitar Auth/CRUD, validar bootstrap do Owner, Auth redirect URLs, cadeia de migrations e isolamento multi-tenant.
+
+## 15.3 Vercel — estado real consultado
+- Projeto `smkon`, equipe Smkon, project ID `prj_udn2T9xYctnJU8uq4oE6wjzPF5qK`.
+- Domínio listado: `smkon-smkon.vercel.app`.
+- Variáveis listadas para o projeto: zero; `hiddenProductionEnvCount = 0`. Nenhum valor secreto foi solicitado ou exposto.
+- Node.js configurado no projeto foi reportado como `26.x`; a matriz atual do conector aceita 20.x, 22.x e 24.x. Revisar/ajustar para versão LTS suportada antes do release.
+- Último deployment Production consultado: estado `CANCELED`.
+- Preview `dpl_dgdv2DR88L3xYHpFe6Z8edEToXqE` estava `READY` para commit `71297cd53181d366045426e4fc0aaa2416d4da3f`, branch `feature/admin-panel`.
+- Esse Preview não foi promovido para Production.
+- Sem variáveis de ambiente e sem schema/Auth no host, login, Content Studio e APIs protegidas não podem ser considerados funcionais em produção.
+
+## 15.4 Decisão de release
+A autorização do Owner para publicação direta foi registrada nesta conversa, mas a promoção não deve ocorrer enquanto houver bloqueadores objetivos de runtime: variáveis Supabase ausentes, migrations remotas ausentes e Auth/bootstrap/RLS sem validação. Publicar nesse estado criaria uma versão com funcionalidades centrais quebradas ou indisponíveis.
+
+## 15.5 Próximas ações necessárias
+1. Definir variáveis Supabase de Production no Vercel sem compartilhar valores no chat.
+2. Configurar Supabase Auth e redirect URLs para o domínio oficial.
+3. Validar as migrations em banco local descartável, incluindo dependências e políticas.
+4. Confirmar usuário Owner e bootstrap de organização.
+5. Testar Auth e RLS com dois tenants.
+6. Integrar persistência real de Product Intelligence e validar CRUD do Content Studio.
+7. Rodar CI, build e smoke tests no commit exato.
+8. Criar deploy Production e verificar logs/rotas; só então confirmar release público.
