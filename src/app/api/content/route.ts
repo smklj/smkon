@@ -6,7 +6,7 @@ import {
   type ContentStatusApi,
 } from "@/lib/content/types";
 
-const allowedChannels = new Set(CHANNELS);
+const allowedChannels = new Set<string>(CHANNELS);
 const SELECT_COLUMNS =
   "id,title,product,source_url,asset_url,script,caption,cta,hashtags,channels,rights_confirmed,status,created_at,updated_at";
 
