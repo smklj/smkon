@@ -19,17 +19,21 @@
 | SMTP Supabase / Resend | Pendente de domínio próprio verificado |
 | Auth invite-only e redirect URLs | Requer conferência/configuração no painel |
 
-As versões de migration registradas no Supabase refletem o horário real de aplicação. **Divergência de histórico (decisão pendente do Owner):** o remoto registrou `20261118155856`, `20261118160203`, `20261118160207` e `20261118160210`; os arquivos no Git usam `20261117183000`, `20261117200000`, `20261118120000` e `20261118150000`. O conteúdo é o mesmo (catálogo remoto conferido em 18/11). Opções:
-- **A — renomear os arquivos locais** para as versões remotas. Não escreve no banco, mas contraria a regra de `docs/MIGRATION_RECONCILIATION.md` ("não renomear migrations já aplicadas").
-- **B — manter os nomes do Git e reconciliar o histórico remoto** (`supabase migration repair`), com backup e `migration list --linked` antes. Escreve na tabela de histórico do remoto e exige autorização.
+As versões de migration registradas no Supabase refletem o horário real de aplicação. **Histórico alinhado em 18/11 (opção B):** as versões no `supabase_migrations.schema_migrations` remoto foram corrigidas para os nomes do Git, sem alterar o schema nem renomear arquivos (regra de `docs/MIGRATION_RECONCILIATION.md`). Estado remoto:
 
-Até a decisão: não usar `supabase db push` nem a integração GitHub de migrations; aplicar migrations novas de forma controlada.
-
-### Pendentes de aplicação no remoto (exigem autorização)
-| Arquivo | Conteúdo | Testes |
+| Versão | Migration | Aplicada |
 |---|---|---|
-| `20261118170000_hardening_rls_indexes_audit.sql` | Políticas por comando (sem `FOR ALL`), 17 índices de FK, auditoria nas 4 tabelas restantes | `003_hardening_regression.test.sql` |
-| `20261118180000_revoke_internal_functions.sql` | Remove `content_canonical_hash` e `reject_mutation` da API RPC | `004_internal_functions.test.sql` |
+| `20261117183000` | split_01_revenue_domains | ✅ |
+| `20261117200000` | content_studio | ✅ |
+| `20261118120000` | product_intelligence | ✅ |
+| `20261118150000` | p0_security_integrity | ✅ |
+| `20261118170000` | hardening_rls_indexes_audit | ✅ 18/11 |
+| `20261118180000` | revoke_internal_functions | ✅ 18/11 |
+
+Verificação pós-aplicação: 0 políticas `FOR ALL`, 43 políticas, 17 índices de FK, 12 triggers de auditoria, funções internas sem EXECUTE para `anon`/`authenticated`.
+Advisors: segurança só com os 2 avisos intencionais (`ensure_workspace`, `approve_content`); performance só "índice não usado" (banco sem dados).
+
+Ao aplicar migrations novas pela ferramenta MCP, corrigir a versão registrada para o nome do arquivo logo em seguida. Com o histórico alinhado, `supabase db push --dry-run` passa a ser confiável; a execução real continua exigindo autorização.
 
 ## Advisors pós-migration
 
