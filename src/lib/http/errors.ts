@@ -54,6 +54,16 @@ const DB_BUSINESS_ERRORS: Record<string, { status: number; message: string }> = 
   invalid_decision: { status: 400, message: "Decisão inválida." },
   review_note_required: { status: 400, message: "Informe o motivo da rejeição." },
   review_note_too_long: { status: 400, message: "O motivo deve ter até 500 caracteres." },
+  invalid_agent: { status: 400, message: "Agente inválido." },
+  invalid_goal: { status: 400, message: "Descreva o objetivo em 3 a 2000 caracteres." },
+  invalid_max_steps: { status: 400, message: "Número de passos fora do limite do workspace." },
+  agents_killed: { status: 423, message: "O kill switch está ligado: nenhuma execução de agente pode começar." },
+  run_limit_reached: { status: 429, message: "Limite de execuções nas últimas 24 horas atingido." },
+  agent_run_not_found: { status: 404, message: "Execução não encontrada." },
+  run_not_active: { status: 409, message: "Esta execução já foi encerrada." },
+  kill_reason_required: { status: 400, message: "Informe o motivo para ligar o kill switch (3 a 500 caracteres)." },
+  invalid_limits: { status: 400, message: "Limites fora da faixa permitida." },
+  unknown_tool: { status: 400, message: "Ferramenta fora da allowlist." },
 };
 
 /** Mensagem segura para um código de negócio conhecido (para Server Actions). */
