@@ -700,6 +700,65 @@ export type Database = {
         }
         Relationships: []
       }
+      product_evidence: {
+        Row: {
+          captured_by: string
+          claim: string
+          created_at: string
+          id: string
+          kind: string
+          observed_at: string
+          organization_id: string
+          product_id: string
+          review_note: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_url: string
+          value: number | null
+        }
+        Insert: {
+          captured_by?: string
+          claim: string
+          created_at?: string
+          id?: string
+          kind: string
+          observed_at?: string
+          organization_id: string
+          product_id: string
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url: string
+          value?: number | null
+        }
+        Update: {
+          captured_by?: string
+          claim?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          observed_at?: string
+          organization_id?: string
+          product_id?: string
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_evidence_product_id_organization_id_fkey"
+            columns: ["product_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       products: {
         Row: {
           affiliate_url: string | null
@@ -725,7 +784,7 @@ export type Database = {
           affiliate_url?: string | null
           commission_percent?: number | null
           created_at?: string
-          created_by: string
+          created_by?: string
           currency?: string
           evidence?: Json
           external_id?: string | null
@@ -1027,6 +1086,13 @@ export type Database = {
           allowed: boolean
           remaining: number
           retry_after_seconds: number
+        }[]
+      }
+      review_product_evidence: {
+        Args: { p_decision: string; p_evidence_id: string; p_note?: string }
+        Returns: {
+          evidence_id: string
+          product_score: number | null
         }[]
       }
       revoke_invitation: {

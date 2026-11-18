@@ -36,7 +36,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 |---|---|---|
 | **S4** | Camada de domínio por módulo (`schema/service/repository`), validação de schema, tipos gerados do Supabase, atualização do toolchain de lint | S1 (+ rede para npm) |
 | **S5** · ✅ convites em produção (`docs/S5_HANDOFF.md`); falta listar/gerenciar membros e seletor de organização | Tenancy completa: membros, convites, papéis, seletor de organização, RBAC central | S1, S3 |
-| **S6** · headers, rate limit e logs implementados e testados (`docs/S6_HANDOFF.md`); falta CSP com nonce e destino externo de logs | Observabilidade (logs estruturados, rastreio de erros), headers de segurança (CSP/HSTS), rate limit | S1 |
+| **S6** · ✅ em produção (`docs/S6_HANDOFF.md`); falta CSP com nonce e destino externo de logs | Observabilidade (logs estruturados, rastreio de erros), headers de segurança (CSP/HSTS), rate limit | S1 |
 | **S7** · ✅ build/CI verdes, integrado via PR #5 (validação visual manual pendente) | Design system com o kit de marca oficial (tokens, tipografia, ícones), app shell com sidebar, navegação responsiva | S1 |
 | **S8** · ✅ em produção (`docs/S8_HANDOFF.md`); falta ingestão real e conciliação (S11) | Financeiro: estados completos de comissão (prevista → aprovada → liquidada/cancelada/estornada → paga), ingestão server-side, conciliação | S1, S3 |
 
@@ -44,7 +44,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S9** | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
+| **S9** · catálogo, evidências verificáveis e score no banco implementados e testados (`docs/S9_HANDOFF.md`); falta coleta automática | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
 | **S10** | Assets (Storage), registro de licenças e direitos, calendário editorial e fila de publicação em dry-run |
 | **S11** | Primeiro conector financeiro real (Mercado Livre ou Amazon) com idempotência e conciliação 🔐 (contas e escopos) |
 | **S12** | Dashboard com dados reais substituindo constantes |
