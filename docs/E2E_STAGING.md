@@ -61,13 +61,20 @@ Suítes:
 
 Os dados criados usam um sufixo por execução (`runId`) e ficam só no workspace QA do staging.
 
+## Ambientes na Vercel
+
+| Ambiente | Supabase |
+|---|---|
+| Production | `hpplboyysmfcjsnjrdmw` (produção) |
+| Preview (todas as branches) e Development | `xoyasrizivadxnpmzzno` (staging) |
+
+As variáveis com escopo na branch `qa-e2e-staging` continuam válidas e apontam para o mesmo staging.
+
+## Quando roda
+- Automaticamente no evento `deployment_status` da Vercel: quando o Preview de um commit fica pronto, a suíte roda contra a URL desse deployment. O resultado aparece como check no commit e no PR.
+- Manualmente (workflow_dispatch), contra `E2E_BASE_URL`.
+- Nunca roda contra o deploy de produção. Mesmo assim, `auth.setup.mjs` aborta se a CSP do deployment não apontar para o Supabase de staging.
+
 ## Limitações atuais
-- `E2E_BASE_URL` aponta para o Preview fixo da branch `qa-e2e-staging`. Os testes do PR rodam contra esse deployment, não contra o código do PR. Para testar o código de cada PR, os Previews de todas as branches precisam usar o Supabase de staging (hoje usam o de produção) e o workflow deve ler a URL do evento `deployment_status`.
+- Previews usam o banco de staging: migrations novas precisam ser aplicadas no staging antes de o Preview funcionar com elas.
 - Traces e vídeos de falha (artifacts privados, 14 dias) podem conter cookies da sessão QA de staging. O login roda sem trace para não gravar a senha.
-
-## Segurança
-
-- Não use usuário, senha, service_role ou dados de produção no staging.
-- A publishable key pode estar no frontend; nunca use secret/service_role key em `NEXT_PUBLIC_*`.
-- O bypass da Vercel é exclusivo do CI e deve ser rotacionado/revogado se exposto.
-- Pull Requests de forks não recebem secrets por padrão; mantenha essa proteção.

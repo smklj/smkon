@@ -1,8 +1,9 @@
 name: E2E Browser Tests
 
+# Roda contra o Preview do próprio commit assim que a Vercel conclui o deploy
+# (todos os Previews usam o Supabase de staging). Manual: usa o secret E2E_BASE_URL.
 on:
-  pull_request:
-    branches: [main, feature/smkon-production-readiness]
+  deployment_status:
   workflow_dispatch:
 
 permissions:
@@ -18,11 +19,15 @@ jobs:
     name: Playwright · Staging
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # PRs de forks não recebem secrets; não roda para eles.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository }}
+    # Só Previews concluídos com sucesso; nunca o deploy de produção.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.deployment_status.state == 'success' &&
+           contains(github.event.deployment.environment, 'Preview') &&
+           !contains(github.event.deployment.environment, 'Production')) }}
     env:
       CI: "true"
-      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || secrets.E2E_BASE_URL }}
       E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
