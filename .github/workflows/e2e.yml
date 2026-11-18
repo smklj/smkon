@@ -63,19 +63,30 @@ jobs:
 
       - name: Install dependencies
         if: steps.config.outputs.ready == 'true'
-        run: npm ci
+        run: mkdir -p e2e-logs && npm ci 2>&1 | tee e2e-logs/1-npm-ci.log; exit ${PIPESTATUS[0]}
 
       - name: Install pinned Playwright runner
         if: steps.config.outputs.ready == 'true'
-        run: npm install --no-save --no-package-lock @playwright/test@1.56.1
+        run: npm install --no-save --no-package-lock @playwright/test@1.56.1 2>&1 | tee e2e-logs/2-playwright-install.log; exit ${PIPESTATUS[0]}
 
       - name: Install Chromium
         if: steps.config.outputs.ready == 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium 2>&1 | tail -n 200 | tee e2e-logs/3-chromium.log; exit ${PIPESTATUS[0]}
 
       - name: Run browser tests against isolated staging
         if: steps.config.outputs.ready == 'true'
-        run: npx playwright test
+        run: npx playwright test 2>&1 | tee e2e-logs/4-playwright-test.log; exit ${PIPESTATUS[0]}
+
+      # Sem acesso aos logs do Actions em algumas ferramentas: publica o fim de cada log como anotação.
+      - name: Publish failure details as annotations
+        if: ${{ failure() && steps.config.outputs.ready == 'true' }}
+        shell: bash
+        run: |
+          for f in e2e-logs/*.log; do
+            [ -f "$f" ] || continue
+            body=$(tail -n 60 "$f" | sed -E 's/\x1b\[[0-9;]*m//g' | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=$(basename "$f")::${body}"
+          done
 
       - name: Upload screenshots and report
         if: ${{ always() && steps.config.outputs.ready == 'true' }}
