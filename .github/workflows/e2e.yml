@@ -1,0 +1,101 @@
+name: E2E Browser Tests
+
+# Roda contra o Preview do próprio commit assim que a Vercel conclui o deploy
+# (todos os Previews usam o Supabase de staging). Manual: usa o secret E2E_BASE_URL.
+on:
+  deployment_status:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Um único run por vez: todos usam a mesma conta QA no staging.
+  group: e2e-staging
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    name: Playwright · Staging
+    # Fixo em 24.04: ubuntu-latest virou 26.04, ainda sem suporte do Playwright 1.56.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Só Previews concluídos com sucesso; nunca o deploy de produção.
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.deployment_status.state == 'success' &&
+           contains(github.event.deployment.environment, 'Preview') &&
+           !contains(github.event.deployment.environment, 'Production')) }}
+    env:
+      CI: "true"
+      E2E_BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || secrets.E2E_BASE_URL }}
+      E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      # Ref pública do Supabase de staging. A suíte aborta se o deployment não usar este projeto.
+      E2E_SUPABASE_REF: xoyasrizivadxnpmzzno
+    steps:
+      - name: Check E2E configuration
+        id: config
+        run: |
+          missing=""
+          for name in E2E_BASE_URL E2E_EMAIL E2E_PASSWORD VERCEL_AUTOMATION_BYPASS_SECRET; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; echo "✗ $name ausente"; else echo "✓ $name configurado"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::E2E não executado. Secrets ausentes:$missing"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.config.outputs.ready == 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        if: steps.config.outputs.ready == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.config.outputs.ready == 'true'
+        run: mkdir -p e2e-logs && npm ci 2>&1 | tee e2e-logs/1-npm-ci.log; exit ${PIPESTATUS[0]}
+
+      - name: Install pinned Playwright runner
+        if: steps.config.outputs.ready == 'true'
+        run: npm install --no-save --no-package-lock @playwright/test@1.56.1 2>&1 | tee e2e-logs/2-playwright-install.log; exit ${PIPESTATUS[0]}
+
+      - name: Install Chromium
+        if: steps.config.outputs.ready == 'true'
+        run: npx playwright install --with-deps chromium 2>&1 | tail -n 200 | tee e2e-logs/3-chromium.log; exit ${PIPESTATUS[0]}
+
+      - name: Run browser tests against isolated staging
+        if: steps.config.outputs.ready == 'true'
+        run: npx playwright test 2>&1 | tee e2e-logs/4-playwright-test.log; exit ${PIPESTATUS[0]}
+
+      # Sem acesso aos logs do Actions em algumas ferramentas: publica o fim de cada log como anotação.
+      - name: Publish failure details as annotations
+        if: ${{ failure() && steps.config.outputs.ready == 'true' }}
+        shell: bash
+        run: |
+          for f in e2e-logs/*.log; do
+            [ -f "$f" ] || continue
+            body=$(tail -n 60 "$f" | sed -E 's/\x1b\[[0-9;]*m//g' | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=$(basename "$f")::${body}"
+          done
+
+      - name: Upload screenshots and report
+        if: ${{ always() && steps.config.outputs.ready == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: smkon-e2e-${{ github.run_number }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

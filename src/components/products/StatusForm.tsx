@@ -15,6 +15,7 @@ export function StatusForm({ productId, status }: { productId: string; status: P
       </select>
       <button type="submit" className="button button-secondary button-small" disabled={pending}>{pending ? "Salvando…" : "Alterar status"}</button>
       {state?.error ? <span className="feedback feedback-error" role="alert">{state.error}</span> : null}
+      {state?.ok ? <span className="muted" role="status">{state.ok}</span> : null}
     </form>
   );
 }
