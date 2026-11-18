@@ -69,7 +69,7 @@ test("produto: cadastro, evidências, revisão humana e score baseado em evidên
   // Produto com evidência não é apagado: arquivar.
   await page.getByLabel("Status do produto").selectOption("archived");
   await page.getByRole("button", { name: "Alterar status" }).click();
-  await expect(page.getByLabel("Status do produto")).toHaveValue("archived");
+  await expect(page.getByRole("status").filter({ hasText: "Status atualizado." })).toBeVisible();
   await page.goto("/produtos");
   await expect(page.getByRole("link", { name })).toHaveCount(0);
   await page.getByRole("link", { name: "Mostrar arquivados" }).click();

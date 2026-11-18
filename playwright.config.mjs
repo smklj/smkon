@@ -15,7 +15,8 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  reporter: process.env.CI ? [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]] : "list",
+  // "github" publica cada falha como anotação do check (legível sem baixar artifacts).
+  reporter: process.env.CI ? [["github"], ["list"], ["html", { outputFolder: "playwright-report", open: "never" }]] : "list",
   outputDir: "test-results/output",
   use: {
     baseURL,

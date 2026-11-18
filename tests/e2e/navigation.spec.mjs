@@ -29,7 +29,12 @@ test("visitante sem sessão é levado ao login preservando o destino", async ({ 
 });
 
 test("API sem sessão responde 401 em JSON", async ({ playwright }) => {
-  const api = await playwright.request.newContext({ baseURL: appOrigin, extraHTTPHeaders: bypassHeaders });
+  // Sessão vazia explícita: o runner aplicaria o storageState do projeto (usuário logado).
+  const api = await playwright.request.newContext({
+    baseURL: appOrigin,
+    extraHTTPHeaders: bypassHeaders,
+    storageState: { cookies: [], origins: [] },
+  });
   const response = await api.get("/api/products");
   expect(response.status()).toBe(401);
   expect((await response.json()).error).toBeTruthy();
