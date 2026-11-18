@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, fix/sprint-1-security-auth-foundation]
+    branches: [main, fix/sprint-1-security-auth-foundation, 'feature/**']
   push:
     branches:
       - main

@@ -51,3 +51,19 @@
 4. Atualizar PR #3 com o diff desta integração UI↔API.
 
 **Nota:** "feito" no código da branch não implica operação em produção. Sempre revalidar com migration aplicada e usuário autenticado.
+
+## Correção — API realmente endurecida (18/11/2026)
+
+O commit `84617bb` documentou o endurecimento de `/api/content`, mas o `route.ts` ainda era a versão anterior (sem 23505, sem HTTPS, sem 404).
+
+Nesta correção o `src/app/api/content/route.ts` passa a:
+
+- Tratar violação única `23505` no bootstrap de workspace (reconsulta membership).
+- Exigir HTTPS em `sourceUrl` e `assetUrl` quando preenchidos.
+- Devolver o item completo (`item`) em POST/PATCH, mantendo `id` para o client atual.
+- Retornar 404 em PATCH/DELETE quando o item não existe no tenant.
+- Contrato GET permanece `{ items: rows snake_case }` para o `studio-client` já na branch.
+
+CI: `pull_request` também dispara em `feature/**`.
+
+Não aplicado: migration no host, merge em main, deploy, publicação.
