@@ -29,21 +29,49 @@ npm run lint
 npm run build   # o resumo de rotas deve listar "Proxy (Middleware)"
 ```
 
-### 2.2 Banco (Postgres local ou Supabase CLI)
-Aplicar as migrations em ordem num banco descartável (`supabase start` + `supabase db reset`, ou Postgres com um shim de `auth.users`/`auth.uid()` e os papéis `anon`/`authenticated`/`service_role`). Testes mínimos que devem ser escritos e passar:
+### 2.2 Banco — suíte automatizada (S1.1)
+Não exige Supabase CLI nem pgTAP. Usa PostgreSQL 17 descartável com um shim mínimo do Supabase
+(`supabase/tests/_support/supabase_shim.sql`): papéis `anon`/`authenticated`/`service_role`,
+`auth.users`, `auth.uid()` e os privilégios padrão do Supabase no schema `public`.
 
-1. `ensure_workspace()` como usuário novo cria 1 organização + membership owner; segunda chamada retorna a mesma (idempotente).
-2. `authenticated` não consegue `insert` direto em `organizations` nem em `organization_members`.
-3. Inserir `content_items` com `status = 'approved'` falha com `approval_required`.
-4. Inserir conteúdo gera `version = 1`, `content_hash` com 64 hex e 1 linha em `content_versions`.
-5. `approve_content(id, hash_errado)` falha com `hash_mismatch`; com o hash correto aprova e grava `content_approvals` + `audit_log` (`APPROVE`).
-6. Editar o conteúdo aprovado incrementa `version`, volta `status` para `draft` e zera `approved_*`.
-7. `update content_items set status = 'approved'` direto (sem aprovação da versão atual) falha.
-8. Usuário `viewer`/`analyst` recebe `forbidden` em `approve_content`; usuário de outro tenant recebe `content_not_found`.
-9. `delete` de conteúdo com aprovação falha (FK restrict, 23503); sem aprovação, apaga e remove as versões.
-10. `update`/`delete` em `audit_log`, `content_versions` (direto), `content_approvals` e `financial_ledger_entries` falham, inclusive como `postgres`/`service_role`.
-11. Isolamento: usuário A não lê `content_items`, `content_versions`, `content_approvals` nem `audit_log` do tenant B.
-12. Regressão do Split 01: `supabase/tests/001_split_01_schema.test.sql` continua passando (precisa de pgTAP).
+```bash
+docker run --rm -d --name smkon-pg -p 54329:5432 -e POSTGRES_PASSWORD=postgres postgres:17
+DATABASE_ADMIN_URL=postgres://postgres:postgres@localhost:54329/postgres npm run test:db
+docker stop smkon-pg
+```
+
+O script cria um banco temporário, aplica shim → migrations (em ordem) → helpers → testes e apaga o banco ao final.
+Ele se recusa a rodar contra URLs `supabase.co`/`supabase.com`. Com Supabase local (`supabase start && supabase db reset`):
+`DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres npm run test:db -- supabase`.
+
+| Arquivo | Cobertura |
+|---|---|
+| `supabase/tests/001_split_01_schema.test.sql` | Regressão do Split 01 portada para SQL puro: tabelas, RLS, grants, FKs compostas, coerência provedor×domínio, isolamento de pedidos entre tenants |
+| `supabase/tests/002_p0_security_integrity.test.sql` | Os 12 cenários abaixo, numerados no próprio arquivo |
+
+1. `ensure_workspace()` cria organização + owner, é idempotente e audita o bootstrap.
+2. `authenticated` não insere direto em `organizations`/`organization_members`.
+3. Conteúdo não nasce `approved`.
+4. Inserção gera `version = 1`, hash SHA-256 e snapshot.
+5. `approve_content` recusa hash errado, aprova com o hash exato, registra decisão e `APPROVE`, é idempotente.
+6. Editar conteúdo aprovado gera nova versão em rascunho sem aprovação; salvar sem mudança não versiona.
+7. `status = approved` direto é recusado, inclusive ao voltar ao texto de uma versão aprovada antiga.
+8. Viewer lê mas não aprova nem edita; outro tenant recebe `content_not_found`.
+9. Conteúdo com aprovação não é apagado (23503); rascunho é apagado com versões em cascata e auditoria; arquivado não é aprovado.
+10. Ledger, `audit_log`, `content_versions` e `content_approvals` são append-only, inclusive para o superusuário; `authenticated` não grava no ledger.
+11. Isolamento entre tenants em conteúdo, versões, aprovações, auditoria e ledger; viewer não lê auditoria.
+12. `organization_id` e `created_by` são imutáveis.
+
+Saída esperada: linhas `NOTICE: ok - ...` e, ao final, `✓ 2 arquivo(s) de teste passaram.` Qualquer falha interrompe com `FAIL: <cenário>`.
+
+### 2.2.1 Testes unitários
+```bash
+npm run test:unit   # node:test nativo (Node ≥ 22.18, type stripping), sem dependência nova
+```
+Cobrem scoring de produtos, mapeadores do Content Studio (nunca enviam `approved`), validação de UUID/hash e mapeamento de erros sem vazamento.
+
+### 2.2.2 CI
+O workflow ganhou o passo `Unit tests` e o job `database` (Postgres 17 como serviço + `scripts/test-db.sh shim`).
 
 ### 2.3 Fluxo no navegador (preview com banco de teste)
 - Anônimo em `/`, `/admin`, `/studio` → redirect para `/login`; `GET /api/content` anônimo → 401 JSON.
@@ -58,13 +86,17 @@ git push -u origin feature/p0-security-integrity
 Abrir PR **para `feature/smkon-production-readiness`** (não para `main`), com o título `fix(p0): auth gate, atomic workspace bootstrap, exact-version approval, audit trail`. Sem merge em `main`, sem migration remota, sem deploy de produção.
 
 ## 4. Não concluído neste split
-- Testes automatizados (unitários, integração e SQL) não foram escritos nem executados: responsabilidade do validador (seção 2).
+- Testes automatizados foram **escritos** (S1.1), mas **não executados** pelo Claude Code: execução é do validador (seção 2).
+- E2E de navegador (Playwright) não foi adicionado: exige nova dependência npm. O fluxo da seção 2.3 segue manual no Preview.
 - Build, lint e typecheck não foram executados: o ambiente do Claude não acessa o registro npm.
 - Desativação do signup público e configuração do Supabase Auth: dependem de decisão do Owner (S2).
 - Aprovador diferente do autor: depende de convites e papéis (S5).
 - Atualização do toolchain de lint (14 alertas *high*, todos em dependências de desenvolvimento): depende de acesso ao npm (S4).
 
 ## 5. Riscos e pontos de atenção
+- **Testes unitários e `next/server`:** `http-errors.test.ts` importa `NextResponse` fora do runtime do Next. Se o Node não resolver a importação, isolar `jsonError` em módulo próprio.
+- **Detecção de módulo do Node:** os `.ts` usam sintaxe ESM num pacote sem `"type": "module"`; o Node 22 detecta ESM automaticamente. Se surgir erro de módulo, renomear os testes para `.test.mts`.
+- **Fidelidade do shim:** o shim reproduz só o necessário. A validação final continua sendo o branch de banco Supabase (S3).
 - **Supabase real:** confirmar que `sha256()` e `hashtextextended()` estão disponíveis (Postgres 17 nativo) e que funções `security definer` pertencem a `postgres`.
 - **Proxy:** conferir no build se as rotas públicas (`/login`, `/auth/callback`, assets) não entram em loop de redirect.
 - **Tipos do Supabase:** o cliente não usa tipos gerados; erros de tipo só aparecem no `typecheck`.
