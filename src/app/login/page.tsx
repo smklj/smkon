@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
 import { Logo } from "@/components/brand/Logo";
-import { signIn, signUp } from "./actions";
+import { safeNextPath } from "@/lib/http/safe-redirect";
+import { signIn } from "./actions";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 };
 
 const errorMessages: Record<string, string> = {
   "invalid-input": "Confira o e-mail e use uma senha entre 8 e 128 caracteres.",
   "invalid-credentials": "E-mail ou senha inválidos.",
-  "signup-failed": "Não foi possível criar a conta. Verifique os dados e tente novamente.",
+  "callback-failed": "O link de acesso expirou ou já foi usado. Peça um novo convite ou redefinição de senha.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const error = params.error ? errorMessages[params.error] : undefined;
+  const next = safeNextPath(params.next, "/");
+  const invited = next.startsWith("/convite");
 
   return (
     <main className="auth-shell">
@@ -24,27 +27,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <Logo variant="horizontal" className="auth-logo" />
         <p className="eyebrow">Plataforma de operação digital</p>
         <h1>Acesse sua operação.</h1>
-        <p className="auth-copy">Entre na sua conta para continuar no ambiente privado da SMKON.</p>
+        <p className="auth-copy">
+          {invited
+            ? "Entre com o e-mail que recebeu o convite para entrar no workspace."
+            : "Entre na sua conta para continuar no ambiente privado da SMKON."}
+        </p>
         {error ? <p className="auth-alert" role="alert">{error}</p> : null}
-        {params.message === "check-email" ? (
-          <p className="auth-success" role="status">Conta criada. Confira seu e-mail para confirmar o acesso.</p>
-        ) : null}
         <form action={signIn} className="auth-form">
+          <input type="hidden" name="next" value={next} />
           <label htmlFor="email">E-mail</label>
           <input id="email" name="email" type="email" autoComplete="email" required maxLength={254} />
           <label htmlFor="password">Senha</label>
           <input id="password" name="password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} />
           <button type="submit" className="button button-primary">Entrar</button>
         </form>
-        <div className="auth-divider"><span>Primeiro acesso</span></div>
-        <form action={signUp} className="auth-form">
-          <label htmlFor="signup-email">E-mail para cadastro</label>
-          <input id="signup-email" name="email" type="email" autoComplete="email" required maxLength={254} />
-          <label htmlFor="signup-password">Crie uma senha</label>
-          <input id="signup-password" name="password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} />
-          <button className="button button-secondary" type="submit">Criar conta</button>
-        </form>
-        <p className="auth-footnote">A confirmação de e-mail pode ser exigida conforme as configurações do Supabase Auth.</p>
+        <p className="auth-footnote">Acesso somente por convite. Se você ainda não tem conta, peça um convite ao administrador do workspace.</p>
       </section>
     </main>
   );
