@@ -287,3 +287,33 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .finance-metrics .metric:nth-child(odd) { border-left: 0; }
   .finance-metrics .metric:nth-child(even) { border-left: 1px solid var(--line); }
 }
+
+/* ---------- Formulários genéricos ---------- */
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > span { font-size: 12px; color: var(--text-2); font-weight: 500; }
+.field small { color: var(--muted); font-size: 11px; }
+.field-wide { grid-column: 1 / -1; }
+.field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--bg); padding: 0 12px; font-size: 14px; outline: none; }
+.field input, .field select { height: 40px; }
+.field textarea { padding: 10px 12px; resize: vertical; line-height: 1.5; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--text); }
+.form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; grid-column: 1 / -1; }
+.inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inline-form input, .inline-form select { height: 34px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--bg); padding: 0 10px; font-size: 13px; outline: none; }
+.inline-form input { flex: 1 1 200px; }
+.button-small { height: 34px; padding: 0 12px; font-size: 12px; }
+
+/* ---------- Produtos ---------- */
+.score { display: inline-grid; place-items: center; min-width: 44px; height: 30px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); font: 600 14px var(--font-display-stack); font-variant-numeric: tabular-nums; }
+.score-none { color: var(--muted); border-style: dashed; font-weight: 500; font-size: 12px; }
+.score-large { font: 600 44px/1 var(--font-display-stack); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.reasons { margin: 12px 0 0; padding-left: 18px; display: grid; gap: 6px; color: var(--text-2); font-size: 13px; }
+.evidence-claim { font-size: 14px; }
+.evidence-source { font-size: 12px; color: var(--muted); word-break: break-all; }
+.evidence-review { display: grid; gap: 8px; margin-top: 10px; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; font-size: 13px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; color: var(--text-2); }
+@media (max-width: 720px) { .form-grid { grid-template-columns: 1fr; } }
+.stack-top { margin-top: 16px; }

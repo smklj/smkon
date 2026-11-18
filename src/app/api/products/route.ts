@@ -1,75 +1,49 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { ProductPayload, ProductSource, RevenueDomain } from "@/lib/products/types";
-import { calculateProductScore } from "@/lib/products/scoring";
-import { generateContentFromProduct } from "@/lib/products/content-stub";
+import { jsonError, toErrorResponse } from "@/lib/http/errors";
+import { canEditProducts, createProduct, listProducts } from "@/lib/products/server";
+import { parseProductInput } from "@/lib/products/validation";
+import { findWorkspace } from "@/lib/tenancy/workspace";
 
-const ALLOWED_REVENUE_DOMAINS = new Set<RevenueDomain>(["owned_sales", "affiliate", "paid_media"]);
+async function context() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return { response: jsonError(401, "not_authenticated", "Não autenticado.") } as const;
+  const workspace = await findWorkspace(supabase, user.id);
+  if (!workspace) return { response: jsonError(409, "no_workspace", "Workspace ainda não criado.") } as const;
+  return { supabase, workspace } as const;
+}
 
-const ALLOWED_SOURCES = new Set<ProductSource>([
-  "kiwify", "hotmart", "shopify", "amazon", "manual", "other",
-]);
-
-export async function GET() {
+/** Catálogo do workspace. O score vem do banco e só existe com evidência verificada. */
+export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-
-    return NextResponse.json({
-      items: [],
-      persistence: "disabled",
-      note: "Product Intelligence MVP: catálogo ainda não persiste. A migration precisa ser validada e aplicada antes de habilitar armazenamento.",
-    });
-  } catch {
-    return NextResponse.json({ error: "Não foi possível consultar produtos." }, { status: 500 });
+    const ctx = await context();
+    if ("response" in ctx) return ctx.response;
+    const includeArchived = new URL(request.url).searchParams.get("archived") === "1";
+    const items = await listProducts(ctx.supabase, ctx.workspace.organizationId, includeArchived);
+    return NextResponse.json({ items });
+  } catch (error) {
+    return toErrorResponse("api.products.get", error, "Não foi possível consultar produtos.");
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    const ctx = await context();
+    if ("response" in ctx) return ctx.response;
+    if (!canEditProducts(ctx.workspace.role)) return jsonError(403, "forbidden", "Apenas owner ou admin cadastram produtos.");
 
-    const payload = (await request.json()) as ProductPayload;
-    if (typeof payload.name !== "string" || !payload.name.trim() || payload.name.trim().length > 200) {
-      return NextResponse.json({ error: "Nome do produto deve ter entre 1 e 200 caracteres." }, { status: 400 });
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonError(400, "invalid_input", "Corpo da requisição inválido.");
     }
-    if (payload.revenueDomain !== undefined && !ALLOWED_REVENUE_DOMAINS.has(payload.revenueDomain)) {
-      return NextResponse.json({ error: "Domínio de receita inválido." }, { status: 400 });
-    }
-    if (!ALLOWED_SOURCES.has(payload.source)) {
-      return NextResponse.json({ error: "Fonte inválida." }, { status: 400 });
-    }
-    if (payload.commissionPercent !== undefined &&
-      (!Number.isFinite(payload.commissionPercent) || payload.commissionPercent < 0 || payload.commissionPercent > 100)) {
-      return NextResponse.json({ error: "Comissão deve estar entre 0 e 100%." }, { status: 400 });
-    }
-    if (payload.priceCents !== undefined &&
-      (!Number.isInteger(payload.priceCents) || payload.priceCents < 0)) {
-      return NextResponse.json({ error: "Preço inválido." }, { status: 400 });
-    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) return jsonError(400, "invalid_input", "Corpo da requisição inválido.");
 
-    const scoreResult = calculateProductScore(payload);
-    const contentPreview = generateContentFromProduct(payload);
-    return NextResponse.json({
-      ok: true,
-      persistence: "disabled",
-      product: {
-        name: payload.name.trim(),
-        source: payload.source,
-        type: payload.type ?? "unknown",
-        revenueDomain: payload.revenueDomain ?? "affiliate",
-        priceCents: payload.priceCents,
-        commissionPercent: payload.commissionPercent,
-        score: scoreResult.score,
-        scoreReasons: scoreResult.reasons,
-      },
-      contentPreview,
-      note: "Preview apenas: nenhum produto foi salvo e nenhum conteúdo foi publicado. Persistência depende da migration aprovada; publicação exige aprovação humana.",
-    }, { status: 202 });
-  } catch {
-    return NextResponse.json({ error: "Payload inválido ou erro ao processar produto." }, { status: 400 });
+    const id = await createProduct(ctx.supabase, ctx.workspace.organizationId, parseProductInput(body));
+    return NextResponse.json({ id, score: null, note: "Produto salvo sem score: adicione e verifique evidências." }, { status: 201 });
+  } catch (error) {
+    return toErrorResponse("api.products.post", error, "Não foi possível salvar o produto.");
   }
 }

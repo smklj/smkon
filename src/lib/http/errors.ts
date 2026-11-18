@@ -31,12 +31,32 @@ const DB_BUSINESS_ERRORS: Record<string, { status: number; message: string }> = 
   invitation_email_mismatch: { status: 403, message: "Este convite foi enviado para outro e-mail." },
   invitation_not_found: { status: 404, message: "Convite não encontrado." },
   invitation_not_pending: { status: 409, message: "Este convite não está mais pendente." },
+  evidence_not_found: { status: 404, message: "Evidência não encontrada." },
+  evidence_already_reviewed: { status: 409, message: "Esta evidência já foi revisada." },
+  evidence_immutable: { status: 409, message: "Evidências não podem ser editadas nem apagadas. Registre uma nova." },
+  evidence_in_future: { status: 400, message: "A data de observação não pode estar no futuro." },
+  invalid_decision: { status: 400, message: "Decisão inválida." },
+  review_note_required: { status: 400, message: "Informe o motivo da rejeição." },
+  review_note_too_long: { status: 400, message: "O motivo deve ter até 500 caracteres." },
 };
 
 /** Mensagem segura para um código de negócio conhecido (para Server Actions). */
 export function businessErrorMessage(error: unknown, fallback: string): string {
   const code = (error as DbError)?.message?.trim();
   return code && code in DB_BUSINESS_ERRORS ? DB_BUSINESS_ERRORS[code].message : fallback;
+}
+
+/** Mensagem segura para qualquer erro do banco (Server Actions), sem vazar detalhes. */
+export function dbErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ValidationError) return error.message;
+  const dbError = error as DbError;
+  const code = dbError?.message?.trim();
+  if (code && code in DB_BUSINESS_ERRORS) return DB_BUSINESS_ERRORS[code].message;
+  if (dbError?.code === "23505") return "Já existe um registro com estes dados.";
+  if (dbError?.code === "23514") return "Os dados não atendem às regras de validação.";
+  if (dbError?.code === "23503") return "Este registro possui histórico vinculado. Arquive em vez de excluir.";
+  if (dbError?.code === "42501") return "Seu papel não permite esta ação.";
+  return fallback;
 }
 
 export function jsonError(status: number, code: string, message: string) {
@@ -59,8 +79,14 @@ export function toErrorResponse(scope: string, error: unknown, fallbackMessage: 
     const mapped = DB_BUSINESS_ERRORS[businessCode];
     return jsonError(mapped.status, businessCode, mapped.message);
   }
+  if (dbError?.code === "23505") {
+    return jsonError(409, "duplicate", "Já existe um registro com estes dados.");
+  }
+  if (dbError?.code === "23514") {
+    return jsonError(400, "invalid_input", "Os dados não atendem às regras de validação.");
+  }
   if (dbError?.code === "23503") {
-    return jsonError(409, "has_dependencies", "Este registro possui histórico de aprovação. Arquive em vez de excluir.");
+    return jsonError(409, "has_dependencies", "Este registro possui histórico vinculado. Arquive em vez de excluir.");
   }
   if (dbError?.code === "42501") {
     return jsonError(403, "forbidden", "Seu papel não permite esta ação.");
