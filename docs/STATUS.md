@@ -1,7 +1,6 @@
 # SMKON — Matriz de Status Atual
 
 **Data de referência:** 18/11/2026  
-**Baseado em:** docs/SMKON_MASTER_DOSSIER_ANTIGRAVITY.md (versão 1.0 de 18/11/2026)  
 **Branch de referência:** feature/content-growth-studio-mvp  
 **Classificação:** feito / parcial / planejado / a validar
 
@@ -10,54 +9,45 @@
 ### Identidade operacional exclusiva
 - **Somente** `smkonlj@gmail.com` / GitHub `smklj`.
 - Repositório oficial: `smklj/smkon`.
-- Não misturar com conta pessoal ou identidades de outros projetos (NEXO, BMI9 etc.).
-- Confirmar identidade/organização em cada serviço (GitHub, Supabase, Vercel) antes de qualquer ação.
-- Não usar conta pessoal como fallback.
+- Não misturar com conta pessoal ou identidades de outros projetos.
+- Confirmar identidade/organização em cada serviço antes de qualquer ação.
 
 ### Proibições absolutas (sem autorização explícita do Owner)
 - **Sem merge em main**.
 - **Sem migration host** (não aplicar migrations no Supabase hospedado).
-- **Sem deploy** (especialmente produção; Preview somente se autorizado).
-- **Sem publicar** (nenhuma publicação em perfis reais de redes sociais).
-- Sem gastos, campanhas pagas, compras, assinaturas, contratações ou transferências.
-- Sem conectar contas que não pertençam à identidade SMKON.
-- Sem compartilhar dados entre SMKON e outros projetos.
+- **Sem deploy** (especialmente produção).
+- **Sem publicar** em perfis reais de redes sociais.
+- Sem gastos, campanhas pagas, compras, assinaturas, contratações.
 - Secrets nunca no Git, frontend, logs ou documentação.
 
-Estas regras prevalecem sobre qualquer outra instrução. Trabalho permitido: auditoria, testes locais, branches de feature, PRs, documentação e implementação em ambiente local/Preview autorizado.
+## O que mudou nesta entrega (Content Studio cloud)
 
-## Matriz de status (conforme dossiê mestre)
-
-| Área / Item | Status | Observações / Próxima ação |
+| Item | Status | Notas |
 |---|---|---|
-| Identidade SMKON (smkonlj@gmail.com / smklj) | feito | Definida e documentada. Confirmar em cada serviço. |
-| Repositório GitHub (smklj/smkon) | feito | Existe, com branches e PRs. Revisar CI atual. |
-| Control Center (interface inicial) | parcial | Fundação presente. Inspecionar cobertura. |
-| Oito áreas operacionais | planejado | Arquitetura documentada. Mapear módulos reais. |
-| Três domínios financeiros | parcial | Separação iniciada/documentada (PR #1). Revisar schema. |
-| Auth Supabase (login/signup/PKCE/SSR) | parcial | Fundação no código. A validar com teste E2E. |
-| Multi-tenant / RLS | parcial | Migrations e políticas versionadas. A validar isolamento real. |
-| Content Studio UI (MVP) | parcial | Implementado (briefing, rascunhos, filtros, prévia). Persistência local. |
-| Content Studio API (/api/content CRUD) | parcial | Criada e autenticada. UI ainda não consome. |
-| Persistência do Studio | parcial | Ainda em localStorage. Integrar à API (Fase 2). |
-| Migration content_items | parcial | Versionada no Git. Não aplicar em host sem autorização. |
-| Biblioteca de mídia | planejado | Não pronta. Definir Storage e permissões. |
-| Editor de vídeo timeline | planejado | Não pronto. Escopo técnico em fase própria. |
-| OAuth redes sociais / publicação | planejado | Não concluído. Mapear escopos; publicação só após aprovação. |
-| Agendamento / publicação | planejado | Não validado. Implementar fila + idempotência. |
-| Analytics (Metricool/Supermetrics) | a validar | Snapshots históricos. Revalidar contas e dados. |
-| Financeiro real (integrações) | planejado | Não integrado ponta a ponta. APIs e conciliação. |
-| Agentes IA | planejado | Arquitetura proposta (Scout, Analyst etc.). Implementar com limites. |
-| Observabilidade / backup | planejado | Pendente. Definir alertas, logs e restore. |
-| Deploy produção / Vercel | a validar | Não presumir concluído. Verificar vínculo; sem deploy sem OK. |
-| CI (typecheck/lint/build) | a validar | Workflow existe. Confirmar status dos checks nos PRs. |
-| PRs (#1, #2, #3) | parcial | Abertos/draft. Não mesclados. Verificar estado atual. |
+| `src/lib/content/types.ts` | feito | Tipos compartilhados, mapeamento legacy→API, labels PT |
+| `src/app/api/content/route.ts` | feito | GET/POST/PATCH/DELETE; 404 em item ausente; race 23505 no bootstrap de workspace; validação HTTPS; resposta com `item` completo (+ `id` compat) |
+| `src/app/studio/studio-client.tsx` | feito | Consome `/api/content`; loading/erro; filtros Rascunho/Aprovado/Arquivado; migração opcional localStorage → API sem duplicar |
+| README.md | feito | Reflete Auth + API + migrations ainda não aplicadas no host |
+| Persistência localStorage como fonte primária | removido | Apenas migração one-shot residual |
+| Migration `content_items` no host | **não feito** | Versionada no Git; **não aplicar** sem OK do Owner |
+| Deploy / publicação social | **não feito** | Proibido nesta linha |
 
-## Próximos passos prioritários
-1. Completar Fase 0 (auditoria completa com evidências).
-2. Estabilizar fundação (Auth + RLS multi-tenant).
-3. Integrar Content Studio UI → API (sair do localStorage).
-4. Manter todas as proibições acima.
+## Matriz resumida
 
-**Nota:** Status "feito" significa registrado/documentado ou implementado no código da branch. Não implica validação ponta a ponta ou operação em produção. Sempre revalidar.
+| Área | Status | Observações |
+|---|---|---|
+| Auth Supabase (login/signup/PKCE/SSR) | parcial | Fundação no código. A validar E2E. |
+| Content Studio UI → API | feito (código) | UI ligada à API. Depende de migration host + auth real. |
+| Migration content_items | parcial | No Git. Não aplicada no host. |
+| CI feature branches | feito | Workflow deve disparar em `feature/**`. |
+| Deploy produção / Vercel | a validar | Sem deploy nesta entrega. |
+| OAuth / publicação redes | planejado | Bloqueado por governança. |
 
+## Próximo bloco concreto
+
+1. Confirmar se Owner autoriza aplicar migration `20261117200000_content_studio.sql` (e fundação) no projeto Supabase `hpplboyysmfcjsnjrdmw` — **somente se autorizado**.
+2. Teste manual autenticado: login → GET lista → POST rascunho → PATCH → DELETE; verificar RLS/isolamento.
+3. Manter commits pequenos na branch `feature/content-growth-studio-mvp` (sem merge main).
+4. Atualizar PR #3 com o diff desta integração UI↔API.
+
+**Nota:** "feito" no código da branch não implica operação em produção. Sempre revalidar com migration aplicada e usuário autenticado.
