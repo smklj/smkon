@@ -44,7 +44,8 @@
 
 - **Staging** (`xoyasrizivadxnpmzzno`): migration aplicada via MCP. As 13 funções `agent_*` conferem por md5 com um banco local montado a partir do Git; as 4 tabelas estão com RLS e 1 política de leitura cada; `anon` não executa `agent_start_run`, `authenticated` não executa `agent_record_step` e `service_role` não faz UPDATE direto em `agent_runs`.
 - **E2E:** `/agentes` entrou no `navigation.spec.mjs`, e o novo `agents.spec.mjs` cobre limites, execução na fila, kill switch interrompendo e bloqueando, e o desligamento.
-- **Produção** (`hpplboyysmfcjsnjrdmw`) e **main**: ver `ROADMAP_SPLITS.md`.
+- **Produção** (`hpplboyysmfcjsnjrdmw`): aplicada via MCP, versão alinhada para `20261119020000`; as mesmas 13 funções conferem por md5, RLS e privilégios iguais ao staging.
+- **main:** PR #29 com CI e E2E (21/21) verdes.
 
 ## Pendências
 
