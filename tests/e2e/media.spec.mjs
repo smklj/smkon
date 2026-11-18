@@ -15,7 +15,7 @@ test("Mídia e licenças: upload privado, licença exige comprovação, revogaç
 
   // Revogar a licença própria exige motivo e muda o estado.
   await row.getByRole("button", { name: "Revogar" }).click();
-  await expect(row.locator(".feedback-error")).toContainText("motivo");
+  await expect(row.locator(".feedback-error").filter({ hasText: "motivo da revogação" })).toBeVisible();
   await row.getByPlaceholder("Motivo para revogar").fill("Teste de revogação E2E");
   await row.getByRole("button", { name: "Revogar" }).click();
   await expect(row.getByText("Licença revogada", { exact: true })).toBeVisible();
