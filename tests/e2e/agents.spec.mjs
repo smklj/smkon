@@ -22,7 +22,7 @@ test("Agentes: limites, nova execução na fila, kill switch interrompe e bloque
 
   // Nova execução fica na fila (executor do servidor ainda não ativo).
   const form = page.getByRole("region", { name: "Nova execução" });
-  await form.getByLabel("Agente").selectOption("operations_review");
+  await form.locator('select[name="agent"]').selectOption("operations_review");
   await form.getByLabel("Objetivo").fill(goal);
   await form.getByRole("button", { name: "Criar execução" }).click();
   await expect(form.getByRole("status").filter({ hasText: "Execução criada na fila" })).toBeVisible();
