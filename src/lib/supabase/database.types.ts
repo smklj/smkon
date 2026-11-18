@@ -14,6 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_runs: {
+        Row: {
+          agent: string
+          cancel_reason: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string
+          error_code: string | null
+          finished_at: string | null
+          goal: string
+          id: string
+          max_steps: number
+          organization_id: string
+          outcome: Json | null
+          started_at: string | null
+          status: string
+          step_count: number
+        }
+        Insert: {
+          agent: string
+          cancel_reason?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by: string
+          error_code?: string | null
+          finished_at?: string | null
+          goal: string
+          id?: string
+          max_steps: number
+          organization_id: string
+          outcome?: Json | null
+          started_at?: string | null
+          status?: string
+          step_count?: number
+        }
+        Update: {
+          agent?: string
+          cancel_reason?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string
+          error_code?: string | null
+          finished_at?: string | null
+          goal?: string
+          id?: string
+          max_steps?: number
+          organization_id?: string
+          outcome?: Json | null
+          started_at?: string | null
+          status?: string
+          step_count?: number
+        }
+        Relationships: []
+      }
+      agent_settings: {
+        Row: {
+          kill_changed_at: string | null
+          kill_changed_by: string | null
+          kill_reason: string | null
+          kill_switch: boolean
+          max_runs_per_day: number
+          max_steps_per_run: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          kill_changed_at?: string | null
+          kill_changed_by?: string | null
+          kill_reason?: string | null
+          kill_switch?: boolean
+          max_runs_per_day?: number
+          max_steps_per_run?: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          kill_changed_at?: string | null
+          kill_changed_by?: string | null
+          kill_reason?: string | null
+          kill_switch?: boolean
+          max_runs_per_day?: number
+          max_steps_per_run?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      agent_steps: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: number
+          input: Json
+          organization_id: string
+          output: Json
+          phase: string
+          run_id: string
+          seq: number
+          status: string
+          tool: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: number
+          input?: Json
+          organization_id: string
+          output?: Json
+          phase: string
+          run_id: string
+          seq: number
+          status: string
+          tool?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: number
+          input?: Json
+          organization_id?: string
+          output?: Json
+          phase?: string
+          run_id?: string
+          seq?: number
+          status?: string
+          tool?: string | null
+        }
+        Relationships: []
+      }
+      agent_tool_grants: {
+        Row: {
+          granted_at: string
+          granted_by: string
+          organization_id: string
+          tool: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by: string
+          organization_id: string
+          tool: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string
+          organization_id?: string
+          tool?: string
+        }
+        Relationships: []
+      }
       ad_campaign_daily_metrics: {
         Row: {
           campaign_external_id: string
@@ -1233,6 +1386,30 @@ export type Database = {
       }
     }
     Functions: {
+      agent_cancel_run: {
+        Args: { p_reason: string; p_run_id: string }
+        Returns: undefined
+      }
+      agent_set_kill_switch: {
+        Args: { p_on: boolean; p_organization_id: string; p_reason?: string }
+        Returns: number
+      }
+      agent_set_tool: {
+        Args: { p_enabled: boolean; p_organization_id: string; p_tool: string }
+        Returns: undefined
+      }
+      agent_start_run: {
+        Args: { p_agent: string; p_goal: string; p_max_steps?: number; p_organization_id: string }
+        Returns: string
+      }
+      agent_tool_catalog: {
+        Args: never
+        Returns: { description: string; kind: string; tool: string }[]
+      }
+      agent_update_limits: {
+        Args: { p_max_runs_per_day: number; p_max_steps_per_run: number; p_organization_id: string }
+        Returns: undefined
+      }
       accept_invitation: {
         Args: { p_token_hash: string }
         Returns: {

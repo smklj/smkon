@@ -310,6 +310,15 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .inline-form input, .inline-form select { height: 34px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--bg); padding: 0 10px; font-size: 13px; outline: none; }
 .inline-form input { flex: 1 1 200px; }
 .button-small { height: 34px; padding: 0 12px; font-size: 12px; }
+.button-danger { background: rgba(255, 107, 107, 0.12); border-color: rgba(255, 107, 107, 0.45); color: #ffc9c9; }
+.button-danger:hover { background: rgba(255, 107, 107, 0.2); }
+.panel-alert { border-color: rgba(255, 107, 107, 0.45); }
+.agents-control { margin-top: 14px; }
+.agents-note { margin: 0 0 14px; }
+.agent-steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.agent-steps li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.agent-step-phase { min-width: 64px; color: var(--text-2); font-weight: 600; }
+.agent-steps code { font-size: 12px; color: var(--text-2); }
 
 /* ---------- Produtos ---------- */
 .score { display: inline-grid; place-items: center; min-width: 44px; height: 30px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); font: 600 14px var(--font-display-stack); font-variant-numeric: tabular-nums; }

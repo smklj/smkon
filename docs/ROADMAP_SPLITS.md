@@ -53,7 +53,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S13** | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
+| **S13** · implementado e testado (`docs/S13_HANDOFF.md`); migration `20261119020000` aguardando staging/produção 🔐; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
 | **S14** | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## P4 — Escala e experiência
