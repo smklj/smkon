@@ -9,7 +9,7 @@ test("Calendário: agendar versão aprovada, dry-run, edição reprova, cancelar
   await page.getByLabel("Título interno *").fill(title);
   await page.getByLabel("Legenda").fill("Legenda para o calendário E2E #smkon");
   await page.getByRole("button", { name: /Aprovar esta versão/ }).click();
-  await expect(page.getByRole("status").filter({ hasText: /Versão \d+ aprovada/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Versão \d+ aprovada\. Nenhuma publicação foi enviada\./ })).toBeVisible();
 
   // Agendar no Instagram.
   await page.getByRole("link", { name: "Calendário" }).click();
