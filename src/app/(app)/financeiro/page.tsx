@@ -7,6 +7,7 @@ import {
   formatMoney,
 } from "@/lib/finance/commissions";
 import { createClient } from "@/lib/supabase/server";
+import { errorFields, log } from "@/lib/observability/log";
 import { findWorkspace } from "@/lib/tenancy/workspace";
 
 export const metadata: Metadata = { title: "Financeiro" };
@@ -79,13 +80,7 @@ async function load(): Promise<Data> {
     if (history.error) throw history.error;
     return { state: "ok", summaries: summary.data ?? [], history: history.data ?? [] };
   } catch (error) {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        scope: "page.financeiro",
-        message: error instanceof Error ? error.message : (error as { message?: string })?.message ?? "unknown",
-      }),
-    );
+    log("error", "page.financeiro", errorFields(error));
     return { state: "error" };
   }
 }

@@ -1,3 +1,5 @@
+import { log } from "../observability/log.ts";
+
 /** Erro de validação com mensagem segura para exibir ao usuário. */
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -64,13 +66,9 @@ export function toErrorResponse(scope: string, error: unknown, fallbackMessage: 
     return jsonError(403, "forbidden", "Seu papel não permite esta ação.");
   }
 
-  console.error(
-    JSON.stringify({
-      level: "error",
-      scope,
-      code: dbError?.code ?? "unknown",
-      message: error instanceof Error ? error.message : dbError?.message ?? String(error),
-    }),
-  );
+  log("error", scope, {
+    code: dbError?.code ?? "unknown",
+    message: error instanceof Error ? error.message : dbError?.message ?? String(error),
+  });
   return jsonError(500, "internal_error", fallbackMessage);
 }
