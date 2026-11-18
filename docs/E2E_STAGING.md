@@ -37,11 +37,33 @@ As variáveis de Production permanecem apontando para o Supabase de produção.
 4. No primeiro login, `ensure_workspace()` deve criar um workspace isolado e atribuir `owner`.
 5. O teste Playwright valida login, bootstrap e renderização dos módulos principais.
 
+## Bypass da proteção da Vercel (feito pelo Owner)
+
+1. Vercel → projeto `smkon` → Settings → Deployment Protection → **Protection Bypass for Automation** → Add/Generate.
+2. Copie o valor e cole direto em GitHub → Settings → Secrets and variables → Actions → `VERCEL_AUTOMATION_BYPASS_SECRET`.
+3. O valor não deve passar por chat, commits ou logs. A proteção geral (SSO) continua ligada.
+
+A suíte só envia o header de bypass para a origem da aplicação (`tests/e2e/fixtures.mjs`), nunca para o Supabase ou terceiros.
+
 ## Execução
 
 O workflow `.github/workflows/e2e.yml` roda em Pull Requests para `main` e manualmente via workflow_dispatch. Ele só executa quando os quatro secrets necessários estão presentes.
 
-O teste inicial é smoke/regressão de navegação. Testes de CRUD, convites, score e cálculos financeiros serão adicionados após instrumentar seletores estáveis e validar cada fluxo no staging.
+Suítes:
+
+| Arquivo | Cobre |
+|---|---|
+| `auth.setup.mjs` | trava de isolamento (CSP precisa apontar para o Supabase de staging), senha errada, login QA, bootstrap do workspace |
+| `navigation.spec.mjs` | os 5 módulos carregam sem erro, visitante vai ao login com `next`, API sem sessão responde 401, headers de segurança |
+| `products.spec.mjs` | cadastro, validação de link, evidências, revisão (rejeição exige motivo), score 40 → 50, rejeitada não conta, arquivar; API ignora score do cliente |
+| `studio.spec.mjs` | rascunho, aprovação da versão exata, exclusão bloqueada após aprovação, arquivar |
+| `admin-finance.spec.mjs` | convite criado, link exibido uma vez, revogar; Financeiro sem valores inventados |
+
+Os dados criados usam um sufixo por execução (`runId`) e ficam só no workspace QA do staging.
+
+## Limitações atuais
+- `E2E_BASE_URL` aponta para o Preview fixo da branch `qa-e2e-staging`. Os testes do PR rodam contra esse deployment, não contra o código do PR. Para testar o código de cada PR, os Previews de todas as branches precisam usar o Supabase de staging (hoje usam o de produção) e o workflow deve ler a URL do evento `deployment_status`.
+- Traces e vídeos de falha (artifacts privados, 14 dias) podem conter cookies da sessão QA de staging. O login roda sem trace para não gravar a senha.
 
 ## Segurança
 
