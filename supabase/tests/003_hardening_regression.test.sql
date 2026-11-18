@@ -65,4 +65,47 @@ select tests.ok(
   '5 SECURITY DEFINER RPC grants remain intentional: authenticated only'
 );
 
+
+select tests.ok(
+  (select count(*) from pg_policies
+   where schemaname='public'
+     and tablename in (
+       'ad_campaign_daily_metrics','affiliate_clicks','affiliate_conversions',
+       'external_events','products','sales_order_adjustments','sales_orders',
+       'source_connections'
+     )
+     and cmd in ('INSERT','UPDATE','DELETE')
+     and roles @> array['authenticated']::name[]) = 24,
+  '6 all eight tables expose explicit INSERT, UPDATE and DELETE policies to authenticated'
+);
+
+select tests.ok(
+  not exists (
+    select 1 from pg_policies
+    where schemaname='public'
+      and tablename in (
+        'ad_campaign_daily_metrics','affiliate_clicks','affiliate_conversions',
+        'external_events','products','sales_order_adjustments','sales_orders',
+        'source_connections'
+      )
+      and cmd='ALL'
+  ),
+  '7 no ALL-command policy remains on the eight reviewed tables'
+);
+
+select tests.ok(
+  (select count(*) from pg_trigger t
+   join pg_class c on c.oid=t.tgrelid
+   join pg_namespace n on n.oid=c.relnamespace
+   join pg_proc p on p.oid=t.tgfoid
+   where n.nspname='public'
+     and t.tgname in (
+       'audit_ad_campaign_daily_metrics','audit_affiliate_clicks',
+       'audit_external_events','audit_sales_order_adjustments'
+     )
+     and p.proname='audit_row_change'
+     and not t.tgisinternal) = 4,
+  '8 all four new audit triggers invoke audit_row_change'
+);
+
 rollback;
