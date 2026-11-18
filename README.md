@@ -4,15 +4,20 @@
 
 Plataforma interna da SMKON para curadoria de produtos, gestão de conteúdo, direitos, aprovações, crescimento e inteligência operacional.
 
-## Status
+## Status (branch `feature/content-growth-studio-mvp`)
 
-Sprint 0 — fundação técnica iniciada. A aplicação Next.js e o pipeline inicial de qualidade estão versionados na branch `main`.
+- **Content Studio UI** consome `/api/content` (GET/POST/PATCH/DELETE).
+- Persistência no workspace autenticado (Supabase via API). Labels em PT: Rascunho / Aprovado / Arquivado.
+- Migração opcional de `localStorage` (`smkon-content-studio-v1`) para a API, sem duplicar (chave estável título+updatedAt).
+- Loading e feedback de erro/sucesso implementados.
+- Migration SQL versionada (`supabase/migrations/20261117200000_content_studio.sql`). **Não aplicada** ao Supabase hospedado.
+- Sem merge em `main`, sem deploy de produção, sem publicação em redes.
 
 ## Stack
 
 - Next.js App Router + TypeScript
-- Supabase (Postgres, Auth, RLS e Storage) — integração ainda não configurada
-- Vercel — projeto ainda não vinculado
+- Supabase (Postgres, Auth, RLS) — integração de leitura/escrita via `/api/content`
+- Vercel — projeto ainda não vinculado para produção
 
 ## Princípios operacionais
 
@@ -37,4 +42,4 @@ npm run lint
 npm run build
 ```
 
-Consulte `docs/architecture/decisions.md` para os limites e a sequência de entrega.
+Consulte `docs/architecture/decisions.md` e `STATUS.md` para limites e próximos blocos.
