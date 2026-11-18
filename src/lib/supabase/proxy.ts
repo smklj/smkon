@@ -2,9 +2,33 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "./env";
 
+const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/robots.txt", "/icon.svg", "/apple-icon.png"]);
+
+function isPublicRoute(pathname: string): boolean {
+  return (
+    PUBLIC_PATHS.has(pathname) ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/brand/")
+  );
+}
+
+function isApiRoute(pathname: string): boolean {
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
+
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
   const env = getSupabaseEnv();
-  if (!env) return NextResponse.next({ request });
+
+  // Fail-closed: sem configuração de Auth, nada além das rotas públicas é servido.
+  if (!env) {
+    if (isPublicRoute(pathname)) return NextResponse.next({ request });
+    console.error(JSON.stringify({ level: "error", scope: "proxy", code: "auth_not_configured" }));
+    return isApiRoute(pathname)
+      ? NextResponse.json({ error: "Serviço indisponível.", code: "auth_not_configured" }, { status: 503 })
+      : new NextResponse("Serviço indisponível: autenticação não configurada.", { status: 503 });
+  }
 
   let response = NextResponse.next({ request });
 
@@ -29,15 +53,11 @@ export async function updateSession(request: NextRequest) {
   // Validate JWT claims on the server; never authorize from getSession().
   const { data, error } = await supabase.auth.getClaims();
   const isAuthenticated = !error && Boolean(data?.claims?.sub);
-  const pathname = request.nextUrl.pathname;
-  const isPublicRoute =
-    pathname === "/login" ||
-    pathname.startsWith("/auth/") ||
-    pathname.startsWith("/_next/") ||
-    pathname === "/favicon.ico" ||
-    pathname === "/robots.txt";
 
-  if (!isAuthenticated && !isPublicRoute) {
+  if (!isAuthenticated && !isPublicRoute(pathname)) {
+    if (isApiRoute(pathname)) {
+      return NextResponse.json({ error: "Não autenticado.", code: "not_authenticated" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

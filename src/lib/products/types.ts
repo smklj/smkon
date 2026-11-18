@@ -16,7 +16,8 @@ export type ProductStatus =
   | "active"
   | "archived";
 
-export type RevenueDomain = "own_sales" | "affiliate" | "media";
+/** Mesmo vocabulário do enum public.smkon_revenue_domain. */
+export type RevenueDomain = "owned_sales" | "affiliate" | "paid_media";
 
 export type ProductEvidence = {
   source: string;

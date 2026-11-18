@@ -1,32 +1,18 @@
 import type { RevenueDomain } from "@/lib/admin/constants";
 
-type Props = {
-  domain: RevenueDomain;
-};
-
-export function DomainCard({ domain }: Props) {
+export function DomainCard({ domain }: { domain: RevenueDomain }) {
   return (
-    <article className="stream">
-      <div className="stream-top">
-        <span className="module-number">{domain.id}</span>
-        <span className="stream-type">{domain.type}</span>
-      </div>
+    <article className="domain">
+      <p className="eyebrow">{domain.id} · {domain.type}</p>
       <h3>{domain.name}</h3>
-      <p className="stream-description">{domain.description}</p>
-      <div className="stream-sources">
-        <span className="field-label">FONTES PLANEJADAS</span>
-        <div className="source-list">
-          {domain.sources.map((source) => (
-            <span className="source-chip" key={source}>
-              {source}
-            </span>
-          ))}
-        </div>
+      <p className="row-meta">{domain.description}</p>
+      <p className="domain-label">Fontes planejadas</p>
+      <div className="chips">
+        {domain.sources.map((source) => (
+          <span className="chip" key={source}>{source}</span>
+        ))}
       </div>
-      <div className="stream-bottom">
-        <span>{domain.metric}</span>
-        <span className="module-state">MODELAGEM INICIAL</span>
-      </div>
+      <p className="domain-metric">{domain.metric}</p>
     </article>
   );
 }

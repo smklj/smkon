@@ -1,17 +1,18 @@
 import { INTEGRATION_PLACEHOLDERS } from "@/lib/admin/constants";
+import { Badge } from "@/components/ui/PageHeader";
 
 export function IntegrationPlaceholders() {
   return (
-    <section className="connections">
+    <ul className="rows">
       {INTEGRATION_PLACEHOLDERS.map((item) => (
-        <div className="connection-row" key={item.name}>
-          <div>
-            <h3>{item.name}</h3>
-            <p>{item.detail}</p>
+        <li className="row" key={item.name}>
+          <div className="row-main">
+            <p className="row-title">{item.name}</p>
+            <p className="row-meta">{item.detail}</p>
           </div>
-          <span className="module-state">{item.state}</span>
-        </div>
+          <Badge>Não conectado</Badge>
+        </li>
       ))}
-    </section>
+    </ul>
   );
 }

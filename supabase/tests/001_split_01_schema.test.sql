@@ -1,40 +1,36 @@
--- Split 01: schema, grants, composite tenant FKs and RLS isolation.
--- Run with Supabase CLI against a disposable local database after applying migrations.
+-- Split 01: schema, grants, FKs compostas de tenant e isolamento por RLS.
+-- SQL puro (sem pgTAP). Executar com scripts/test-db.sh após aplicar as migrations.
+\set ON_ERROR_STOP 1
 begin;
 
-select plan(25);
+select tests.ok(to_regclass('public.' || t) is not null, 'tabela public.' || t || ' existe')
+from unnest(array[
+  'organizations', 'organization_members', 'source_connections', 'external_events',
+  'ad_campaign_daily_metrics', 'sales_orders', 'sales_order_adjustments',
+  'affiliate_clicks', 'affiliate_conversions', 'financial_ledger_entries'
+]) as t;
 
-select has_table('public', 'organizations', 'organizations table exists');
-select has_table('public', 'organization_members', 'organization_members table exists');
-select has_table('public', 'source_connections', 'source_connections table exists');
-select has_table('public', 'external_events', 'external_events table exists');
-select has_table('public', 'ad_campaign_daily_metrics', 'paid media metrics table exists');
-select has_table('public', 'sales_orders', 'owned sales table exists');
-select has_table('public', 'sales_order_adjustments', 'sales adjustments table exists');
-select has_table('public', 'affiliate_clicks', 'affiliate clicks table exists');
-select has_table('public', 'affiliate_conversions', 'affiliate conversions table exists');
-select has_table('public', 'financial_ledger_entries', 'financial ledger table exists');
+select tests.ok(c.relrowsecurity, 'RLS habilitado em public.' || c.relname)
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname in (
+    'organizations', 'organization_members', 'source_connections', 'external_events',
+    'ad_campaign_daily_metrics', 'sales_orders', 'sales_order_adjustments',
+    'affiliate_clicks', 'affiliate_conversions', 'financial_ledger_entries'
+  );
 
-select ok((select relrowsecurity from pg_class where oid = 'public.organizations'::regclass), 'organizations has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.organization_members'::regclass), 'memberships has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.source_connections'::regclass), 'connections has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.external_events'::regclass), 'external events has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.ad_campaign_daily_metrics'::regclass), 'ad metrics has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.sales_orders'::regclass), 'sales orders has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.sales_order_adjustments'::regclass), 'sales adjustments has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.affiliate_clicks'::regclass), 'affiliate clicks has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.affiliate_conversions'::regclass), 'affiliate conversions has RLS enabled');
-select ok((select relrowsecurity from pg_class where oid = 'public.financial_ledger_entries'::regclass), 'financial ledger has RLS enabled');
+select tests.ok(not has_table_privilege('anon', 'public.sales_orders', 'select'), 'anon não lê sales_orders');
 
-select ok(not has_table_privilege('anon', 'public.sales_orders', 'select'), 'anon cannot read sales orders');
-select ok(exists (
+select tests.ok(exists (
   select 1 from pg_constraint
   where conrelid = 'public.sales_order_adjustments'::regclass
     and contype = 'f'
     and pg_get_constraintdef(oid) like 'FOREIGN KEY (sales_order_id, organization_id)%'
-), 'sales adjustments enforce matching order tenant');
-select is((
-  select count(*)::integer from pg_constraint
+), 'ajustes exigem pedido do mesmo tenant');
+
+select tests.ok((
+  select count(*) from pg_constraint
   where contype = 'f'
     and conrelid in (
       'public.ad_campaign_daily_metrics'::regclass,
@@ -42,13 +38,11 @@ select is((
       'public.affiliate_conversions'::regclass
     )
     and pg_get_constraintdef(oid) like 'FOREIGN KEY (external_event_id, organization_id, domain)%'
-), 3, 'all event references enforce organization and domain');
+) = 3, 'referências a eventos exigem organização e domínio');
 
--- Deterministic fixture: two users, two organizations and one order per tenant.
-insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
-values
-  ('10000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'rls-a@smkon.test', '', now(), now(), now()),
-  ('20000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'rls-b@smkon.test', '', now(), now(), now());
+-- Fixture determinística: dois usuários, duas organizações e um pedido por tenant.
+select tests.create_user('10000000-0000-4000-8000-000000000001', 'rls-a@smkon.test');
+select tests.create_user('20000000-0000-4000-8000-000000000002', 'rls-b@smkon.test');
 
 insert into public.organizations (id, name, slug, created_by)
 values
@@ -73,14 +67,23 @@ values
   ('10000000-0000-4000-8000-000000000333', '10000000-0000-4000-8000-000000000011', '10000000-0000-4000-8000-000000000111', 'owned_sales', 'mercado_livre', 'A-ORDER', 'paid', 'BRL', 100, now()),
   ('20000000-0000-4000-8000-000000000444', '20000000-0000-4000-8000-000000000022', '20000000-0000-4000-8000-000000000222', 'owned_sales', 'mercado_livre', 'B-ORDER', 'paid', 'BRL', 200, now());
 
+-- Domínio errado para o provedor é recusado (Mercado Livre é venda própria).
+select tests.throws(
+  $sql$insert into public.source_connections (organization_id, domain, provider, external_account_id)
+       values ('10000000-0000-4000-8000-000000000011', 'affiliate', 'mercado_livre', 'x')$sql$,
+  '23514',
+  'provedor e domínio de receita precisam ser coerentes'
+);
+
 set local role authenticated;
-select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001', true);
-select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
-select is((select count(*)::integer from public.sales_orders), 1, 'Tenant A only sees its own sales order');
 
-select set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
-select set_config('request.jwt.claims', '{"sub":"20000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
-select is((select count(*)::integer from public.sales_orders), 1, 'Tenant B only sees its own sales order');
+select tests.login('10000000-0000-4000-8000-000000000001');
+select tests.ok((select count(*) from public.sales_orders) = 1, 'tenant A vê apenas o próprio pedido');
+select tests.ok((select external_order_id from public.sales_orders) = 'A-ORDER', 'tenant A vê o pedido A');
 
-select * from finish();
+select tests.login('20000000-0000-4000-8000-000000000002');
+select tests.ok((select count(*) from public.sales_orders) = 1, 'tenant B vê apenas o próprio pedido');
+select tests.ok((select external_order_id from public.sales_orders) = 'B-ORDER', 'tenant B vê o pedido B');
+
+reset role;
 rollback;

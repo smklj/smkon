@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { ProductPayload, ProductSource } from "@/lib/products/types";
+import type { ProductPayload, ProductSource, RevenueDomain } from "@/lib/products/types";
 import { calculateProductScore } from "@/lib/products/scoring";
 import { generateContentFromProduct } from "@/lib/products/content-stub";
+
+const ALLOWED_REVENUE_DOMAINS = new Set<RevenueDomain>(["owned_sales", "affiliate", "paid_media"]);
 
 const ALLOWED_SOURCES = new Set<ProductSource>([
   "kiwify", "hotmart", "shopify", "amazon", "manual", "other",
@@ -33,6 +35,9 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as ProductPayload;
     if (typeof payload.name !== "string" || !payload.name.trim() || payload.name.trim().length > 200) {
       return NextResponse.json({ error: "Nome do produto deve ter entre 1 e 200 caracteres." }, { status: 400 });
+    }
+    if (payload.revenueDomain !== undefined && !ALLOWED_REVENUE_DOMAINS.has(payload.revenueDomain)) {
+      return NextResponse.json({ error: "Domínio de receita inválido." }, { status: 400 });
     }
     if (!ALLOWED_SOURCES.has(payload.source)) {
       return NextResponse.json({ error: "Fonte inválida." }, { status: 400 });
