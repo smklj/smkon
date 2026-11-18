@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { LICENSE_STATUS_LABEL, type LicenseStatus } from "@/lib/media/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -19,6 +21,8 @@ type Filter = "Todos" | ContentStatusLabel;
 
 const FILTERS: Filter[] = ["Todos", "Rascunho", "Aprovado", "Arquivado"];
 
+type MediaOption = { id: string; name: string; kind: "video" | "image"; licenseStatus: LicenseStatus };
+
 export default function StudioClient() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [draft, setDraft] = useState<ContentItem>(emptyItem);
@@ -28,6 +32,7 @@ export default function StudioClient() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [media, setMedia] = useState<MediaOption[]>([]);
 
   const loadItems = useCallback(async () => {
     setError("");
@@ -102,6 +107,22 @@ export default function StudioClient() {
       // Migration is optional; keep local data if it fails.
     }
   }, [loadItems]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/media", { cache: "no-store" });
+        const body = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok) setMedia(body.items ?? []);
+      } catch {
+        // Sem biblioteca, o seletor fica só com "Sem mídia".
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -273,7 +294,12 @@ export default function StudioClient() {
         eyebrow="03 · Content Studio"
         title="Content Studio"
         description="Crie uma peça central, adapte para YouTube, Instagram e TikTok e aprove a versão exata. Aprovar não publica nada."
-        actions={<button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>}
+        actions={
+          <>
+            <Link className="link" href="/calendario">Calendário</Link>
+            <button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>
+          </>
+        }
       />
 
       {error && <p className="feedback feedback-error" role="alert">{error}</p>}
@@ -322,6 +348,18 @@ export default function StudioClient() {
             <label className="studio-field studio-wide"><span>Título interno *</span><input value={draft.title} onChange={(e) => update("title", e.target.value)} placeholder="Ex.: Review honesta — produto X" disabled={saving} /></label>
             <label className="studio-field"><span>Produto / oferta</span><input value={draft.product} onChange={(e) => update("product", e.target.value)} placeholder="Nome do produto" disabled={saving} /></label>
             <label className="studio-field"><span>Link do produto</span><input value={draft.assetUrl} onChange={(e) => update("assetUrl", e.target.value)} placeholder="https://..." disabled={saving} /></label>
+            <label className="studio-field studio-wide">
+              <span>Mídia da peça</span>
+              <select value={draft.mediaAssetId ?? ""} onChange={(e) => update("mediaAssetId", e.target.value || null)} disabled={saving}>
+                <option value="">Sem mídia</option>
+                {media.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name} · {LICENSE_STATUS_LABEL[option.licenseStatus]}
+                  </option>
+                ))}
+              </select>
+              <small className="studio-muted">A mídia faz parte da versão aprovada. Envie arquivos e registre licenças em <Link className="link" href="/midia">Mídia e licenças</Link>.</small>
+            </label>
             <label className="studio-field studio-wide"><span>Vídeo de referência / UGC</span><input value={draft.sourceUrl} onChange={(e) => update("sourceUrl", e.target.value)} placeholder="URL do vídeo original ou referência (opcional)" disabled={saving} /></label>
             {draft.sourceUrl && (
               <label className="studio-rights studio-wide">
