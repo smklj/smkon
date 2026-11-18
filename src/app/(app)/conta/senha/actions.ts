@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/http/safe-redirect";
+import { log } from "@/lib/observability/log";
 
 export type PasswordState = { error: string } | null;
 
@@ -15,7 +16,7 @@ export async function updatePassword(_prev: PasswordState, formData: FormData): 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
-    console.error(JSON.stringify({ level: "error", scope: "account.updatePassword", code: error.code ?? "unknown" }));
+    log("error", "account.updatePassword", { code: error.code ?? "unknown" });
     return { error: "Não foi possível definir a senha. Tente novamente." };
   }
   redirect(safeNextPath(formData.get("next"), "/?senha=ok"));
