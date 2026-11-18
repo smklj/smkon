@@ -1,61 +1,70 @@
-# S3 — Conexão completa do Supabase
+# S3 — Conexão completa do Supabase e e-mail
 
-**Projeto:** `smkonlj` (`hpplboyysmfcjsnjrdmw`, us-west-2, Postgres 17, plano Free)
+**Projeto:** `smkonlj` (`hpplboyysmfcjsnjrdmw`, us-west-2, Postgres 17)
 **Atualizado:** 18/11/2026
 
-## Estado
+## Estado remoto confirmado
 
-| Item | Estado | Responsável |
-|---|---|---|
-| URL e chave pública na Vercel (prod, preview, dev) | ✅ já existia | — |
-| `NEXT_PUBLIC_SITE_URL=https://smkon-smkon.vercel.app` (production) | ✅ criado em 18/11 | Claude |
-| Migrations no banco remoto (4 arquivos) | ⛔ bloqueado: exige autorização explícita do Owner | Owner → Claude |
-| Advisors de segurança e performance após migrations | ⏳ depende do item anterior | Claude |
-| Tipos TypeScript gerados do schema | ⏳ depende das migrations | Claude |
-| Configuração do Auth (URLs, e-mail, cadastro) | ⏳ painel do Supabase (não acessível pelas ferramentas do Claude) | Owner |
-| Integração GitHub ↔ Supabase (deploy de migrations) | ⏳ painel | Owner |
+| Item | Estado |
+|---|---|
+| URL e publishable key na Vercel (prod, preview, dev) | Configurados |
+| `NEXT_PUBLIC_SITE_URL=https://smkon-smkon.vercel.app` | Configurado em Production |
+| Migration base `split_01_revenue_domains` | Já aplicada antes desta execução |
+| `content_studio` | Aplicada |
+| `product_intelligence` | Aplicada |
+| `p0_security_integrity` | Aplicada |
+| Tabelas public | 15 identificadas; RLS habilitado em todas |
+| Tipos TypeScript | Gerados do schema remoto em `src/lib/supabase/database.types.ts` |
+| Clientes browser/server | Tipados com `Database` |
+| SMTP Supabase / Resend | Pendente de domínio próprio verificado |
+| Auth invite-only e redirect URLs | Requer conferência/configuração no painel |
 
-## 1. Migrations remotas — autorização necessária
+As versões de migration registradas no Supabase refletem o horário real de aplicação. Não habilitar deploy automático de migrations pelo GitHub antes de alinhar o histórico com os arquivos versionados.
 
-Ordem de aplicação (todas em `supabase/migrations/`):
-1. `20261117183000_split_01_revenue_domains.sql`
-2. `20261117200000_content_studio.sql`
-3. `20261118120000_product_intelligence.sql`
-4. `20261118150000_p0_security_integrity.sql`
+## Advisors pós-migration
 
-O banco está vazio (0 tabelas, 0 usuários). Para autorizar, envie: **"Autorizo aplicar as 4 migrations do SMKON no projeto Supabase smkonlj."**
-Recomendação: autorizar depois que o GPT aprovar a revalidação do S1 (`npm run test:db`).
+- Segurança: dois avisos de `SECURITY DEFINER` para `ensure_workspace()` e `approve_content(...)`. As duas funções foram intencionalmente concedidas a `authenticated`, usam `search_path = ''`, validam `auth.uid()` e, no caso de aprovação, validam membership/role, tenant, hash e direitos. O aviso é para revisão manual, não prova exploração. A função de trigger `audit_row_change()` é SECURITY DEFINER, mas tem EXECUTE revogado para os papéis da API.
+- Performance: 19 FKs sem índice de cobertura e 8 avisos de políticas permissivas sobrepostas. Os índices de uso zero são esperados em banco recém-criado. Corrigir/otimizar em migration própria após revisar consultas e planos, sem remover políticas de autorização por conveniência.
 
-Observação: as migrations aplicadas pela ferramenta recebem versão com o horário da aplicação. Antes de ligar a integração GitHub ou usar `supabase db push`, alinhar o histórico com `supabase migration repair` para as versões dos arquivos.
+## Auth — painel Supabase (Owner)
 
-## 2. Auth — passos no painel (Owner)
+Authentication → URL Configuration:
+- Site URL: `https://smkon-smkon.vercel.app`
+- Redirect URLs:
+  - `https://smkon-smkon.vercel.app/auth/callback`
+  - URL de Preview exata da Vercel + padrão wildcard suportado pelo painel, se permitido
+  - `http://localhost:3000/auth/callback`
 
-Painel → projeto `smkonlj`:
+Authentication → Sign In / Providers → Email:
+- Confirm email: ligado.
+- Signup público: desligado (decisão invite-only).
+- Convites devem ser emitidos server-side por Admin API; nunca expor service-role/secret key ao browser.
 
-1. **Authentication → URL Configuration**
-   - Site URL: `https://smkon-smkon.vercel.app`
-   - Redirect URLs:
-     - `https://smkon-smkon.vercel.app/auth/callback`
-     - `https://smkon-*-smkon.vercel.app/**` (previews da Vercel)
-     - `http://localhost:3000/auth/callback` (desenvolvimento)
-2. **Authentication → Sign In / Providers → Email**
-   - Confirm email: **ligado**.
-   - Allow new users to sign up: **desligar** se o SMKON for só por convite (decisão pendente). Com o cadastro desligado, os usuários entram por convite em Authentication → Users → Invite.
-3. **Authentication → Emails → SMTP Settings** (obrigatório antes de convidar pessoas de fora)
-   - O envio embutido só entrega para e-mails da equipe da organização e tem limite baixo por hora.
-   - Opção pronta: Resend (já conectado). Exige um domínio verificado no Resend e as credenciais SMTP dele no Supabase. Desligar o rastreamento de links no provedor para não quebrar os links de confirmação.
-4. **Authentication → Rate Limits**: revisar depois do SMTP.
-5. **Conta Supabase**: ativar MFA no login do painel.
+Ativar MFA para Owner no painel Supabase. Verificar URLs/redirects efetivamente salvos antes de convidar usuários.
 
-## 3. Integrações (Owner)
+## Resend — preparação e ativação
 
-- **Supabase → Settings → Integrations → GitHub**: conectar `smklj/smkon`, diretório `supabase`. Deixar "Deploy to production" desligado até existir proteção na `main` (S2).
-- **Vercel ↔ Supabase** (opcional): a integração oficial sincroniza as variáveis. Hoje elas já estão configuradas manualmente; não é necessária.
+A conta Resend está conectada, mas a consulta retornou **nenhum domínio cadastrado**. Portanto não é possível ativar SMTP de produção nem gerar um sender confiável ainda.
 
-## 4. Limites do plano Free
+Após comprar/definir domínio próprio:
+1. Cadastrar o domínio no Resend.
+2. Publicar exatamente os registros DNS SPF/DKIM/Return-Path apresentados pelo Resend.
+3. Verificar o domínio até ficar `verified`.
+4. Criar uma API key de envio restrita ao domínio.
+5. Configurar Supabase → Authentication → Emails → SMTP:
+   - Host: `smtp.resend.com`
+   - Port: `465` (TLS) ou valor recomendado pelo painel atual do Resend
+   - Username: `resend`
+   - Password: API key restrita de envio
+   - Sender: endereço no domínio verificado
+6. Enviar e confirmar e-mail de teste; revisar rate limits e desativar click tracking para preservar links de autenticação.
 
-- Projetos com pouca atividade em 7 dias podem ser pausados.
-- Backups não ficam disponíveis para download.
-- Branching (banco por PR) exige plano Pro.
+Não criar API key ampla, não colocar segredo em `NEXT_PUBLIC_*`, e não usar remetente inventado ou domínio compartilhado `vercel.app`.
 
-Considerar o Pro antes de dados reais de clientes ou financeiros.
+## Vercel
+
+Projeto `smkon`, domínio `smkon-smkon.vercel.app`, Node `22.x`. As variáveis públicas Supabase já estão presentes nos três ambientes. SSO protection permanece habilitada em deployments; validar acesso externo por convite antes de alterar a proteção. Não fazer merge em `main` nem promover Production sem aprovação explícita do Owner.
+
+## Integração GitHub ↔ Supabase
+
+Não habilitar deploy automático de migrations até configurar proteção da `main` e alinhar o histórico remoto com os nomes/versões versionados. Por enquanto, migrations são aplicadas de forma controlada e verificadas manualmente.
