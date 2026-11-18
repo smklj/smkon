@@ -1,13 +1,15 @@
-import { expect, runId, snap, test } from "./fixtures.mjs";
+import { expect, runId, snap, test, uploadLicensedMedia } from "./fixtures.mjs";
 
 test("Calendário: agendar versão aprovada, dry-run, edição reprova, cancelar com motivo", async ({ page }) => {
   const title = `E2E Agenda ${runId}`;
+  const { fileName } = await uploadLicensedMedia(page, `agenda-${runId}`);
 
-  // Conteúdo aprovado no Studio.
+  // Conteúdo aprovado no Studio, com a mídia licenciada.
   await page.goto("/studio");
   await page.getByRole("button", { name: "Novo conteúdo" }).click();
   await page.getByLabel("Título interno *").fill(title);
   await page.getByLabel("Legenda").fill("Legenda para o calendário E2E #smkon");
+  await page.getByLabel("Mídia da peça").selectOption({ label: `${fileName} · Licenciada` });
   await page.getByRole("button", { name: /Aprovar esta versão/ }).click();
   await expect(page.getByRole("status").filter({ hasText: /Versão \d+ aprovada\. Nenhuma publicação foi enviada\./ })).toBeVisible();
 
@@ -27,7 +29,8 @@ test("Calendário: agendar versão aprovada, dry-run, edição reprova, cancelar
   await row.getByRole("button", { name: `Rodar dry-run de ${title} em Instagram` }).click();
   await expect(row.getByText("Dry-run aprovado", { exact: true })).toBeVisible();
   await expect(row).toContainText("Versão 1 aprovada e inalterada.");
-  await expect(row).toContainText("Arquivo de mídia ainda não é anexado");
+  await expect(row).toContainText(`Mídia anexada: ${fileName}.`);
+  await expect(row).toContainText("Licença de Equipe SMKON E2E válida");
   await snap(page, "50-calendario-dry-run");
 
   // Editar a peça depois de agendar: o dry-run reprova.

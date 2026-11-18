@@ -5,6 +5,8 @@ const MODULES = [
   { path: "/produtos", heading: "Inteligência de produtos", name: "02-produtos" },
   { path: "/studio", heading: "Content Studio", name: "03-studio" },
   { path: "/financeiro", heading: "Financeiro", name: "05-financeiro" },
+  { path: "/calendario", heading: "Calendário editorial", name: "04-calendario" },
+  { path: "/midia", heading: "Mídia e licenças", name: "06-midia" },
   { path: "/admin", heading: "Administração", name: "08-admin" },
 ];
 

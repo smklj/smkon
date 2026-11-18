@@ -20,6 +20,7 @@ export type ContentItemRow = {
   hashtags: string;
   channels: string[];
   rights_confirmed: boolean;
+  media_asset_id: string | null;
   status: ContentStatusApi;
   version: number;
   content_hash: string;
@@ -42,6 +43,8 @@ export type ContentItem = {
   hashtags: string;
   channels: ContentChannel[];
   rightsConfirmed: boolean;
+  /** Mídia da peça (S10b). Faz parte da versão aprovada. */
+  mediaAssetId: string | null;
   status: ContentStatusLabel;
   version: number;
   contentHash: string;
@@ -64,6 +67,7 @@ export type ContentPayload = {
   hashtags?: string;
   channels?: string[];
   rightsConfirmed?: boolean;
+  mediaAssetId?: string | null;
   status?: WritableContentStatus;
 };
 
@@ -116,6 +120,7 @@ export function rowToItem(row: ContentItemRow): ContentItem {
     hashtags: row.hashtags ?? "",
     channels: channels.length > 0 ? channels : [...CHANNELS],
     rightsConfirmed: row.rights_confirmed === true,
+    mediaAssetId: row.media_asset_id ?? null,
     status: STATUS_TO_LABEL[row.status] ?? "Rascunho",
     version: row.version ?? 1,
     contentHash: row.content_hash ?? "",
@@ -139,6 +144,7 @@ export function itemToPayload(item: ContentItem, status: WritableContentStatus =
     hashtags: item.hashtags,
     channels: item.channels,
     rightsConfirmed: item.rightsConfirmed,
+    mediaAssetId: item.mediaAssetId,
     status,
   };
 }
@@ -156,6 +162,7 @@ export function emptyItem(): ContentItem {
     hashtags: "",
     channels: [...CHANNELS],
     rightsConfirmed: false,
+    mediaAssetId: null,
     status: "Rascunho",
     version: 0,
     contentHash: "",

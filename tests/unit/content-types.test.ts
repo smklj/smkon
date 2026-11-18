@@ -14,6 +14,7 @@ const row: ContentItemRow = {
   hashtags: "",
   channels: ["TikTok", "Orkut"],
   rights_confirmed: false,
+  media_asset_id: "11111111-2222-4333-8444-555555555555",
   status: "approved",
   version: 3,
   content_hash: "a".repeat(64),
@@ -30,6 +31,14 @@ test("rowToItem mapeia status, versão, hash e descarta canais desconhecidos", (
   assert.equal(item.contentHash, "a".repeat(64));
   assert.equal(item.approvedVersion, 3);
   assert.deepEqual(item.channels, ["TikTok"]);
+});
+
+test("mídia da peça vai e volta entre a API e a tela", () => {
+  const item = rowToItem(row);
+  assert.equal(item.mediaAssetId, "11111111-2222-4333-8444-555555555555");
+  assert.equal(itemToPayload(item).mediaAssetId, "11111111-2222-4333-8444-555555555555");
+  assert.equal(rowToItem({ ...row, media_asset_id: null }).mediaAssetId, null);
+  assert.equal(emptyItem().mediaAssetId, null);
 });
 
 test("rowToItem usa todos os canais quando nenhum é válido", () => {
