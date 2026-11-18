@@ -19,7 +19,11 @@
 | SMTP Supabase / Resend | Pendente de domínio próprio verificado |
 | Auth invite-only e redirect URLs | Requer conferência/configuração no painel |
 
-As versões de migration registradas no Supabase refletem o horário real de aplicação. **Alinhado em 18/11 (S3.1):** os arquivos locais foram renomeados para as mesmas versões do remoto (`20261118155856`, `20261118160203`, `20261118160207`, `20261118160210`), na mesma ordem. Migrations novas usam versões posteriores.
+As versões de migration registradas no Supabase refletem o horário real de aplicação. **Divergência de histórico (decisão pendente do Owner):** o remoto registrou `20261118155856`, `20261118160203`, `20261118160207` e `20261118160210`; os arquivos no Git usam `20261117183000`, `20261117200000`, `20261118120000` e `20261118150000`. O conteúdo é o mesmo (catálogo remoto conferido em 18/11). Opções:
+- **A — renomear os arquivos locais** para as versões remotas. Não escreve no banco, mas contraria a regra de `docs/MIGRATION_RECONCILIATION.md` ("não renomear migrations já aplicadas").
+- **B — manter os nomes do Git e reconciliar o histórico remoto** (`supabase migration repair`), com backup e `migration list --linked` antes. Escreve na tabela de histórico do remoto e exige autorização.
+
+Até a decisão: não usar `supabase db push` nem a integração GitHub de migrations; aplicar migrations novas de forma controlada.
 
 ### Pendentes de aplicação no remoto (exigem autorização)
 | Arquivo | Conteúdo | Testes |
