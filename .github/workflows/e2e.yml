@@ -15,7 +15,6 @@ concurrency:
 jobs:
   browser:
     name: Playwright · Staging
-    if: ${{ secrets.E2E_BASE_URL != '' && secrets.E2E_EMAIL != '' && secrets.E2E_PASSWORD != '' && secrets.VERCEL_AUTOMATION_BYPASS_SECRET != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -40,13 +39,20 @@ jobs:
         run: npm ci
 
       - name: Install pinned Playwright runner
+        if: ${{ env.E2E_BASE_URL != '' && env.E2E_EMAIL != '' && env.E2E_PASSWORD != '' && env.VERCEL_AUTOMATION_BYPASS_SECRET != '' }}
         run: npm install --no-save --no-package-lock @playwright/test@1.56.1
 
       - name: Install Chromium
+        if: ${{ env.E2E_BASE_URL != '' && env.E2E_EMAIL != '' && env.E2E_PASSWORD != '' && env.VERCEL_AUTOMATION_BYPASS_SECRET != '' }}
         run: npx playwright install --with-deps chromium
 
       - name: Run browser tests against isolated staging
+        if: ${{ env.E2E_BASE_URL != '' && env.E2E_EMAIL != '' && env.E2E_PASSWORD != '' && env.VERCEL_AUTOMATION_BYPASS_SECRET != '' }}
         run: npx playwright test
+
+      - name: Explain skipped E2E setup
+        if: ${{ env.E2E_BASE_URL == '' || env.E2E_EMAIL == '' || env.E2E_PASSWORD == '' || env.VERCEL_AUTOMATION_BYPASS_SECRET == '' }}
+        run: echo "E2E not run: configure E2E_BASE_URL, E2E_EMAIL, E2E_PASSWORD and VERCEL_AUTOMATION_BYPASS_SECRET in repository Actions secrets."
 
       - name: Upload screenshots, traces and report
         if: always()
