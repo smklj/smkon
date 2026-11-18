@@ -1,33 +1,32 @@
-# Product Intelligence — SMKON
+# SMKON — Product Intelligence
 
-**Status:** MVP integrado ao ramo de readiness; scoring e geração de conteúdo são previews, sem persistência.
-**Branch:** feature/smkon-production-readiness
-**Data:** 18/11/2026
+**Status (S9):** catálogo persistente no Supabase, evidências verificáveis com revisão humana e score calculado no banco.
 
-## Implementado neste ramo
-- Tipos de produto, origem, domínio financeiro, estado e evidências.
-- Scoring explicável de 0 a 100, com justificativas.
-- Preview de roteiro, legenda, CTA, hashtags e disclosure de afiliado.
-- Endpoint autenticado `/api/products` para calcular score e retornar preview.
-- Validação básica de nome, origem, preço e comissão.
-- Import corrigido para a implementação Supabase SSR que existe em `feature/admin-panel`.
+## Regras
+- **Evidência** = afirmação + link `https` da fonte + data de observação. Tipos: página de venda, preço, comissão, avaliação, reembolso, sinal de demanda, outra. Cada tipo tem regra de valor (ex.: comissão 0–100%, avaliação 0–5).
+- Evidências são **append-only**: não podem ser editadas nem apagadas. Para corrigir, registre outra e rejeite a anterior.
+- **Quem faz o quê:** owner/admin cadastram produtos e revisam evidências; analistas também registram evidências; viewers só leem.
+- **Revisão** acontece uma única vez por evidência (verificada ou rejeitada). Rejeitar exige motivo. Quem revisou, quando e o motivo ficam gravados e auditados.
+- **Score (0–100)** é calculado por `public.product_evidence_score` usando só evidências **verificadas** observadas nos **últimos 180 dias**:
 
-## Limites funcionais
-- GET ainda retorna lista vazia; não existe persistência.
-- POST retorna HTTP 202 com preview; não salva produto.
-- Nenhuma API de Kiwify, Hotmart, Shopify ou Amazon foi conectada.
-- Nenhum conteúdo é enviado para redes sociais.
-- Scoring é heurístico e não usa tendências ou dados de mercado reais.
+| Critério | Pontos |
+|---|---|
+| Página de venda verificada (obrigatória) | +20 |
+| Comissão verificada mais recente | metade do %, até +25 |
+| Preço verificado mais recente | +10 na faixa 97–497, +5 fora dela |
+| Avaliação verificada mais recente | nota × 4, até +20 |
+| Política de reembolso verificada | +10 |
+| Sinais de demanda verificados | +5 cada, até +15 |
 
-## Banco
-Migration `supabase/migrations/20261118120000_product_intelligence.sql` versionada como draft. Depende das tabelas `organizations` e `organization_members`. Não aplicar no host antes de validar a migration base, autenticação, bootstrap do workspace e RLS multi-tenant.
+Sem página de venda verificada, o produto fica **sem score** (null) e o motivo é exibido. A fonte do produto (Hotmart, Kiwify etc.) não dá pontos. Preço e comissão digitados no cadastro são referência e não entram no score.
 
-## Próximos passos para ativar
-1. Validar a cadeia completa de migrations em banco local descartável.
-2. Implementar e testar bootstrap seguro de organização/owner.
-3. Validar Auth, cookies e redirects no Preview.
-4. Aplicar migrations somente após backup e aprovação específica do Owner.
-5. Implementar persistência GET/POST/PATCH/DELETE com tenant scoping.
-6. Testar isolamento com pelo menos dois usuários/workspaces.
-7. Criar UI do catálogo e fluxo de seleção.
-8. Só depois ligar fontes oficiais e fila de publicação com aprovação humana.
+## Onde está
+- Banco: `supabase/migrations/20261118220000_product_evidence.sql` (tabela `product_evidence`, `review_product_evidence`, score).
+- App: `/produtos` (catálogo e cadastro) e `/produtos/[id]` (score, motivos, evidências, revisão, status).
+- API: `GET /api/products` (catálogo do workspace) e `POST /api/products` (cadastro, owner/admin).
+- Validação compartilhada: `src/lib/products/validation.ts`.
+
+## Ainda não faz
+- Coleta automática de evidências (conectores Hotmart/Kiwify/Amazon) — exige contas e APIs oficiais.
+- Captura de screenshot/arquivo da fonte; hoje a prova é o link e a data.
+- Geração de conteúdo a partir do produto (o stub antigo foi removido; o Content Studio é o fluxo oficial).
