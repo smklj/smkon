@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { ProductPayload, ProductSource } from "@/lib/products/types";
+import { calculateProductScore } from "@/lib/products/scoring";
+import { generateContentFromProduct } from "@/lib/products/content-stub";
 
 const ALLOWED_SOURCES = new Set<ProductSource>([
   "kiwify",
@@ -22,11 +24,9 @@ export async function GET() {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
     }
 
-    // Stub: retorna lista vazia até migration aplicada e workspace validado.
-    // Implementação completa virá após fundação estável.
     return NextResponse.json({
       items: [],
-      note: "Product Intelligence MVP — stub. Migration draft ainda não aplicada.",
+      note: "Product Intelligence MVP — stub. Migration draft ainda não aplicada. Scoring e geração de conteúdo disponíveis via POST.",
     });
   } catch (error) {
     const message =
@@ -57,23 +57,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Fonte inválida." }, { status: 400 });
     }
 
-    // Stub: não persiste ainda. Retorna eco validado.
+    const scoreResult = calculateProductScore(payload);
+    const contentPreview = generateContentFromProduct(payload);
+
     return NextResponse.json(
       {
         ok: true,
-        received: {
+        product: {
           name: payload.name.trim(),
           source: payload.source,
           type: payload.type ?? "unknown",
           revenueDomain: payload.revenueDomain ?? "affiliate",
+          priceCents: payload.priceCents,
+          commissionPercent: payload.commissionPercent,
+          score: scoreResult.score,
+          scoreReasons: scoreResult.reasons,
         },
-        note: "Stub — persistência será ativada após migration aprovada e aplicada.",
+        contentPreview,
+        note: "Stub — persistência será ativada após migration aprovada. Conteúdo gerado é preview e exige aprovação humana + disclosure antes de qualquer uso.",
       },
       { status: 202 },
     );
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Erro ao criar produto.";
+      error instanceof Error ? error.message : "Erro ao processar produto.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
