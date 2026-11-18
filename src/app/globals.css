@@ -32,3 +32,29 @@ h2{font:600 25px "Space Grotesk",sans-serif;letter-spacing:-.03em;margin:0}
 .module-state{font-size:9px;border:1px solid var(--line);padding:7px 9px;border-radius:4px}
 footer{display:flex;justify-content:space-between;padding:38px 0 46px;font-size:9px}
 @media(max-width:640px){.shell{padding:0 20px}.topbar{height:70px}.environment{font-size:8px}.hero{padding:76px 0 66px}.section-heading{align-items:start;gap:16px;flex-direction:column}.module{grid-template-columns:35px 1fr;gap:12px;padding:21px 10px}.module-state{grid-column:2;justify-self:start}.module p{font-size:12px}footer{gap:16px;flex-direction:column}}
+
+/* Queue / approval UI */
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:8px;font:600 13px "DM Sans",sans-serif;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.warn{border-color:#f5a623;color:#f5a623}
+.btn.ghost{background:transparent}
+.notice{background:rgba(40,123,255,.12);border:1px solid var(--blue);color:var(--text);padding:14px 16px;border-radius:8px;margin:16px 0 24px;white-space:pre-wrap;font-size:14px;line-height:1.5}
+.queue{display:flex;flex-direction:column;gap:16px;margin-bottom:48px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+.card-head{display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:10px}
+.card-head h3{font:600 18px "Space Grotesk",sans-serif;margin:0}
+.badge{font-size:10px;letter-spacing:.08em;font-weight:700;padding:6px 10px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.status-draft{color:#9aa5b4}
+.status-pending_review{color:#f5a623;border-color:#f5a623}
+.status-approved{color:#3dd68c;border-color:#3dd68c}
+.status-scheduled{color:var(--blue-soft);border-color:var(--blue)}
+.body{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 14px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px;font-size:12px}
+.meta dt{color:var(--muted);margin-bottom:4px}
+.meta dd{margin:0}
+.meta code{background:#0d1117;padding:2px 6px;border-radius:4px;font-size:11px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.approval{width:100%;background:rgba(245,166,35,.08);border:1px solid #f5a623;border-radius:8px;padding:12px;margin-bottom:10px}
+.approval p{margin:0 0 10px;font-size:13px;color:var(--text)}
+@media(max-width:640px){.meta{grid-template-columns:1fr}}
