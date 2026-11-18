@@ -34,7 +34,7 @@ export default function Home() {
     <main className="shell">
       <header className="topbar">
         <Link className="brand" href="/" aria-label="SMKON início"><span className="brand-mark">S</span><span>SMKON</span></Link>
-        <span className="environment"><i /> CONTROL CENTER / 8 ÁREAS</span>
+        <nav className="home-nav"><Link href="/studio">CONTENT STUDIO ↗</Link><span className="environment"><i /> CONTROL CENTER / 8 ÁREAS</span></nav>
       </header>
       <section className="hero">
         <p className="eyebrow">SMKON · OPERATING SYSTEM</p>
