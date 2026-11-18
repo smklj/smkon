@@ -2,7 +2,7 @@
 
 **Data de referência:** 18/11/2026  
 **Baseado em:** docs/SMKON_MASTER_DOSSIER_ANTIGRAVITY.md (versão 1.0 de 18/11/2026)  
-**Branch de referência:** feature/content-growth-studio-mvp  
+**Branch de referência:** feature/admin-dashboard-mvp  
 **Classificação:** feito / parcial / planejado / a validar
 
 ## Regras de identidade e proibições (explícitas)
@@ -32,13 +32,14 @@ Estas regras prevalecem sobre qualquer outra instrução. Trabalho permitido: au
 |---|---|---|
 | Identidade SMKON (smkonlj@gmail.com / smklj) | feito | Definida e documentada. Confirmar em cada serviço. |
 | Repositório GitHub (smklj/smkon) | feito | Existe, com branches e PRs. Revisar CI atual. |
-| Control Center (interface inicial) | parcial | Fundação presente. Inspecionar cobertura. |
-| Oito áreas operacionais | planejado | Arquitetura documentada. Mapear módulos reais. |
-| Três domínios financeiros | parcial | Separação iniciada/documentada (PR #1). Revisar schema. |
+| Control Center (interface inicial) | parcial | Fundação presente. Link para Admin adicionado. |
+| Admin Dashboard (/admin) | parcial | Nova rota de leitura: 8 áreas + 3 domínios + listagem /api/content + placeholders Metricool/Instagram/TikTok. Componentes reutilizam estilos existentes. |
+| Oito áreas operacionais | parcial | Visualizadas no dashboard (leitura). Ainda sem dados vivos. |
+| Três domínios financeiros | parcial | Exibidos no dashboard. Separação documentada. |
 | Auth Supabase (login/signup/PKCE/SSR) | parcial | Fundação no código. A validar com teste E2E. |
 | Multi-tenant / RLS | parcial | Migrations e políticas versionadas. A validar isolamento real. |
 | Content Studio UI (MVP) | parcial | Implementado (briefing, rascunhos, filtros, prévia). Persistência local. |
-| Content Studio API (/api/content CRUD) | parcial | Criada e autenticada. UI ainda não consome. |
+| Content Studio API (/api/content CRUD) | parcial | Criada e autenticada. Consumida em leitura no /admin (com fallback de auth). |
 | Persistência do Studio | parcial | Ainda em localStorage. Integrar à API (Fase 2). |
 | Migration content_items | parcial | Versionada no Git. Não aplicar em host sem autorização. |
 | Biblioteca de mídia | planejado | Não pronta. Definir Storage e permissões. |
@@ -57,7 +58,8 @@ Estas regras prevalecem sobre qualquer outra instrução. Trabalho permitido: au
 1. Completar Fase 0 (auditoria completa com evidências).
 2. Estabilizar fundação (Auth + RLS multi-tenant).
 3. Integrar Content Studio UI → API (sair do localStorage).
-4. Manter todas as proibições acima.
+4. Expandir Admin Dashboard com dados reais quando Auth/RLS estiverem validados.
+5. Manter todas as proibições acima.
 
 **Nota:** Status "feito" significa registrado/documentado ou implementado no código da branch. Não implica validação ponta a ponta ou operação em produção. Sempre revalidar.
 
