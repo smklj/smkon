@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ValidationError, toErrorResponse } from "../../src/lib/http/errors.ts";
+import { ValidationError, businessErrorMessage, toErrorResponse } from "../../src/lib/http/errors.ts";
 
 async function body(response: Response) {
   return (await response.json()) as { error: string; code: string };
@@ -35,4 +35,24 @@ test("erro desconhecido não vaza detalhes internos", async (t) => {
   const payload = await body(response);
   assert.equal(payload.error, "Não foi possível salvar.");
   assert.equal(JSON.stringify(payload).includes("secret_table"), false);
+});
+
+test("erros de convite são mapeados", async () => {
+  const cases: Array<[string, number]> = [
+    ["invitation_invalid", 410],
+    ["invitation_email_mismatch", 403],
+    ["email_not_verified", 403],
+    ["already_member", 409],
+    ["invalid_role", 400],
+  ];
+  for (const [code, status] of cases) {
+    const response = toErrorResponse("t", { message: code }, "falha");
+    assert.equal(response.status, status, code);
+    assert.equal((await body(response)).code, code);
+  }
+});
+
+test("businessErrorMessage só revela mensagens conhecidas", () => {
+  assert.equal(businessErrorMessage({ message: "invitation_invalid" }, "x"), "Convite inválido, expirado ou já utilizado.");
+  assert.equal(businessErrorMessage({ message: "relation secret does not exist" }, "fallback"), "fallback");
 });

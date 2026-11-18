@@ -20,7 +20,22 @@ const DB_BUSINESS_ERRORS: Record<string, { status: number; message: string }> = 
   },
   rights_required: { status: 422, message: "Confirme os direitos de uso do vídeo de referência antes de aprovar." },
   approval_required: { status: 409, message: "A aprovação só pode ser feita pelo fluxo de aprovação." },
+  invalid_role: { status: 400, message: "Papel inválido para convite." },
+  invalid_email: { status: 400, message: "E-mail inválido." },
+  invalid_token: { status: 400, message: "Convite inválido." },
+  already_member: { status: 409, message: "Este e-mail já faz parte do workspace." },
+  email_not_verified: { status: 403, message: "Confirme seu e-mail antes de aceitar o convite." },
+  invitation_invalid: { status: 410, message: "Convite inválido, expirado ou já utilizado." },
+  invitation_email_mismatch: { status: 403, message: "Este convite foi enviado para outro e-mail." },
+  invitation_not_found: { status: 404, message: "Convite não encontrado." },
+  invitation_not_pending: { status: 409, message: "Este convite não está mais pendente." },
 };
+
+/** Mensagem segura para um código de negócio conhecido (para Server Actions). */
+export function businessErrorMessage(error: unknown, fallback: string): string {
+  const code = (error as DbError)?.message?.trim();
+  return code && code in DB_BUSINESS_ERRORS ? DB_BUSINESS_ERRORS[code].message : fallback;
+}
 
 export function jsonError(status: number, code: string, message: string) {
   // Response padrão da web: funciona em Route Handlers e em testes fora do runtime do Next.

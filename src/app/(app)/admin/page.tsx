@@ -3,6 +3,7 @@ import { AreaCard } from "@/components/admin/AreaCard";
 import { ContentList } from "@/components/admin/ContentList";
 import { DomainCard } from "@/components/admin/DomainCard";
 import { IntegrationPlaceholders } from "@/components/admin/IntegrationPlaceholders";
+import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
 import { PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { AREAS, REVENUE_DOMAINS } from "@/lib/admin/constants";
 
@@ -19,6 +20,11 @@ export default function AdminPage() {
         title="Administração"
         description="Modelo operacional de referência, domínios financeiros e estado das integrações. Esta tela é somente leitura."
       />
+
+      <section className="panel" aria-labelledby="convites-titulo">
+        <SectionHeading id="convites-titulo" title="Membros e convites" aside={<span className="muted">acesso somente por convite</span>} />
+        <InvitationsPanel />
+      </section>
 
       <section className="panel" aria-labelledby="areas-titulo">
         <SectionHeading id="areas-titulo" title="Modelo operacional" aside={<span className="muted">8 áreas</span>} />

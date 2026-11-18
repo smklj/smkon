@@ -569,6 +569,59 @@ export type Database = {
           },
         ]
       }
+      organization_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          role: string
+          token_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role: string
+          token_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -865,6 +918,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { p_token_hash: string }
+        Returns: {
+          member_role: string
+          workspace_id: string
+        }[]
+      }
       approve_content: {
         Args: { p_content_id: string; p_expected_hash: string; p_note?: string }
         Returns: {
@@ -877,12 +937,29 @@ export type Database = {
         Args: { item: Database["public"]["Tables"]["content_items"]["Row"] }
         Returns: string
       }
+      create_invitation: {
+        Args: {
+          p_email: string
+          p_organization_id: string
+          p_role: string
+          p_token_hash: string
+        }
+        Returns: {
+          created: boolean
+          invitation_expires_at: string
+          invitation_id: string
+        }[]
+      }
       ensure_workspace: {
         Args: never
         Returns: {
           member_role: string
           workspace_id: string
         }[]
+      }
+      revoke_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
       }
     }
     Enums: {
