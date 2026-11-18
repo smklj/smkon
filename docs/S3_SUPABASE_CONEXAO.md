@@ -19,7 +19,17 @@
 | SMTP Supabase / Resend | Pendente de domínio próprio verificado |
 | Auth invite-only e redirect URLs | Requer conferência/configuração no painel |
 
-As versões de migration registradas no Supabase refletem o horário real de aplicação. Não habilitar deploy automático de migrations pelo GitHub antes de alinhar o histórico com os arquivos versionados.
+As versões de migration registradas no Supabase refletem o horário real de aplicação. **Divergência de histórico (decisão pendente do Owner):** o remoto registrou `20261118155856`, `20261118160203`, `20261118160207` e `20261118160210`; os arquivos no Git usam `20261117183000`, `20261117200000`, `20261118120000` e `20261118150000`. O conteúdo é o mesmo (catálogo remoto conferido em 18/11). Opções:
+- **A — renomear os arquivos locais** para as versões remotas. Não escreve no banco, mas contraria a regra de `docs/MIGRATION_RECONCILIATION.md` ("não renomear migrations já aplicadas").
+- **B — manter os nomes do Git e reconciliar o histórico remoto** (`supabase migration repair`), com backup e `migration list --linked` antes. Escreve na tabela de histórico do remoto e exige autorização.
+
+Até a decisão: não usar `supabase db push` nem a integração GitHub de migrations; aplicar migrations novas de forma controlada.
+
+### Pendentes de aplicação no remoto (exigem autorização)
+| Arquivo | Conteúdo | Testes |
+|---|---|---|
+| `20261118170000_hardening_rls_indexes_audit.sql` | Políticas por comando (sem `FOR ALL`), 17 índices de FK, auditoria nas 4 tabelas restantes | `003_hardening_regression.test.sql` |
+| `20261118180000_revoke_internal_functions.sql` | Remove `content_canonical_hash` e `reject_mutation` da API RPC | `004_internal_functions.test.sql` |
 
 ## Advisors pós-migration
 
@@ -67,4 +77,4 @@ Projeto `smkon`, domínio `smkon-smkon.vercel.app`, Node `22.x`. As variáveis p
 
 ## Integração GitHub ↔ Supabase
 
-Não habilitar deploy automático de migrations até configurar proteção da `main` e alinhar o histórico remoto com os nomes/versões versionados. Por enquanto, migrations são aplicadas de forma controlada e verificadas manualmente.
+Histórico local alinhado ao remoto (S3.1). Ainda assim, não habilitar deploy automático de migrations até configurar a proteção da `main`. Por enquanto, migrations são aplicadas de forma controlada e verificadas manualmente.
