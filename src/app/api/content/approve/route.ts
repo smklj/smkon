@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     if (typeof body.contentHash !== "string" || !CONTENT_HASH_PATTERN.test(body.contentHash)) {
       return jsonError(400, "invalid_input", "Hash da versão inválido.");
     }
-    const note = typeof body.note === "string" ? body.note.slice(0, 1000) : null;
+    const note = typeof body.note === "string" ? body.note.slice(0, 1000) : undefined;
 
     const { error } = await supabase.rpc("approve_content", {
       p_content_id: body.id,
