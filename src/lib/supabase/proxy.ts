@@ -2,10 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "./env";
 
-const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/robots.txt", "/icon.svg", "/apple-touch-icon.png"]);
+const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/robots.txt", "/icon.svg", "/apple-icon.png"]);
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_PATHS.has(pathname) || pathname.startsWith("/auth/") || pathname.startsWith("/_next/");
+  return (
+    PUBLIC_PATHS.has(pathname) ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/brand/")
+  );
 }
 
 function isApiRoute(pathname: string): boolean {

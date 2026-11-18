@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CHANNELS,
@@ -268,45 +268,35 @@ export default function StudioClient() {
   const fullCaption = [draft.caption, draft.cta, draft.hashtags].filter(Boolean).join("\n\n");
 
   return (
-    <main className="studio-shell">
-      <header className="studio-topbar">
-        <Link className="brand" href="/"><span className="brand-mark">S</span><span>SMKON</span></Link>
-        <nav><Link href="/">Control Center</Link><span className="studio-nav-active">Content Studio</span></nav>
-        <span className="studio-local-tag"><i /> WORKSPACE</span>
-      </header>
+    <div className="page">
+      <PageHeader
+        eyebrow="03 · Content Studio"
+        title="Content Studio"
+        description="Crie uma peça central, adapte para YouTube, Instagram e TikTok e aprove a versão exata. Aprovar não publica nada."
+        actions={<button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>}
+      />
 
-      <section className="studio-hero">
-        <p className="eyebrow">CONTENT & GROWTH / WORKSPACE 01</p>
-        <div className="studio-hero-line">
-          <div><h1>Content Studio<span>.</span></h1><p>Crie uma peça central e organize sua adaptação para YouTube, Instagram e TikTok.</p></div>
-          <button className="studio-primary" onClick={newDraft} disabled={saving}>＋ Novo conteúdo</button>
-        </div>
-        <div className="studio-notice">
-          <strong>Modo de trabalho:</strong> os rascunhos são salvos no workspace autenticado. Aprovar aqui não publica nem envia conteúdo às plataformas.
-        </div>
-      </section>
+      {error && <p className="feedback feedback-error" role="alert">{error}</p>}
+      {notice && <p className="feedback feedback-ok" role="status">{notice}</p>}
 
-      {error && <p className="studio-feedback" role="alert">{error}</p>}
-      {notice && <p className="studio-feedback" role="status">{notice}</p>}
-
-      <section className="studio-stats">
-        <div><span>PEÇAS NO WORKSPACE</span><strong>{loading ? "…" : items.length.toString().padStart(2, "0")}</strong></div>
-        <div><span>RASCUNHOS</span><strong>{loading ? "…" : items.filter((item) => item.status === "Rascunho").length.toString().padStart(2, "0")}</strong></div>
-        <div><span>APROVADOS</span><strong>{loading ? "…" : items.filter((item) => item.status === "Aprovado").length.toString().padStart(2, "0")}</strong></div>
-        <div><span>ARQUIVADOS</span><strong>{loading ? "…" : items.filter((item) => item.status === "Arquivado").length.toString().padStart(2, "0")}</strong></div>
+      <section className="metrics" aria-label="Indicadores do Studio">
+        <div className="metric"><span>Peças</span><strong>{loading ? "…" : items.length.toString().padStart(2, "0")}</strong></div>
+        <div className="metric"><span>Rascunhos</span><strong>{loading ? "…" : items.filter((item) => item.status === "Rascunho").length.toString().padStart(2, "0")}</strong></div>
+        <div className="metric"><span>Aprovados</span><strong>{loading ? "…" : items.filter((item) => item.status === "Aprovado").length.toString().padStart(2, "0")}</strong></div>
+        <div className="metric"><span>Arquivados</span><strong>{loading ? "…" : items.filter((item) => item.status === "Arquivado").length.toString().padStart(2, "0")}</strong></div>
       </section>
 
       <div className="studio-layout">
         <aside className="studio-library">
-          <div className="studio-library-head"><div><p className="eyebrow">LIBRARY</p><h2>Suas peças</h2></div><span>{loading ? "…" : items.length}</span></div>
+          <div className="studio-library-head"><div><p className="eyebrow">Biblioteca</p><h2>Suas peças</h2></div><span>{loading ? "…" : items.length}</span></div>
           <div className="studio-filters">
             {FILTERS.map((item) => (
               <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item}</button>
             ))}
           </div>
           <div className="studio-draft-list">
-            {loading && <div className="studio-empty"><span>✳</span><strong>Carregando…</strong><p>Buscando peças do workspace.</p></div>}
-            {!loading && visibleItems.length === 0 && <div className="studio-empty"><span>✳</span><strong>Nenhuma peça por aqui</strong><p>Crie seu primeiro conteúdo para começar a organizar a produção.</p></div>}
+            {loading && <div className="studio-empty"><span aria-hidden="true">✳</span><strong>Carregando…</strong><p>Buscando peças do workspace.</p></div>}
+            {!loading && visibleItems.length === 0 && <div className="studio-empty"><span aria-hidden="true">✳</span><strong>Nenhuma peça por aqui</strong><p>Crie seu primeiro conteúdo para começar a organizar a produção.</p></div>}
             {!loading && visibleItems.map((item) => (
               <button key={item.id} className={activeId === item.id ? "studio-draft active" : "studio-draft"} onClick={() => openItem(item)}>
                 <span className="draft-status">{item.status === "Aprovado" && item.approvedVersion ? `Aprovado · v${item.approvedVersion}` : `${item.status} · v${item.version}`}</span>
@@ -320,19 +310,19 @@ export default function StudioClient() {
 
         <section className="studio-editor">
           <div className="studio-editor-head">
-            <div><p className="eyebrow">PRODUCTION DESK</p><h2>{activeId ? "Editar conteúdo" : "Nova peça de conteúdo"}</h2></div>
-            <span className="studio-step">01 / 03 · BRIEFING</span>
+            <div><p className="eyebrow">Produção</p><h2>{activeId ? "Editar conteúdo" : "Nova peça de conteúdo"}</h2></div>
+            <span className="studio-step">01 / 03 · Briefing</span>
           </div>
           {activeId && draft.status === "Aprovado" && (
-            <p className="studio-feedback" role="status">
+            <p className="feedback feedback-info" role="status">
               Versão {draft.approvedVersion} aprovada. Qualquer alteração cria uma nova versão e exige nova aprovação.
             </p>
           )}
           <div className="studio-form-grid">
-            <label className="studio-field studio-wide"><span>TÍTULO INTERNO *</span><input value={draft.title} onChange={(e) => update("title", e.target.value)} placeholder="Ex.: Review honesta — produto X" disabled={saving} /></label>
-            <label className="studio-field"><span>PRODUTO / OFERTA</span><input value={draft.product} onChange={(e) => update("product", e.target.value)} placeholder="Nome do produto" disabled={saving} /></label>
-            <label className="studio-field"><span>LINK DO PRODUTO</span><input value={draft.assetUrl} onChange={(e) => update("assetUrl", e.target.value)} placeholder="https://..." disabled={saving} /></label>
-            <label className="studio-field studio-wide"><span>VÍDEO DE REFERÊNCIA / UGC</span><input value={draft.sourceUrl} onChange={(e) => update("sourceUrl", e.target.value)} placeholder="URL do vídeo original ou referência (opcional)" disabled={saving} /></label>
+            <label className="studio-field studio-wide"><span>Título interno *</span><input value={draft.title} onChange={(e) => update("title", e.target.value)} placeholder="Ex.: Review honesta — produto X" disabled={saving} /></label>
+            <label className="studio-field"><span>Produto / oferta</span><input value={draft.product} onChange={(e) => update("product", e.target.value)} placeholder="Nome do produto" disabled={saving} /></label>
+            <label className="studio-field"><span>Link do produto</span><input value={draft.assetUrl} onChange={(e) => update("assetUrl", e.target.value)} placeholder="https://..." disabled={saving} /></label>
+            <label className="studio-field studio-wide"><span>Vídeo de referência / UGC</span><input value={draft.sourceUrl} onChange={(e) => update("sourceUrl", e.target.value)} placeholder="URL do vídeo original ou referência (opcional)" disabled={saving} /></label>
             {draft.sourceUrl && (
               <label className="studio-rights studio-wide">
                 <input type="checkbox" checked={draft.rightsConfirmed} onChange={(e) => update("rightsConfirmed", e.target.checked)} disabled={saving} />
@@ -340,7 +330,7 @@ export default function StudioClient() {
               </label>
             )}
             <div className="studio-field studio-wide">
-              <span>CANAIS DE DESTINO</span>
+              <span>Canais de destino</span>
               <div className="studio-channel-picks">
                 {CHANNELS.map((channel) => (
                   <button type="button" key={channel} className={draft.channels.includes(channel) ? "picked" : ""} onClick={() => toggleChannel(channel)} disabled={saving}>
@@ -349,10 +339,10 @@ export default function StudioClient() {
                 ))}
               </div>
             </div>
-            <label className="studio-field studio-wide"><span>ROTEIRO / ESTRUTURA DO VÍDEO</span><textarea rows={6} value={draft.script} onChange={(e) => update("script", e.target.value)} placeholder={"HOOK (0–3s)\nDESENVOLVIMENTO\nDEMONSTRAÇÃO / PROVA\nFECHAMENTO"} disabled={saving} /></label>
-            <label className="studio-field studio-wide"><span>LEGENDA</span><textarea rows={4} value={draft.caption} onChange={(e) => update("caption", e.target.value)} placeholder="Escreva a legenda adaptada aos canais selecionados..." disabled={saving} /></label>
+            <label className="studio-field studio-wide"><span>Roteiro / estrutura do vídeo</span><textarea rows={6} value={draft.script} onChange={(e) => update("script", e.target.value)} placeholder={"HOOK (0–3s)\nDESENVOLVIMENTO\nDEMONSTRAÇÃO / PROVA\nFECHAMENTO"} disabled={saving} /></label>
+            <label className="studio-field studio-wide"><span>Legenda</span><textarea rows={4} value={draft.caption} onChange={(e) => update("caption", e.target.value)} placeholder="Escreva a legenda adaptada aos canais selecionados..." disabled={saving} /></label>
             <label className="studio-field"><span>CTA</span><input value={draft.cta} onChange={(e) => update("cta", e.target.value)} placeholder="Ex.: Confira no link..." disabled={saving} /></label>
-            <label className="studio-field"><span>HASHTAGS</span><input value={draft.hashtags} onChange={(e) => update("hashtags", e.target.value)} placeholder="#smkon #review" disabled={saving} /></label>
+            <label className="studio-field"><span>Hashtags</span><input value={draft.hashtags} onChange={(e) => update("hashtags", e.target.value)} placeholder="#smkon #review" disabled={saving} /></label>
           </div>
           <div className="studio-editor-actions">
             <button className="studio-secondary" onClick={() => save("draft")} disabled={saving}>{saving ? "Salvando…" : "Salvar rascunho"}</button>
@@ -365,13 +355,13 @@ export default function StudioClient() {
 
       <section className="studio-preview">
         <div className="studio-editor-head">
-          <div><p className="eyebrow">CHANNEL ADAPTATION</p><h2>Prévia de publicação</h2></div>
-          <span className="studio-step">02 / 03 · REVISÃO</span>
+          <div><p className="eyebrow">Adaptação por canal</p><h2>Prévia de publicação</h2></div>
+          <span className="studio-step">02 / 03 · Revisão</span>
         </div>
         <div className="studio-preview-grid">
           {draft.channels.map((channel) => (
             <article key={channel}>
-              <div className="preview-channel"><span>{channel}</span><small>{channel === "YouTube" ? "SHORTS / VÍDEO" : channel === "Instagram" ? "REELS / FEED" : "VÍDEO CURTO"}</small></div>
+              <div className="preview-channel"><span>{channel}</span><small>{channel === "YouTube" ? "Shorts / vídeo" : channel === "Instagram" ? "Reels / feed" : "Vídeo curto"}</small></div>
               <h3>{draft.title || "Título do conteúdo"}</h3>
               <p>{fullCaption || "A legenda, o CTA e as hashtags aparecerão aqui conforme você preencher o briefing."}</p>
               <button onClick={() => copyText(fullCaption)} disabled={saving}>Copiar legenda</button>
@@ -382,14 +372,13 @@ export default function StudioClient() {
       </section>
 
       <section className="studio-next">
-        <div><p className="eyebrow">NEXT MILESTONES</p><h2>Da pauta à publicação</h2></div>
+        <div><p className="eyebrow">Próximas etapas</p><h2>Da pauta à publicação</h2></div>
         <div className="studio-pipeline">
           <div className="done"><span>01</span><strong>Briefing e roteiro</strong><small>Disponível neste workspace</small></div>
           <div><span>02</span><strong>Edição de vídeo</strong><small>Próxima etapa: timeline, cortes, legendas e exportação</small></div>
           <div><span>03</span><strong>Distribuição conectada</strong><small>OAuth, upload e publicação via APIs oficiais</small></div>
         </div>
       </section>
-      <footer><span>SMKON © {new Date().getFullYear()}</span><span>NO AUTO-PUBLISH · HUMAN APPROVAL FIRST</span></footer>
-    </main>
+    </div>
   );
 }

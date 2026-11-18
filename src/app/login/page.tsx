@@ -1,5 +1,8 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { Logo } from "@/components/brand/Logo";
 import { signIn, signUp } from "./actions";
+
+export const metadata: Metadata = { title: "Entrar" };
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; message?: string }>;
@@ -18,8 +21,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="auth-shell">
       <section className="auth-panel">
-        <Link className="auth-brand" href="/">SMKON</Link>
-        <p className="eyebrow">CONTROL CENTER</p>
+        <Logo variant="horizontal" className="auth-logo" />
+        <p className="eyebrow">Plataforma de operação digital</p>
         <h1>Acesse sua operação.</h1>
         <p className="auth-copy">Entre na sua conta para continuar no ambiente privado da SMKON.</p>
         {error ? <p className="auth-alert" role="alert">{error}</p> : null}
@@ -31,15 +34,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <input id="email" name="email" type="email" autoComplete="email" required maxLength={254} />
           <label htmlFor="password">Senha</label>
           <input id="password" name="password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} />
-          <button type="submit">Entrar</button>
+          <button type="submit" className="button button-primary">Entrar</button>
         </form>
-        <div className="auth-divider"><span>PRIMEIRO ACESSO</span></div>
+        <div className="auth-divider"><span>Primeiro acesso</span></div>
         <form action={signUp} className="auth-form">
           <label htmlFor="signup-email">E-mail para cadastro</label>
           <input id="signup-email" name="email" type="email" autoComplete="email" required maxLength={254} />
           <label htmlFor="signup-password">Crie uma senha</label>
           <input id="signup-password" name="password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} />
-          <button className="auth-secondary" type="submit">Criar conta</button>
+          <button className="button button-secondary" type="submit">Criar conta</button>
         </form>
         <p className="auth-footnote">A confirmação de e-mail pode ser exigida conforme as configurações do Supabase Auth.</p>
       </section>
