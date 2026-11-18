@@ -21,6 +21,7 @@ export default function Home() {
         <h1>Achados inteligentes.<br /><span>Escolhas melhores.</span></h1>
         <p className="intro">A base operacional da SMKON para transformar curadoria em decisões úteis, conteúdo confiável e crescimento mensurável.</p>
         <div className="hero-meta"><span>PLATAFORMA EM CONSTRUÇÃO</span><span>v0.1.0</span></div>
+        <div style={{marginTop:28}}><Link className="btn primary" href="/fila">Abrir fila de conteúdo</Link></div>
       </section>
 
       <section className="section-heading">
