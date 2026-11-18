@@ -812,3 +812,164 @@ A autorização do Owner para publicação direta foi registrada nesta conversa,
 6. Integrar persistência real de Product Intelligence e validar CRUD do Content Studio.
 7. Rodar CI, build e smoke tests no commit exato.
 8. Criar deploy Production e verificar logs/rotas; só então confirmar release público.
+
+
+---
+
+# 16. Atualização executiva — estado consolidado, trabalho realizado e proposta atual (18/11/2026)
+
+**Versão do dossiê:** 1.1  
+**Branch deste registro:** `feature/smkon-production-readiness`  
+**Repositório oficial:** `smklj/smkon`  
+**Conta operacional:** `smkonlj@gmail.com`
+
+> Esta seção atualiza e corrige os pontos operacionais da seção 15. Em caso de divergência de status entre as seções 15 e 16, prevalece a evidência mais recente desta seção. Nenhuma chave ou valor secreto é registrado aqui.
+
+## 16.1 Resumo executivo da proposta atualizada
+
+O SMKON deve evoluir para uma plataforma operacional de **Social Commerce Intelligence & Growth**, reunindo em um único Control Center o ciclo completo de oportunidade → produto → conteúdo → aprovação → distribuição → métricas → receita → otimização.
+
+A plataforma não deve ser apenas um painel de links ou um gerador de posts. Seu diferencial é conectar decisões e resultados com rastreabilidade: por que um produto foi escolhido, quais evidências sustentam a recomendação, qual conteúdo foi produzido, quem aprovou a versão publicada, em qual canal foi distribuída, quais resultados trouxe e como esses resultados se refletem no financeiro.
+
+### Proposta de valor
+- **Centralização:** um ambiente para estratégia, produtos, conteúdo, canais, crescimento e financeiro.
+- **Inteligência explicável:** recomendações com fontes, evidências, timestamps, critérios e score interpretável.
+- **Operação controlada:** workflows com estados, aprovações, histórico e auditoria.
+- **Automação segura:** agentes de IA que primeiro analisam e propõem; executam ações externas somente com permissão e aprovação adequadas.
+- **Visão financeira confiável:** separar mídia, vendas próprias e afiliados/comissões, reconciliando dados com as plataformas de origem.
+- **Escalabilidade:** arquitetura multi-tenant, APIs oficiais, filas idempotentes, RLS e observabilidade.
+
+### Usuários e papéis propostos
+- **Owner/Admin:** estratégia, conexões, permissões, aprovação de gastos e publicação, configurações e auditoria.
+- **Operator/Editor:** pesquisa, catálogo, criação e edição de conteúdo, preparação de campanhas.
+- **Analyst:** leitura de métricas, scoring, relatórios e conciliação, sem permissão implícita para publicar ou gastar.
+- **Viewer:** leitura de painéis e relatórios.
+
+Os papéis acima são proposta de produto; confirmar o modelo de autorização já implementado antes de codificar ou documentar como concluído.
+
+## 16.2 Mapa atualizado do produto
+
+| Módulo | Resultado esperado | Estado observado nesta etapa |
+|---|---|---|
+| Control Center / Admin | Visão operacional, áreas e indicadores | Painel presente em branch de feature; Preview READY anteriormente confirmado para commit específico |
+| Product Intelligence | Catálogo, evidências, scoring e conteúdo preliminar | Tipos, scoring e preview de conteúdo adicionados; endpoint ainda não persiste dados |
+| Content Studio | Briefing, roteiro, legenda, CTA, hashtags e drafts | MVP registrado; UI ainda precisa ser ligada à API cloud, localStorage não equivale a persistência compartilhada |
+| Revenue Domains | Separação entre mídia, vendas próprias e afiliados | Migration/base versionada no Git; aplicação remota não confirmada |
+| Analytics & Growth | Métricas por canal, experimentos e desempenho | Conectores/snapshots históricos; conexão e sincronização ponta a ponta precisam ser revalidadas |
+| Social Publishing | Calendário, aprovação, agendamento e publicação | Não considerar pronto; faltam validação de APIs, OAuth, fila, idempotência e testes |
+| Finance Center | Ledger, taxas, comissões, pagamentos e conciliação | Domínios definidos; integrações financeiras reais e reconciliação pendentes |
+| AI Agents | Scout, Analyst, Creative, Publisher, Growth, Finance, Compliance | Papéis conceituais; implementação operacional com guardrails ainda pendente |
+| Media Library | Arquivos, metadados, direitos e permissões | Planejado; Storage e políticas precisam ser definidos e testados |
+| Governance & Audit | Aprovações, logs, custos, permissões e trilha de ações | Requisito transversal; completar e validar antes de automações de escrita |
+
+## 16.3 Trabalho realizado e evidências atualizadas
+
+### GitHub e código
+- Repositório oficial mantido em `smklj/smkon`, sem misturar a conta pessoal.
+- Branch `feature/smkon-production-readiness` criada a partir de `feature/admin-panel` para consolidar preparação e evitar merge cego de branches divergentes.
+- Implementados nessa branch: tipos de Product Intelligence, scoring heurístico explicável, gerador de preview de conteúdo, endpoint autenticado de preview, migration draft de produtos e documentação técnica.
+- O endpoint de Product Intelligence é explicitamente preview-only: ainda não grava produtos no banco.
+- Dossiê mestre atualizado nesta branch.
+- PR #4 aberto para revisão: https://github.com/smklj/smkon/pull/4. Na criação, o PR estava aberto e `mergeable=false`; não foi feito merge. Revisar conflitos, histórico e diffs antes de qualquer integração.
+- Branches divergentes não foram fundidas automaticamente. A branch `feature/product-intelligence-mvp` contém apenas commits próprios em relação à branch do painel e está significativamente atrás dela na comparação consultada.
+
+### Supabase — correção de estado
+- Projeto oficial identificado e acessível pelo conector Supabase SMKON: ref `hpplboyysmfcjsnjrdmw`, projeto `smkonlj`.
+- A conexão Supabase ↔ ChatGPT está ativa e foi usada para consultar a URL do projeto e a chave publishable ativa. Não é necessário reconectar o Supabase ao ChatGPT.
+- A URL e a chave publishable foram usadas diretamente na configuração do Vercel; os valores não são reproduzidos neste documento.
+- A última consulta ao histórico remoto de migrations retornou `migrations: []`. Portanto, ainda não há evidência de que a fundação SQL versionada no Git tenha sido aplicada ao banco hospedado.
+- Nenhuma migration remota foi aplicada durante esta atualização.
+
+### Vercel — correção de estado
+- Projeto oficial: `smkon`, equipe Smkon, project ID `prj_udn2T9xYctnJU8uq4oE6wjzPF5qK`.
+- Foi confirmado que o projeto estava sem variáveis de ambiente antes da configuração.
+- Foram cadastradas com sucesso duas variáveis no Vercel, para Production, Preview e Development:
+  - `NEXT_PUBLIC_SUPABASE_URL` — tipo plain, URL pública do projeto;
+  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — tipo encrypted, chave publishable pública.
+- A consulta posterior confirmou as duas chaves e os três targets. Valores foram omitidos.
+- O código de `src/lib/supabase/env.ts`, `src/lib/supabase/server.ts` e `src/lib/supabase/client.ts` confirma que browser e server usam essas duas variáveis.
+- Não foi cadastrada `SUPABASE_SECRET_KEY`: os clientes verificados usam a publishable key e não há evidência de necessidade para o fluxo atual. Não adicionar chave privilegiada sem requisito técnico demonstrado.
+- As variáveis configuradas removem o bloqueio de configuração básica do cliente Supabase, mas não provam Auth, RLS, migrations ou persistência funcionando.
+- Node do projeto foi alterado para `22.x` na etapa anterior; validar build e compatibilidade no deployment atual.
+- A publicação Production não foi executada.
+
+## 16.4 Bloqueadores atuais — ordem recomendada
+
+1. **Migrations:** reconciliar as migrations versionadas no Git com o banco remoto. Primeiro auditar todas, dependências, ordem, policies e reversibilidade; validar em banco descartável; só então solicitar/aplicar a mudança hospedada com autorização explícita.
+2. **Auth e bootstrap:** confirmar providers, redirect URLs do domínio final, callback PKCE, criação do primeiro Owner e bootstrap de organização/workspace.
+3. **RLS multi-tenant:** testar com pelo menos dois usuários em dois workspaces; comprovar isolamento em SELECT/INSERT/UPDATE/DELETE e nas rotas API.
+4. **Build e CI:** executar install, audit, typecheck, lint, testes e build no commit exato do PR; corrigir erros e dependências vulneráveis sem aplicar upgrades breaking às cegas.
+5. **Content Studio:** conectar a interface à API autenticada; migrar drafts locais sem perda; testar CRUD, loading, empty/error states e concorrência.
+6. **Product Intelligence:** implementar persistência real, validação server-side, autorização por tenant, CRUD e testes; retirar a classificação preview-only somente depois disso.
+7. **Integrações externas:** validar contas, scopes e APIs oficiais; implementar filas, retries limitados, idempotência, reconciliação e observabilidade.
+8. **Release:** validar Preview por rotas e smoke tests, configurar Auth URLs, revisar domínio e rollback; promover para Production somente após critérios de aceite e autorização do Owner.
+
+## 16.5 Roadmap priorizado e entregáveis
+
+### Sprint A — estabilização e segurança
+- Resolver PR #4 e divergência entre branches sem descartar trabalho.
+- Revalidar histórico completo de PRs e checks.
+- Fechar migration chain, bootstrap de workspace e RLS.
+- Testes unitários, integração, autorização e E2E de Auth.
+- Entregável: base reproduzível, CI verde e relatório de segurança.
+
+### Sprint B — persistência dos módulos centrais
+- Aplicar schema aprovado em ambiente de teste.
+- Ligar Content Studio à API e banco.
+- Implementar Product Intelligence persistente.
+- Garantir isolamento e histórico de alterações.
+- Entregável: produto e conteúdo persistidos, recuperáveis e testados.
+
+### Sprint C — conteúdo e mídia
+- Biblioteca privada de mídia e metadados.
+- Direitos/licenças e disclosure como etapas do workflow.
+- Aprovação de versão imutável do conteúdo.
+- Entregável: ciclo de criação e revisão rastreável.
+
+### Sprint D — canais, analytics e crescimento
+- Revalidar Metricool e Supermetrics.
+- Implementar conexões oficiais e calendário.
+- Publicação controlada, com aprovação humana e idempotência.
+- Métricas e experimentos por canal.
+- Entregável: distribuição e análise com evidência de execução.
+
+### Sprint E — financeiro e agentes
+- Ledger e conciliação de mídia, vendas próprias e afiliados.
+- Agentes em modo leitura/proposta inicialmente.
+- Permissões, limites, auditoria, aprovação e kill switch.
+- Entregável: relatórios reconciliados e automações seguras.
+
+### Sprint F — release e operação
+- Observabilidade, alertas, backups e restore testado.
+- Checklist de release, rollback e smoke tests.
+- Deploy Production e monitoramento pós-release.
+- Entregável: versão operacional, sem declarar recursos não implementados como prontos.
+
+## 16.6 Critérios de pronto para produção
+
+O SMKON só pode ser declarado pronto para produção quando todos os itens abaixo tiverem evidência:
+- [ ] branch e PR integrados com histórico revisado e sem conflito pendente;
+- [ ] CI verde no commit exato;
+- [ ] build de Production concluído;
+- [ ] migrations aplicadas e reconciliadas com o Git;
+- [ ] Auth, callback e redirects testados no domínio real;
+- [ ] Owner e workspace inicializados corretamente;
+- [ ] RLS comprovada com múltiplos tenants;
+- [ ] APIs protegidas e testes CRUD aprovados;
+- [ ] Content Studio com persistência cloud;
+- [ ] Product Intelligence com persistência cloud ou explicitamente desabilitado na interface pública;
+- [ ] variáveis de ambiente verificadas sem exposição de valores;
+- [ ] smoke tests, logs, alertas e rollback validados;
+- [ ] aprovação explícita do Owner para promoção Production.
+
+## 16.7 Regras para qualquer agente que assumir o projeto
+
+- Trabalhar exclusivamente com a identidade SMKON.
+- Ler este dossiê e o handoff antes de modificar o código.
+- Consultar o estado atual antes de confiar em qualquer status antigo.
+- Nunca apresentar proposta, mock, preview ou endpoint sem persistência como funcionalidade concluída.
+- Nunca aplicar migration remota, merge em main, alterar DNS, criar gasto, publicar conteúdo ou promover Production sem autorização e checklist.
+- Registrar cada alteração com branch, commit, arquivos, testes executados, limitações e próximo passo.
+- Manter a separação entre proposta de produto, implementação no código e operação comprovada.
+
+**Fim da atualização executiva 1.1.**
