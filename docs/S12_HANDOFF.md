@@ -45,12 +45,17 @@ Cobertura do teste SQL: workspace vazio (zeros e `[]`, nunca null); contagens po
 - **"Em aberto" (afiliados)** = prevista + aprovada + liquidada. Pagas e estornadas aparecem separadas.
 - **CPC** só quando há cliques; sem clique, "—".
 
-## Pendências e autorizações
+## Ambientes (autorizado pelo Owner em 18/11/2026)
 
-- 🔐 Aplicar `20261119010000_workspace_overview.sql` no **staging** (`xoyasrizivadxnpmzzno`) para o E2E exercitar o painel completo, e depois em **produção** (`hpplboyysmfcjsnjrdmw`) junto da publicação na main. Esta execução não aplicou migrations remotas.
+- **Staging** (`xoyasrizivadxnpmzzno`): migration presente (`workspace_overview`). A função confere por md5 com o arquivo do Git (`3a81bd86…`). Executada como `authenticated` para um membro real: devolve todas as chaves.
+- **Produção** (`hpplboyysmfcjsnjrdmw`): aplicada via MCP e versão alinhada para `20261119010000`, conforme a regra de `S3_SUPABASE_CONEXAO.md`. md5 igual ao do Git; `security invoker`, `stable`; execução só para `authenticated`/`service_role` (sem `anon`/`public`). Teste como membro real: ok, nenhum dado foi escrito.
+- **main:** publicada pelo PR de release do S12.
+
+## Pendências
+
 - Vendas próprias e mídia paga só terão números quando o primeiro conector existir (S11, 🔐).
-- Fuso: a janela de 30 dias usa `now()`; a data das métricas de mídia é convertida para Brasília.
-- O S10b (PR #22, já integrado) usa a migration `20261119000000` e o teste `010`. Este split usa `20261119010000` e `011` e já foi mesclado com ele.
+- Acrescentar ao E2E uma checagem do bloco "Financeiro por domínio", agora que o staging tem a função.
+- O S10b (PR #22, já integrado) usa a migration `20261119000000` e o teste `010`. Este split usa `20261119010000` e `011`.
 
 ## Próxima etapa
 
