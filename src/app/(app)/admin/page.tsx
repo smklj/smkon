@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AreaCard } from "@/components/admin/AreaCard";
+import { ConnectionsPanel } from "@/components/admin/ConnectionsPanel";
 import { ContentList } from "@/components/admin/ContentList";
 import { DomainCard } from "@/components/admin/DomainCard";
 import { IntegrationPlaceholders } from "@/components/admin/IntegrationPlaceholders";
@@ -18,7 +19,7 @@ export default function AdminPage() {
       <PageHeader
         eyebrow="08 · Segurança e admin"
         title="Administração"
-        description="Modelo operacional de referência, domínios financeiros e estado das integrações. Esta tela é somente leitura."
+        description="Membros, modelo operacional, domínios financeiros e conexões reais do workspace."
       />
 
       <section className="panel" aria-labelledby="convites-titulo">
@@ -50,7 +51,12 @@ export default function AdminPage() {
       </section>
 
       <section className="panel" aria-labelledby="integracoes-titulo">
-        <SectionHeading id="integracoes-titulo" title="Integrações" aside={<span className="muted">nenhuma conectada</span>} />
+        <SectionHeading id="integracoes-titulo" title="Conexões do workspace" aside={<span className="muted">dados reais</span>} />
+        <ConnectionsPanel />
+      </section>
+
+      <section className="panel" aria-labelledby="planejadas-titulo">
+        <SectionHeading id="planejadas-titulo" title="Integrações planejadas" aside={<span className="muted">ainda não validadas</span>} />
         <IntegrationPlaceholders />
       </section>
     </div>
