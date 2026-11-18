@@ -830,6 +830,93 @@ export type Database = {
           },
         ]
       }
+      publication_job_events: {
+        Row: {
+          actor_id: string | null
+          detail: Json
+          event: string
+          id: number
+          job_id: string
+          occurred_at: string
+          organization_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          detail?: Json
+          event: string
+          id?: number
+          job_id: string
+          occurred_at?: string
+          organization_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          detail?: Json
+          event?: string
+          id?: number
+          job_id?: string
+          occurred_at?: string
+          organization_id?: string
+        }
+        Relationships: []
+      }
+      publication_jobs: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          channel: string
+          checks: Json
+          content_hash: string
+          content_item_id: string
+          content_version: number
+          created_at: string
+          created_by: string
+          id: string
+          last_run_at: string | null
+          mode: string
+          organization_id: string
+          scheduled_for: string
+          status: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          channel: string
+          checks?: Json
+          content_hash: string
+          content_item_id: string
+          content_version: number
+          created_at?: string
+          created_by: string
+          id?: string
+          last_run_at?: string | null
+          mode?: string
+          organization_id: string
+          scheduled_for: string
+          status?: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          channel?: string
+          checks?: Json
+          content_hash?: string
+          content_item_id?: string
+          content_version?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          last_run_at?: string | null
+          mode?: string
+          organization_id?: string
+          scheduled_for?: string
+          status?: string
+        }
+        Relationships: []
+      }
       sales_order_adjustments: {
         Row: {
           adjustment_type: string
@@ -1060,6 +1147,10 @@ export type Database = {
         Args: { item: Database["public"]["Tables"]["content_items"]["Row"] }
         Returns: string
       }
+      cancel_publication: {
+        Args: { p_job_id: string; p_reason: string }
+        Returns: undefined
+      }
       create_invitation: {
         Args: {
           p_email: string
@@ -1094,6 +1185,17 @@ export type Database = {
           evidence_id: string
           product_score: number | null
         }[]
+      }
+      run_publication_dry_run: {
+        Args: { p_job_id: string }
+        Returns: {
+          checks: Json
+          job_status: string
+        }[]
+      }
+      schedule_publication: {
+        Args: { p_channel: string; p_content_id: string; p_scheduled_for: string }
+        Returns: string
       }
       revoke_invitation: {
         Args: { p_invitation_id: string }

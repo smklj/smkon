@@ -20,7 +20,7 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { area: "01", label: "Visão geral", href: "/", icon: "overview", status: "available", accent: "#FFFFFF", summary: "Indicadores e fila de aprovação do workspace." },
   { area: "02", label: "Produtos", href: "/produtos", icon: "products", status: "building", accent: "#6EA8FE", summary: "Catálogo persistente com evidências verificadas e score explicável. Sem coleta automática ainda." },
-  { area: "03", label: "Content Studio", href: "/studio", icon: "content", status: "available", accent: "#C084FC", summary: "Roteiros, versões e aprovação humana da versão exata." },
+  { area: "03", label: "Content Studio", href: "/studio", icon: "content", status: "available", accent: "#C084FC", summary: "Roteiros, versões, aprovação humana da versão exata e calendário em dry-run." },
   { area: "04", label: "Agentes de IA", href: null, icon: "agents", status: "planned", accent: "#5EEAD4", summary: "Planner → Executor → Verifier com limites e kill switch." },
   { area: "05", label: "Financeiro", href: "/financeiro", icon: "finance", status: "building", accent: "#3DDC97", summary: "Comissões de afiliado com ciclo de vida e ledger. Vendas próprias e mídia sem ingestão ainda." },
   { area: "06", label: "Jurídico", href: null, icon: "legal", status: "planned", accent: "#F5B547", summary: "Direitos de uso, licenças, disclosure e LGPD." },
