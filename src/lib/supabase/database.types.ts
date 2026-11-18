@@ -135,6 +135,57 @@ export type Database = {
           },
         ]
       }
+      affiliate_commission_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          commission_amount: number | null
+          conversion_id: string
+          currency: string
+          from_status: string | null
+          id: number
+          organization_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          commission_amount?: number | null
+          conversion_id: string
+          currency: string
+          from_status?: string | null
+          id?: never
+          organization_id: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          commission_amount?: number | null
+          conversion_id?: string
+          currency?: string
+          from_status?: string | null
+          id?: never
+          organization_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commission_status_history_conversion_id_fkey"
+            columns: ["conversion_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_conversions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_commission_status_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_conversions: {
         Row: {
           commission_amount: number | null
@@ -915,7 +966,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      affiliate_commission_summary: {
+        Row: {
+          approved_amount: number | null
+          cancelled_amount: number | null
+          conversions: number | null
+          currency: string | null
+          forecast_amount: number | null
+          organization_id: string | null
+          paid_amount: number | null
+          reversed_amount: number | null
+          settled_amount: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_invitation: {
@@ -963,7 +1027,13 @@ export type Database = {
       }
     }
     Enums: {
-      smkon_commission_status: "pending" | "approved" | "reversed" | "paid"
+      smkon_commission_status:
+        | "pending"
+        | "approved"
+        | "settled"
+        | "cancelled"
+        | "reversed"
+        | "paid"
       smkon_connection_status:
         | "pending"
         | "connected"
@@ -1098,7 +1168,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      smkon_commission_status: ["pending", "approved", "reversed", "paid"],
+      smkon_commission_status: [
+        "pending",
+        "approved",
+        "settled",
+        "cancelled",
+        "reversed",
+        "paid",
+      ],
       smkon_connection_status: [
         "pending",
         "connected",
