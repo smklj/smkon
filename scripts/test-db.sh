@@ -26,7 +26,7 @@ command -v psql >/dev/null || { echo "psql não encontrado no PATH." >&2; exit 2
 run_sql() {
   local url="$1" file="$2"
   echo "→ $(basename "$file")"
-  psql "$url" -X -q -v ON_ERROR_STOP=1 -f "$file"
+  psql "$url" -X -q -v ON_ERROR_STOP=1 -o /dev/null -f "$file"
 }
 
 run_tests() {
@@ -45,8 +45,10 @@ case "$MODE" in
       *supabase.co*|*supabase.com*) echo "Recusado: DATABASE_ADMIN_URL aponta para Supabase hospedado." >&2; exit 2 ;;
     esac
     DB="smkon_test_$(date +%s)_$$"
-    BASE="${ADMIN_URL%/*}"
-    TEST_URL="$BASE/$DB"
+    # Troca o nome do banco na URL, preservando parâmetros (?host=...&port=...).
+    URL_PATH="${ADMIN_URL%%\?*}"
+    URL_QUERY="${ADMIN_URL#"$URL_PATH"}"
+    TEST_URL="${URL_PATH%/*}/$DB$URL_QUERY"
 
     cleanup() { psql "$ADMIN_URL" -X -q -c "drop database if exists \"$DB\" with (force)" >/dev/null 2>&1 || true; }
     trap cleanup EXIT

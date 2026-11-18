@@ -1,8 +1,24 @@
 # S1 — P0 Segurança e Integridade · Handoff para validação
 
 **Branch:** `feature/p0-security-integrity` (base: `feature/smkon-production-readiness` @ `cc2d447`)
-**Estado:** implementado · **aguardando validação independente (GPT/Codex)**. Nenhum teste foi executado e nada foi enviado ao GitHub. O split só será considerado concluído após a validação.
+**Estado:** implementado · validação 1 (GPT): reprovado por falta de testes de banco · S1.1: suíte criada e **executada pelo Claude Code em 18/11/2026** (o Owner reatribuiu a execução de testes, push e merge ao Claude Code).
 **Plano geral:** `docs/ROADMAP_SPLITS.md`.
+
+## 0. Resultados reais da execução (18/11/2026)
+
+| Verificação | Ambiente | Resultado |
+|---|---|---|
+| Migrations (4) aplicadas em ordem | PostgreSQL 16.15 local + shim Supabase | ✅ sem erros |
+| `001_split_01_schema.test.sql` (regressão Split 01) | idem | ✅ passou |
+| `002_p0_security_integrity.test.sql` (12 cenários) | idem | ✅ passou |
+| Total de afirmações SQL | idem | ✅ 80/80 |
+| Cada teste de erro recebeu o erro esperado (não por coincidência) | idem | ✅ conferido um a um |
+| Prova negativa: 002 sem a migration P0 | idem | ✅ falha no cenário 1, como esperado |
+| `npm run test:unit` | Node 22.23.5, sem `node_modules` | ✅ 14/14 |
+| `typecheck`, `lint`, `build` | — | ⏳ não executáveis aqui (sem acesso ao npm); executam no CI após o push |
+| Validação 1 (GPT): typecheck, lint, build, audit de produção | GPT | ✅ passou (commit `a720cd9`) |
+
+Ajustes feitos durante a execução: runner aceita URL com parâmetros (socket); saída do psql silenciada; `src/lib/http/errors.ts` usa `Response.json` padrão (remove dependência de `next/server` no teste unitário).
 
 ## 1. O que mudou
 

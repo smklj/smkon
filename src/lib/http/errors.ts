@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 /** Erro de validação com mensagem segura para exibir ao usuário. */
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -25,7 +23,8 @@ const DB_BUSINESS_ERRORS: Record<string, { status: number; message: string }> = 
 };
 
 export function jsonError(status: number, code: string, message: string) {
-  return NextResponse.json({ error: message, code }, { status });
+  // Response padrão da web: funciona em Route Handlers e em testes fora do runtime do Next.
+  return Response.json({ error: message, code }, { status });
 }
 
 /**
