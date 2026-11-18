@@ -1201,6 +1201,10 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      workspace_overview: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       smkon_commission_status:
