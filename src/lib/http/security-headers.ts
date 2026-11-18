@@ -15,7 +15,9 @@ export function contentSecurityPolicy({ supabaseUrl, isDev = false }: Options = 
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : []), "https://vercel.live"],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:"],
+    // Mídia do workspace vem do Storage por URL assinada.
+    "img-src": ["'self'", "data:", "blob:", supabase],
+    "media-src": ["'self'", "blob:", supabase],
     "font-src": ["'self'", "data:"],
     "connect-src": ["'self'", supabase, supabaseWs, "https://vercel.live", ...(isDev ? ["ws:"] : [])],
     "frame-src": ["https://vercel.live"],

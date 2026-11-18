@@ -1,4 +1,4 @@
-# S10a — Calendário editorial e fila de publicação em dry-run
+# S10 — Calendário, fila de publicação em dry-run, mídia e licenças
 
 **Branch:** `feature/s10` → PR para `feature/smkon-production-readiness`
 
@@ -21,6 +21,21 @@
 - Migration `20261118230000_publication_queue.sql` aplicada no **staging** (Previews e E2E).
 - 🔐 Produção: aplicar só com autorização, junto da publicação na main.
 
-## Pendências (S10b)
-- Mídia no Supabase Storage (bucket privado por workspace, URLs assinadas).
-- Registro de licenças e direitos ligado à mídia e ao conteúdo, substituindo o checkbox `rights_confirmed`.
+## S10b — Mídia no Storage e licenças
+
+| Área | Mudança |
+|---|---|
+| Storage | Bucket privado `content-media` (50 MB; MP4, MOV, JPG, PNG, WebP). Caminho `<workspace>/<uuid>.<ext>`. Upload só por owner/admin no diretório do próprio workspace; leitura só por membros; sem update/delete pela API |
+| Banco | `media_assets` (tipo, tamanho e autor lidos do Storage por `register_media_asset`, não do cliente; sem delete; arquivar com autoria) e `media_licenses` (append-only; comprovação https obrigatória exceto produção própria; período coerente; revogação única com motivo) |
+| Conteúdo | `content_items.media_asset_id`: entra no hash e no snapshot da versão. Trocar a mídia cria versão nova e exige nova aprovação. Mídia de outro workspace ou arquivada é recusada |
+| Fila | `media` e `license` passam a **bloquear**: o dry-run só passa com mídia anexada e licença para uso comercial válida na data agendada (horário de Brasília) |
+| App | `/midia` (Jurídico): envio direto do navegador ao Storage, biblioteca com link assinado de 10 min, registro e revogação de licenças, arquivar. Seletor "Mídia da peça" no Content Studio. CSP libera imagens e vídeos do Storage do projeto |
+| Testes | SQL `010_media_licenses`; unit `media.test.ts`; E2E `media.spec.mjs` e calendário com mídia licenciada |
+
+### Decisões
+- Upload direto ao Storage (sem passar pelo servidor do app): evita o limite de corpo das Server Actions e não expõe chave privilegiada. O banco confere o arquivo antes de registrar.
+- O checkbox `rights_confirmed` continua valendo para **vídeo de referência de terceiros** (URL). Licenças cobrem a **mídia publicada**.
+- Arquivos não são apagados: a trilha de direitos depende deles. Limpeza de arquivos órfãos fica para um job futuro.
+
+### Ambientes
+- Migrations `20261118230000_publication_queue` e `20261119000000_media_and_licenses` aplicadas no **staging** (funções conferidas por md5 contra o arquivo).

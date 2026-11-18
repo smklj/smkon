@@ -51,6 +51,31 @@ export async function snap(page, name) {
 /** Identificador único por execução, para não colidir com dados de execuções anteriores no staging. */
 export const runId = `${process.env.GITHUB_RUN_ID ?? "local"}-${Date.now().toString(36)}`;
 
+/**
+ * Envia um vídeo de teste ao Storage do staging (pela tela Mídia e licenças) e registra licença própria.
+ * Devolve o nome do arquivo, usado para selecioná-lo no Content Studio.
+ */
+export async function uploadLicensedMedia(page, label) {
+  const fileName = `${label}.mp4`;
+  await page.goto("/midia");
+  await page.getByLabel("Arquivo de mídia").setInputFiles({
+    name: fileName,
+    mimeType: "video/mp4",
+    buffer: Buffer.from(`SMKON e2e ${label}`),
+  });
+  await page.getByRole("button", { name: "Enviar arquivo" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Arquivo enviado" })).toBeVisible();
+  const row = page.getByRole("listitem").filter({ has: page.getByText(fileName, { exact: true }) });
+  await expect(row.getByText("Sem licença", { exact: true })).toBeVisible();
+  await row.getByText("Registrar licença").click();
+  const form = row.getByRole("form", { name: `Licença de ${fileName}` });
+  await form.getByLabel("Tipo de licença").selectOption("own_production");
+  await form.getByLabel("Quem concede").fill("Equipe SMKON E2E");
+  await form.getByRole("button", { name: "Salvar licença" }).click();
+  await expect(row.getByText("Licenciada", { exact: true })).toBeVisible();
+  return { fileName, row };
+}
+
 export const test = base.extend({
   // O callback do fixture não se chama "use" para não ser confundido com um React Hook pelo lint.
   context: async ({ context }, provide) => {
