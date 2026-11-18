@@ -43,6 +43,9 @@ function toRow(payload: ContentPayload) {
     throw new ValidationError("Confirme os direitos de uso do vídeo de referência.");
   }
 
+  const mediaAssetId = payload.mediaAssetId ? String(payload.mediaAssetId) : null;
+  if (mediaAssetId && !isUuid(mediaAssetId)) throw new ValidationError("Mídia inválida.");
+
   const status = payload.status ?? "draft";
   if (!WRITABLE_STATUSES.has(status)) {
     throw new ValidationError("Status inválido. Para aprovar, use o fluxo de aprovação.");
@@ -60,6 +63,8 @@ function toRow(payload: ContentPayload) {
     hashtags: String(payload.hashtags ?? "").slice(0, 2000),
     channels: [...new Set(channels)],
     rights_confirmed: payload.rightsConfirmed === true,
+    // O banco confere se a mídia é do mesmo workspace e não está arquivada (invalid_media).
+    media_asset_id: mediaAssetId,
     status,
   };
 }

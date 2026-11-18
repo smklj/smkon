@@ -370,6 +370,7 @@ export type Database = {
           cta: string
           hashtags: string
           id: string
+          media_asset_id: string | null
           organization_id: string
           product: string
           rights_confirmed: boolean
@@ -393,6 +394,7 @@ export type Database = {
           cta?: string
           hashtags?: string
           id?: string
+          media_asset_id?: string | null
           organization_id: string
           product?: string
           rights_confirmed?: boolean
@@ -416,6 +418,7 @@ export type Database = {
           cta?: string
           hashtags?: string
           id?: string
+          media_asset_id?: string | null
           organization_id?: string
           product?: string
           rights_confirmed?: boolean
@@ -619,6 +622,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      media_assets: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          created_at: string
+          id: string
+          kind: string
+          mime_type: string
+          organization_id: string
+          original_name: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          mime_type: string
+          organization_id: string
+          original_name: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          mime_type?: string
+          organization_id?: string
+          original_name?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
+      media_licenses: {
+        Row: {
+          allows_commercial_use: boolean
+          allows_modification: boolean
+          created_at: string
+          id: string
+          license_type: string
+          licensor: string
+          media_asset_id: string
+          notes: string | null
+          organization_id: string
+          proof_url: string | null
+          recorded_by: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          territory: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          allows_commercial_use: boolean
+          allows_modification: boolean
+          created_at?: string
+          id?: string
+          license_type: string
+          licensor: string
+          media_asset_id: string
+          notes?: string | null
+          organization_id: string
+          proof_url?: string | null
+          recorded_by?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          territory?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          allows_commercial_use?: boolean
+          allows_modification?: boolean
+          created_at?: string
+          id?: string
+          license_type?: string
+          licensor?: string
+          media_asset_id?: string
+          notes?: string | null
+          organization_id?: string
+          proof_url?: string | null
+          recorded_by?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          territory?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
       }
       organization_invitations: {
         Row: {
@@ -1147,6 +1252,10 @@ export type Database = {
         Args: { item: Database["public"]["Tables"]["content_items"]["Row"] }
         Returns: string
       }
+      archive_media_asset: {
+        Args: { p_media_id: string }
+        Returns: undefined
+      }
       cancel_publication: {
         Args: { p_job_id: string; p_reason: string }
         Returns: undefined
@@ -1196,6 +1305,14 @@ export type Database = {
       schedule_publication: {
         Args: { p_channel: string; p_content_id: string; p_scheduled_for: string }
         Returns: string
+      }
+      register_media_asset: {
+        Args: { p_original_name: string; p_storage_path: string }
+        Returns: string
+      }
+      revoke_media_license: {
+        Args: { p_license_id: string; p_reason: string }
+        Returns: undefined
       }
       revoke_invitation: {
         Args: { p_invitation_id: string }

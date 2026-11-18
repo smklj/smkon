@@ -16,10 +16,18 @@ select workspace_id as org_b from public.ensure_workspace() \gset
 reset role;
 insert into public.organization_members (organization_id, user_id, role) values (:'org_a', :'viewer_a', 'viewer');
 
+-- Mídia com licença própria (S10b): arquivo no Storage, registro e licença.
+select :'org_a' || '/' || gen_random_uuid() || '.mp4' as media_path \gset
+insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
+values ('content-media', :'media_path', :'owner_a', :'owner_a', '{"mimetype": "video/mp4", "size": 1000}');
+
 set local role authenticated;
 select tests.login(:'owner_a');
-insert into public.content_items (organization_id, created_by, title, caption, hashtags, channels)
-values (:'org_a', :'owner_a', 'Peça S10', 'Legenda curta', '#a #b', array['Instagram','YouTube'])
+select public.register_media_asset(:'media_path', 'peca.mp4') as media_id \gset
+insert into public.media_licenses (organization_id, media_asset_id, license_type, licensor, allows_commercial_use, allows_modification)
+values (:'org_a', :'media_id', 'own_production', 'Equipe SMKON', true, true);
+insert into public.content_items (organization_id, created_by, title, caption, hashtags, channels, media_asset_id)
+values (:'org_a', :'owner_a', 'Peça S10', 'Legenda curta', '#a #b', array['Instagram','YouTube'], :'media_id')
 returning id as item, content_hash as hash1 \gset
 
 -- 1. Só conteúdo aprovado entra na fila
@@ -70,9 +78,9 @@ select tests.ok(
   '3b todas as checagens bloqueantes ok'
 );
 select tests.ok(
-  (select c ->> 'severity' = 'warning' and (c ->> 'ok')::boolean = false from public.publication_jobs j, jsonb_array_elements(j.checks) c
-   where j.id = :'job_ig' and c ->> 'check' = 'media'),
-  '3c mídia ausente aparece como aviso'
+  (select count(*) = 2 from public.publication_jobs j, jsonb_array_elements(j.checks) c
+   where j.id = :'job_ig' and c ->> 'check' in ('media', 'license') and (c ->> 'ok')::boolean and c ->> 'severity' = 'error'),
+  '3c mídia anexada e licença válida (bloqueantes)'
 );
 
 -- 4. Conteúdo editado depois do agendamento: dry-run falha

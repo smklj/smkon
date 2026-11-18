@@ -57,7 +57,8 @@ Suítes:
 | `navigation.spec.mjs` | os 5 módulos carregam sem erro, visitante vai ao login com `next`, API sem sessão responde 401, headers de segurança |
 | `products.spec.mjs` | cadastro, validação de link, evidências, revisão (rejeição exige motivo), score 40 → 50, rejeitada não conta, arquivar; API ignora score do cliente |
 | `studio.spec.mjs` | rascunho, aprovação da versão exata, exclusão bloqueada após aprovação, arquivar |
-| `calendar.spec.mjs` | agendar versão aprovada, dry-run aprovado, edição reprova, cancelar exige motivo |
+| `calendar.spec.mjs` | upload e licença da mídia, agendar versão aprovada, dry-run aprovado, edição reprova, cancelar exige motivo |
+| `media.spec.mjs` | upload privado com link assinado, licença de terceiro exige comprovação, revogação com motivo, arquivar, formato recusado |
 | `admin-finance.spec.mjs` | convite criado, link exibido uma vez, revogar; Financeiro sem valores inventados |
 
 Os dados criados usam um sufixo por execução (`runId`) e ficam só no workspace QA do staging.
