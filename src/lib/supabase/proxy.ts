@@ -59,8 +59,9 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.json({ error: "Não autenticado.", code: "not_authenticated" }, { status: 401 });
     }
     const url = request.nextUrl.clone();
+    const next = `${pathname}${request.nextUrl.search}`;
     url.pathname = "/login";
-    url.search = "";
+    url.search = next !== "/" ? `?next=${encodeURIComponent(next)}` : "";
     return NextResponse.redirect(url);
   }
 
