@@ -44,7 +44,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S9** · catálogo, evidências verificáveis e score no banco implementados e testados (`docs/S9_HANDOFF.md`); falta coleta automática | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
+| **S9** · ✅ em produção (`docs/S9_HANDOFF.md`); falta coleta automática | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
 | **S10** | Assets (Storage), registro de licenças e direitos, calendário editorial e fila de publicação em dry-run |
 | **S11** | Primeiro conector financeiro real (Mercado Livre ou Amazon) com idempotência e conciliação 🔐 (contas e escopos) |
 | **S12** | Dashboard com dados reais substituindo constantes |
@@ -67,3 +67,10 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 - O ambiente do Claude não acessa o registro npm. Adicionar dependências (S4) exige que o validador gere o lockfile ou que o acesso de rede seja liberado.
 - A validação final do schema acontece no branch de banco Supabase (S3), após autorização.
+
+
+## QA e staging
+
+- Supabase de staging `xoyasrizivadxnpmzzno` para todos os Previews e Development; Production segue em `hpplboyysmfcjsnjrdmw`.
+- Testes de navegador (Playwright) rodam no Preview de cada commit (`docs/E2E_STAGING.md`).
+- Toda migration nova é aplicada também no staging, antes do Preview que depende dela.
