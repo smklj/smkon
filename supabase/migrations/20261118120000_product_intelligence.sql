@@ -18,7 +18,7 @@ create table if not exists public.products (
   score numeric(5,2) check (score is null or score between 0 and 100),
   score_reasons jsonb not null default '[]'::jsonb,
   evidence jsonb not null default '[]'::jsonb,
-  revenue_domain text not null default 'affiliate' check (revenue_domain in ('own_sales','affiliate','media')),
+  revenue_domain public.smkon_revenue_domain not null default 'affiliate',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -26,7 +26,7 @@ create table if not exists public.products (
 create index if not exists products_org_status_idx
   on public.products(organization_id, status, updated_at desc);
 
-create index if not exists products_source_external_idx
+create unique index if not exists products_source_external_uidx
   on public.products(organization_id, source, external_id)
   where external_id is not null;
 

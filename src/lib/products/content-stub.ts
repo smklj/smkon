@@ -14,7 +14,7 @@ export type GeneratedContent = {
 export function generateContentFromProduct(product: ProductPayload): GeneratedContent {
   const name = product.name.trim();
   const source = product.source;
-  const isAffiliate = product.revenueDomain !== "own_sales";
+  const isAffiliate = product.revenueDomain !== "owned_sales";
 
   const disclosure = isAffiliate
     ? "\n\n⚠️ Divulgação: este conteúdo contém link de afiliado. Posso receber comissão se você comprar."

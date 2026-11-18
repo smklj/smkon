@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,6 +13,16 @@ function readCredentials(formData: FormData) {
   }
 
   return { email, password };
+}
+
+/** URL pública do site: variável de ambiente ou a origem da própria requisição (nunca localhost em produção). */
+async function siteUrl(): Promise<string> {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  if (configured) return configured;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  return host ? `${proto}://${host}` : "http://localhost:3000";
 }
 
 export async function signIn(formData: FormData) {
@@ -29,7 +40,7 @@ export async function signUp(formData: FormData) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback` },
+    options: { emailRedirectTo: `${await siteUrl()}/auth/callback` },
   });
 
   if (error) redirect("/login?error=signup-failed");

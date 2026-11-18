@@ -1,97 +1,54 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  CHANNELS,
-  type ContentPayload,
-  type ContentStatusApi,
-} from "@/lib/content/types";
+import { CHANNELS, type ContentPayload, type WritableContentStatus } from "@/lib/content/types";
+import { ValidationError, jsonError, toErrorResponse } from "@/lib/http/errors";
+import { canEditContent, ensureWorkspace, findWorkspace } from "@/lib/tenancy/workspace";
+import { CONTENT_SELECT_COLUMNS, isUuid } from "@/lib/content/server";
 
 const allowedChannels = new Set<string>(CHANNELS);
-const SELECT_COLUMNS =
-  "id,title,product,source_url,asset_url,script,caption,cta,hashtags,channels,rights_confirmed,status,created_at,updated_at";
-
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
-
-function isUniqueViolation(error: { code?: string; message?: string } | null): boolean {
-  return error?.code === "23505" || /duplicate key|unique/i.test(error?.message ?? "");
-}
+const WRITABLE_STATUSES = new Set<WritableContentStatus>(["draft", "archived"]);
 
 function isHttpsUrl(value: string): boolean {
   if (!value) return true;
   try {
-    const url = new URL(value);
-    return url.protocol === "https:";
+    return new URL(value).protocol === "https:";
   } catch {
     return false;
   }
 }
 
-async function refetchMembership(supabase: SupabaseClient, userId: string) {
-  const { data, error } = await supabase
-    .from("organization_members")
-    .select("organization_id, role")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
-async function getWorkspace(supabase: SupabaseClient, userId: string) {
-  const membership = await refetchMembership(supabase, userId);
-  if (membership?.organization_id) return membership;
-
-  const slug = `smkon-${userId.replace(/-/g, "").slice(0, 12)}`;
-  const { data: organization, error: organizationError } = await supabase
-    .from("organizations")
-    .insert({ name: "SMKON Workspace", slug, created_by: userId })
-    .select("id")
-    .single();
-
-  if (organizationError) {
-    if (isUniqueViolation(organizationError)) {
-      const existing = await refetchMembership(supabase, userId);
-      if (existing?.organization_id) return existing;
-    }
-    throw organizationError;
+async function readJson(request: Request): Promise<ContentPayload> {
+  try {
+    const body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("not an object");
+    return body as ContentPayload;
+  } catch {
+    throw new ValidationError("Corpo da requisição inválido.");
   }
-
-  const { data: newMembership, error: createMembershipError } = await supabase
-    .from("organization_members")
-    .insert({ organization_id: organization.id, user_id: userId, role: "owner" })
-    .select("organization_id, role")
-    .single();
-
-  if (createMembershipError) {
-    if (isUniqueViolation(createMembershipError)) {
-      const existing = await refetchMembership(supabase, userId);
-      if (existing?.organization_id) return existing;
-    }
-    throw createMembershipError;
-  }
-  return newMembership;
 }
 
 function toRow(payload: ContentPayload) {
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
-  const channels = Array.isArray(payload.channels) ? payload.channels : [];
-  if (!title || title.length > 180) throw new Error("Informe um título de até 180 caracteres.");
+  const channels: string[] = Array.isArray(payload.channels) ? payload.channels : [];
+  if (!title || title.length > 180) throw new ValidationError("Informe um título de até 180 caracteres.");
   if (channels.length === 0 || channels.some((channel) => !allowedChannels.has(channel))) {
-    throw new Error("Selecione ao menos um canal válido.");
+    throw new ValidationError("Selecione ao menos um canal válido.");
   }
 
   const sourceUrl = typeof payload.sourceUrl === "string" ? payload.sourceUrl.trim() : "";
   const assetUrl = typeof payload.assetUrl === "string" ? payload.assetUrl.trim() : "";
-  if (!isHttpsUrl(sourceUrl)) throw new Error("O vídeo de referência deve usar HTTPS.");
-  if (!isHttpsUrl(assetUrl)) throw new Error("O link do produto deve usar HTTPS.");
+  if (!isHttpsUrl(sourceUrl)) throw new ValidationError("O vídeo de referência deve usar HTTPS.");
+  if (!isHttpsUrl(assetUrl)) throw new ValidationError("O link do produto deve usar HTTPS.");
   if (sourceUrl && payload.rightsConfirmed !== true) {
-    throw new Error("Confirme os direitos de uso do vídeo de referência.");
+    throw new ValidationError("Confirme os direitos de uso do vídeo de referência.");
   }
 
-  const status = (payload.status ?? "draft") as ContentStatusApi;
-  if (!["draft", "approved", "archived"].includes(status)) throw new Error("Status inválido.");
+  const status = payload.status ?? "draft";
+  if (!WRITABLE_STATUSES.has(status)) {
+    throw new ValidationError("Status inválido. Para aprovar, use o fluxo de aprovação.");
+  }
 
+  // version, content_hash e approved_* são calculados pelo banco.
   return {
     title,
     product: String(payload.product ?? "").slice(0, 180),
@@ -101,35 +58,32 @@ function toRow(payload: ContentPayload) {
     caption: String(payload.caption ?? "").slice(0, 10000),
     cta: String(payload.cta ?? "").slice(0, 1000),
     hashtags: String(payload.hashtags ?? "").slice(0, 2000),
-    channels,
+    channels: [...new Set(channels)],
     rights_confirmed: payload.rightsConfirmed === true,
     status,
-    updated_at: new Date().toISOString(),
   };
-}
-
-function isUuid(value: string | null | undefined): value is string {
-  return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value);
 }
 
 export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (authError || !user) return jsonError(401, "not_authenticated", "Não autenticado.");
 
-    const workspace = await getWorkspace(supabase, user.id);
+    // Leitura sem efeito colateral: sem workspace, não há conteúdo.
+    const workspace = await findWorkspace(supabase, user.id);
+    if (!workspace) return NextResponse.json({ items: [], role: null });
+
     const { data, error } = await supabase
       .from("content_items")
-      .select(SELECT_COLUMNS)
-      .eq("organization_id", workspace.organization_id)
+      .select(CONTENT_SELECT_COLUMNS)
+      .eq("organization_id", workspace.organizationId)
       .order("updated_at", { ascending: false });
 
     if (error) throw error;
-    return NextResponse.json({ items: data ?? [] });
+    return NextResponse.json({ items: data ?? [], role: workspace.role });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível carregar os conteúdos.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return toErrorResponse("api.content.get", error, "Não foi possível carregar os conteúdos.");
   }
 }
 
@@ -137,22 +91,22 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (authError || !user) return jsonError(401, "not_authenticated", "Não autenticado.");
 
-    const payload = (await request.json()) as ContentPayload;
-    const row = toRow(payload);
-    const workspace = await getWorkspace(supabase, user.id);
+    const row = toRow(await readJson(request));
+    const workspace = await ensureWorkspace(supabase);
+    if (!canEditContent(workspace.role)) return jsonError(403, "forbidden", "Seu papel não permite criar conteúdo.");
+
     const { data, error } = await supabase
       .from("content_items")
-      .insert({ ...row, organization_id: workspace.organization_id, created_by: user.id })
-      .select(SELECT_COLUMNS)
+      .insert({ ...row, organization_id: workspace.organizationId, created_by: user.id })
+      .select(CONTENT_SELECT_COLUMNS)
       .single();
 
     if (error) throw error;
     return NextResponse.json({ id: data.id, item: data }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível salvar o conteúdo.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return toErrorResponse("api.content.post", error, "Não foi possível salvar o conteúdo.");
   }
 }
 
@@ -160,28 +114,29 @@ export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (authError || !user) return jsonError(401, "not_authenticated", "Não autenticado.");
 
-    const payload = (await request.json()) as ContentPayload;
-    if (!isUuid(payload.id)) {
-      return NextResponse.json({ error: "Identificador inválido." }, { status: 400 });
-    }
+    const payload = await readJson(request);
+    if (!isUuid(payload.id)) return jsonError(400, "invalid_input", "Identificador inválido.");
     const row = toRow(payload);
-    const workspace = await getWorkspace(supabase, user.id);
+
+    const workspace = await findWorkspace(supabase, user.id);
+    if (!workspace) return jsonError(404, "content_not_found", "Conteúdo não encontrado.");
+    if (!canEditContent(workspace.role)) return jsonError(403, "forbidden", "Seu papel não permite editar conteúdo.");
+
     const { data, error } = await supabase
       .from("content_items")
       .update(row)
       .eq("id", payload.id)
-      .eq("organization_id", workspace.organization_id)
-      .select(SELECT_COLUMNS)
+      .eq("organization_id", workspace.organizationId)
+      .select(CONTENT_SELECT_COLUMNS)
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return NextResponse.json({ error: "Conteúdo não encontrado." }, { status: 404 });
+    if (!data) return jsonError(404, "content_not_found", "Conteúdo não encontrado.");
     return NextResponse.json({ id: data.id, item: data });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível atualizar o conteúdo.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return toErrorResponse("api.content.patch", error, "Não foi possível atualizar o conteúdo.");
   }
 }
 
@@ -189,27 +144,27 @@ export async function DELETE(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+    if (authError || !user) return jsonError(401, "not_authenticated", "Não autenticado.");
 
-    const { searchParams } = new URL(request.url);
-    const contentId = searchParams.get("id");
-    if (!isUuid(contentId)) {
-      return NextResponse.json({ error: "Identificador inválido." }, { status: 400 });
-    }
-    const workspace = await getWorkspace(supabase, user.id);
+    const contentId = new URL(request.url).searchParams.get("id");
+    if (!isUuid(contentId)) return jsonError(400, "invalid_input", "Identificador inválido.");
+
+    const workspace = await findWorkspace(supabase, user.id);
+    if (!workspace) return jsonError(404, "content_not_found", "Conteúdo não encontrado.");
+    if (!canEditContent(workspace.role)) return jsonError(403, "forbidden", "Seu papel não permite excluir conteúdo.");
+
     const { data, error } = await supabase
       .from("content_items")
       .delete()
       .eq("id", contentId)
-      .eq("organization_id", workspace.organization_id)
+      .eq("organization_id", workspace.organizationId)
       .select("id")
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return NextResponse.json({ error: "Conteúdo não encontrado." }, { status: 404 });
+    if (!data) return jsonError(404, "content_not_found", "Conteúdo não encontrado.");
     return NextResponse.json({ ok: true, id: data.id });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível excluir o conteúdo.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return toErrorResponse("api.content.delete", error, "Não foi possível excluir o conteúdo.");
   }
 }

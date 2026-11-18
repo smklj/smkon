@@ -28,15 +28,12 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - name: Install dependencies
-        run: npm install
-      - name: Apply compatible dependency security fixes
-        run: |
-          npm audit fix || echo "Some advisories have no compatible fix yet; continuing to the explicit audit report."
-      - name: Dependency audit report
-        run: |
-          npm audit --json > npm-audit.json || true
-          node -e 'const a=require("./npm-audit.json"); for (const [name,v] of Object.entries(a.vulnerabilities ?? {})) console.log(JSON.stringify({name,severity:v.severity,range:v.range,via:v.via,fixAvailable:v.fixAvailable})); console.log("TOTAL", JSON.stringify(a.metadata?.vulnerabilities ?? {})); if ((a.metadata?.vulnerabilities?.critical ?? 0) > 0) process.exit(1)'
+      - name: Install dependencies (lockfile exato)
+        run: npm ci
+      - name: Dependency audit report (todas as dependências)
+        run: npm audit --json > npm-audit.json || true; node -e 'const a=require("./npm-audit.json"); console.log("TOTAL", JSON.stringify(a.metadata?.vulnerabilities ?? {}))'
+      - name: Dependency audit gate (dependências de produção, high+)
+        run: npm audit --omit=dev --audit-level=high
       - name: Typecheck
         run: npm run typecheck
       - name: Lint

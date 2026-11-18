@@ -40,7 +40,7 @@ export function calculateProductScore(payload: ProductPayload): ScoreResult {
   if (payload.revenueDomain === "affiliate") {
     score += 5;
     reasons.push("Afiliado (menor risco inicial): +5");
-  } else if (payload.revenueDomain === "own_sales") {
+  } else if (payload.revenueDomain === "owned_sales") {
     score += 8;
     reasons.push("Venda própria: +8");
   }

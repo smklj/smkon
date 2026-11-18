@@ -3,6 +3,8 @@
 export type ContentChannel = "YouTube" | "Instagram" | "TikTok";
 
 export type ContentStatusApi = "draft" | "approved" | "archived";
+/** Status que o cliente pode gravar diretamente. "approved" só via /api/content/approve. */
+export type WritableContentStatus = "draft" | "archived";
 export type ContentStatusLabel = "Rascunho" | "Aprovado" | "Arquivado";
 
 /** Row shape returned by /api/content (snake_case from DB). */
@@ -19,6 +21,10 @@ export type ContentItemRow = {
   channels: string[];
   rights_confirmed: boolean;
   status: ContentStatusApi;
+  version: number;
+  content_hash: string;
+  approved_version: number | null;
+  approved_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -37,6 +43,10 @@ export type ContentItem = {
   channels: ContentChannel[];
   rightsConfirmed: boolean;
   status: ContentStatusLabel;
+  version: number;
+  contentHash: string;
+  approvedVersion: number | null;
+  approvedAt: string | null;
   updatedAt: string;
   createdAt?: string;
 };
@@ -54,7 +64,7 @@ export type ContentPayload = {
   hashtags?: string;
   channels?: string[];
   rightsConfirmed?: boolean;
-  status?: ContentStatusApi;
+  status?: WritableContentStatus;
 };
 
 export const CHANNELS: ContentChannel[] = ["YouTube", "Instagram", "TikTok"];
@@ -107,12 +117,16 @@ export function rowToItem(row: ContentItemRow): ContentItem {
     channels: channels.length > 0 ? channels : [...CHANNELS],
     rightsConfirmed: row.rights_confirmed === true,
     status: STATUS_TO_LABEL[row.status] ?? "Rascunho",
+    version: row.version ?? 1,
+    contentHash: row.content_hash ?? "",
+    approvedVersion: row.approved_version ?? null,
+    approvedAt: row.approved_at ?? null,
     updatedAt: row.updated_at ?? new Date().toISOString(),
     createdAt: row.created_at,
   };
 }
 
-export function itemToPayload(item: ContentItem, status?: ContentStatusApi): ContentPayload {
+export function itemToPayload(item: ContentItem, status: WritableContentStatus = "draft"): ContentPayload {
   return {
     id: item.id || undefined,
     title: item.title,
@@ -125,7 +139,7 @@ export function itemToPayload(item: ContentItem, status?: ContentStatusApi): Con
     hashtags: item.hashtags,
     channels: item.channels,
     rightsConfirmed: item.rightsConfirmed,
-    status: status ?? LABEL_TO_STATUS[item.status] ?? "draft",
+    status,
   };
 }
 
@@ -143,6 +157,10 @@ export function emptyItem(): ContentItem {
     channels: [...CHANNELS],
     rightsConfirmed: false,
     status: "Rascunho",
+    version: 0,
+    contentHash: "",
+    approvedVersion: null,
+    approvedAt: null,
     updatedAt: new Date().toISOString(),
   };
 }

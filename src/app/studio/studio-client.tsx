@@ -5,9 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CHANNELS,
   ContentItem,
-  ContentStatusApi,
+  ContentItemRow,
   ContentStatusLabel,
-  LABEL_TO_STATUS,
   LEGACY_STORAGE_KEY,
   LegacyDraft,
   emptyItem,
@@ -83,7 +82,8 @@ export default function StudioClient() {
           hashtags: item.hashtags ?? "",
           channels: item.channels ?? [...CHANNELS],
           rightsConfirmed: item.rightsConfirmed === true,
-          status: LABEL_TO_STATUS[item.status] ?? "draft",
+          // Rascunhos locais nunca entram como aprovados: aprovação exige revisão no workspace.
+          status: "draft",
         };
         const res = await fetch("/api/content", {
           method: "POST",
@@ -136,52 +136,84 @@ export default function StudioClient() {
     }));
   }
 
-  async function save(statusLabel: ContentStatusLabel = "Rascunho") {
+  function validateDraft(): boolean {
     if (!draft.title.trim()) {
       setError("Informe um título para salvar o conteúdo.");
-      return;
+      return false;
     }
     if (draft.channels.length === 0) {
       setError("Selecione ao menos um canal de destino.");
-      return;
+      return false;
     }
     if (draft.sourceUrl.trim() && !draft.rightsConfirmed) {
       setError("Confirme que você tem autorização para usar o vídeo de referência.");
-      return;
+      return false;
     }
+    return true;
+  }
 
+  /** Grava a versão atual. O banco calcula versão e hash e devolve o item persistido. */
+  async function persist(status: "draft" | "archived"): Promise<ContentItem> {
+    const isUpdate = Boolean(draft.id);
+    const res = await fetch("/api/content", {
+      method: isUpdate ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itemToPayload(draft, status)),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || "Não foi possível salvar.");
+    return rowToItem(body.item as ContentItemRow);
+  }
+
+  function applySaved(item: ContentItem) {
+    setActiveId(item.id);
+    setDraft(item);
+  }
+
+  async function save(status: "draft" | "archived" = "draft") {
+    if (!validateDraft()) return;
     setSaving(true);
     setError("");
     setNotice("");
-
-    const status: ContentStatusApi = LABEL_TO_STATUS[statusLabel];
-    const payload = itemToPayload({ ...draft, status: statusLabel }, status);
-    const isUpdate = Boolean(draft.id);
-
     try {
-      const res = await fetch("/api/content", {
-        method: isUpdate ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Não foi possível salvar.");
-
-      const id = isUpdate ? draft.id : body.id;
-      setNotice(
-        statusLabel === "Aprovado"
-          ? "Conteúdo marcado como aprovado. Nenhuma publicação foi enviada."
-          : statusLabel === "Arquivado"
-            ? "Conteúdo arquivado."
-            : "Rascunho salvo no workspace.",
-      );
+      const item = await persist(status);
+      applySaved(item);
+      setNotice(status === "archived" ? "Conteúdo arquivado." : `Rascunho salvo no workspace (versão ${item.version}).`);
       await loadItems();
-      if (id) {
-        setActiveId(id);
-        setDraft((current) => ({ ...current, id, status: statusLabel }));
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível salvar o conteúdo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Aprova exatamente o que está na tela: grava a versão atual e envia o hash
+   * devolvido pelo banco. Se o conteúdo mudar no meio do caminho, o banco recusa.
+   */
+  async function approve() {
+    if (!validateDraft()) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const saved = await persist("draft");
+      const res = await fetch("/api/content/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: saved.id, contentHash: saved.contentHash }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        applySaved(saved);
+        throw new Error(body.error || "Não foi possível aprovar.");
+      }
+      const approved = rowToItem(body.item as ContentItemRow);
+      applySaved(approved);
+      setNotice(`Versão ${approved.approvedVersion} aprovada. Nenhuma publicação foi enviada.`);
+      await loadItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível aprovar o conteúdo.");
     } finally {
       setSaving(false);
     }
@@ -203,6 +235,7 @@ export default function StudioClient() {
 
   async function removeDraft(id: string) {
     if (!id) return;
+    if (!window.confirm("Excluir esta peça? Conteúdos com aprovação registrada só podem ser arquivados.")) return;
     setSaving(true);
     setError("");
     try {
@@ -276,7 +309,7 @@ export default function StudioClient() {
             {!loading && visibleItems.length === 0 && <div className="studio-empty"><span>✳</span><strong>Nenhuma peça por aqui</strong><p>Crie seu primeiro conteúdo para começar a organizar a produção.</p></div>}
             {!loading && visibleItems.map((item) => (
               <button key={item.id} className={activeId === item.id ? "studio-draft active" : "studio-draft"} onClick={() => openItem(item)}>
-                <span className="draft-status">{item.status}</span>
+                <span className="draft-status">{item.status === "Aprovado" && item.approvedVersion ? `Aprovado · v${item.approvedVersion}` : `${item.status} · v${item.version}`}</span>
                 <strong>{item.title}</strong>
                 <small>{item.product || "Produto não informado"}</small>
                 <span className="draft-channels">{item.channels.join(" · ")}</span>
@@ -290,6 +323,11 @@ export default function StudioClient() {
             <div><p className="eyebrow">PRODUCTION DESK</p><h2>{activeId ? "Editar conteúdo" : "Nova peça de conteúdo"}</h2></div>
             <span className="studio-step">01 / 03 · BRIEFING</span>
           </div>
+          {activeId && draft.status === "Aprovado" && (
+            <p className="studio-feedback" role="status">
+              Versão {draft.approvedVersion} aprovada. Qualquer alteração cria uma nova versão e exige nova aprovação.
+            </p>
+          )}
           <div className="studio-form-grid">
             <label className="studio-field studio-wide"><span>TÍTULO INTERNO *</span><input value={draft.title} onChange={(e) => update("title", e.target.value)} placeholder="Ex.: Review honesta — produto X" disabled={saving} /></label>
             <label className="studio-field"><span>PRODUTO / OFERTA</span><input value={draft.product} onChange={(e) => update("product", e.target.value)} placeholder="Nome do produto" disabled={saving} /></label>
@@ -317,9 +355,9 @@ export default function StudioClient() {
             <label className="studio-field"><span>HASHTAGS</span><input value={draft.hashtags} onChange={(e) => update("hashtags", e.target.value)} placeholder="#smkon #review" disabled={saving} /></label>
           </div>
           <div className="studio-editor-actions">
-            <button className="studio-secondary" onClick={() => save("Rascunho")} disabled={saving}>{saving ? "Salvando…" : "Salvar rascunho"}</button>
-            <button className="studio-primary" onClick={() => save("Aprovado")} disabled={saving}>{saving ? "Salvando…" : "Marcar como aprovado ↗"}</button>
-            {activeId && <button className="studio-secondary" onClick={() => save("Arquivado")} disabled={saving}>Arquivar</button>}
+            <button className="studio-secondary" onClick={() => save("draft")} disabled={saving}>{saving ? "Salvando…" : "Salvar rascunho"}</button>
+            <button className="studio-primary" onClick={approve} disabled={saving}>{saving ? "Salvando…" : "Aprovar esta versão ↗"}</button>
+            {activeId && <button className="studio-secondary" onClick={() => save("archived")} disabled={saving}>Arquivar</button>}
           </div>
           {activeId && <button className="studio-delete" onClick={() => removeDraft(activeId)} disabled={saving}>Excluir esta peça</button>}
         </section>
