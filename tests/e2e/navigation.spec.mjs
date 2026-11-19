@@ -8,6 +8,7 @@ const MODULES = [
   { path: "/financeiro", heading: "Financeiro", name: "05-financeiro" },
   { path: "/calendario", heading: "Calendário editorial", name: "04-calendario" },
   { path: "/midia", heading: "Mídia e licenças", name: "06-midia" },
+  { path: "/audiencia", heading: "Audiência e CRM", name: "07-audiencia" },
   { path: "/admin", heading: "Administração", name: "08-admin" },
 ];
 
