@@ -12,12 +12,17 @@
  */
 import { log } from "../../observability/log.ts";
 import { runAgent, type ExecutorLogger } from "../executor/run.ts";
-import type { AgentModel, AgentStore, ExecutorLimits, RunResult, ToolRegistry } from "../executor/types.ts";
+import { DEFAULT_LIMITS, type AgentModel, type AgentStore, type ExecutorLimits, type RunResult, type ToolRegistry } from "../executor/types.ts";
 import { toRunContext, type WorkerQueue } from "./queue.ts";
 
 export const DEFAULT_LEASE_SECONDS = 600;
 export const DEFAULT_MAX_RUNS_PER_TICK = 3;
 export const DEFAULT_TICK_BUDGET_MS = 120_000;
+/**
+ * Teto do disparo inteiro, abaixo do maxDuration (300 s) da rota: cada execução recebe como prazo total o menor
+ * entre o seu maxRunMs e o que resta até este teto, e falha com worker_timeout em vez de ser cortada no meio.
+ */
+export const DEFAULT_TICK_HARD_LIMIT_MS = 270_000;
 
 export interface WorkerTickDeps {
   queue: WorkerQueue;
@@ -28,6 +33,7 @@ export interface WorkerTickDeps {
   leaseSeconds?: number;
   maxRuns?: number;
   budgetMs?: number;
+  hardLimitMs?: number;
   now?: () => number;
   logger?: ExecutorLogger;
   /** Injeção para testes; padrão runAgent. */
@@ -55,6 +61,7 @@ export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickRes
   const execute = deps.execute ?? runAgent;
   const maxRuns = deps.maxRuns ?? DEFAULT_MAX_RUNS_PER_TICK;
   const budgetMs = deps.budgetMs ?? DEFAULT_TICK_BUDGET_MS;
+  const hardLimitMs = deps.hardLimitMs ?? DEFAULT_TICK_HARD_LIMIT_MS;
   const startedAt = now();
 
   const reaped = await deps.queue.reap(deps.leaseSeconds ?? DEFAULT_LEASE_SECONDS);
@@ -86,12 +93,15 @@ export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickRes
     }
 
     logger("info", SCOPE, { event: "claimed", runId: claimed.runId, agent: mapped.ctx.agent });
+    const remainingMs = startedAt + hardLimitMs - now();
+    const maxRunMs = Math.max(1, Math.min(deps.limits?.maxRunMs ?? DEFAULT_LIMITS.maxRunMs, remainingMs));
     const result = await execute(mapped.ctx, {
       model: deps.model,
       store: deps.store,
       tools: deps.tools,
-      limits: deps.limits,
+      limits: { ...deps.limits, maxRunMs },
       logger,
+      now,
     });
     runs.push(result.status === "failed"
       ? { runId: claimed.runId, status: "failed", code: result.code }

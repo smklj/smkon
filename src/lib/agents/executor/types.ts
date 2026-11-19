@@ -40,6 +40,8 @@ export interface Observation {
   seq: number | null;
   tool: string;
   status: "ok" | "error" | "rejected";
+  /** Entrada enviada à ferramenta (já validada quanto ao tamanho). */
+  input?: JsonObject;
   output: JsonObject;
 }
 
@@ -92,9 +94,14 @@ export interface ExecutorLimits {
   stepTimeoutMs: number;
   /** Tamanho máximo (bytes UTF-8 do JSON) de entrada/saída de passo e do outcome; igual ao banco. */
   maxPayloadBytes: number;
+  /**
+   * Prazo total da execução (plan + execute + verify). Estourado, a execução falha com worker_timeout em vez de
+   * ser cortada pela plataforma no meio. Cada passo usa o menor entre stepTimeoutMs e o tempo restante.
+   */
+  maxRunMs: number;
 }
 
-export const DEFAULT_LIMITS: ExecutorLimits = { stepTimeoutMs: 20_000, maxPayloadBytes: 65_536 };
+export const DEFAULT_LIMITS: ExecutorLimits = { stepTimeoutMs: 20_000, maxPayloadBytes: 65_536, maxRunMs: 240_000 };
 
 /** Códigos gravados por agent_fail_run (formato ^[a-z][a-z0-9_]{2,63}$). */
 export const EXECUTOR_ERROR_CODES = [

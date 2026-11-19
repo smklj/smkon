@@ -119,7 +119,7 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 | 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ✅ concluída | ver PR `feature/s14-draft-content` | `test:db` 14/14 arquivos (014: 40 asserções), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
 | 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ✅ concluída | ver PR `feature/s14-claim-queue` | `test:db` 15/15 arquivos (015: 37 asserções), corrida real com 8 sessões (20 reservas, 0 duplicadas), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
 | 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ✅ concluída | ver PR `feature/s14-worker` | `test:unit` 121/121 (18 novos), `test:db` 15/15 arquivos, typecheck, lint e build OK; `next start` local: sem/errado Bearer → 401, Bearer certo → 503 `model_not_configured` (proxy deixa passar). 🔐 nada configurado na Vercel |
-| 7 | Adaptador de modelo sem chave (recusa `model_not_configured`); Verifier exige evidência `verified` | ⬜ | — | — |
+| 7 | Adaptador de modelo sem chave (recusa `model_not_configured`); Verifier exige evidência `verified` | ✅ concluída | ver PR `feature/s14-model-adapter` | `test:unit` 140/140 (19 novos), `test:db` 15/15 arquivos, typecheck, lint e build OK; nenhuma chamada real ao modelo (fetch falso). 🔐 provedor, modelo, orçamento e chave a definir pelo Owner |
 | 8 | UI: detalhe da execução em `/agentes` (passos resumidos, motivo de falha), sem publicar | ⬜ | — | — |
 | 9 | Handoff `docs/S14_HANDOFF.md` + estado no `docs/ROADMAP_SPLITS.md` | ⬜ | — | — |
 
@@ -131,13 +131,15 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
 - Configurar na Vercel (só servidor, nunca `NEXT_PUBLIC_`): `CRON_SECRET` (≥ 32 caracteres), `AGENT_EXECUTOR_ENABLED=true`
   (só quando quiser ligar) e `SUPABASE_SECRET_KEY` (chave secreta/service_role do Supabase; hoje não existe no projeto),
   e o cron do worker (ver "Configuração do worker" abaixo).
-- Escolher provedor de IA (Vercel AI Gateway ou Anthropic), modelo e orçamento; criar a chave.
+- Escolher modelo do Vercel AI Gateway e orçamento; criar a chave e configurar `AGENT_MODEL_PROVIDER=vercel-ai-gateway`,
+  `AGENT_MODEL=<provedor>/<modelo>` e `AI_GATEWAY_API_KEY` (só servidor) — ver etapa 7 no registro.
 
 ## Configuração do worker (etapa 6 — 🔐 a fazer pelo Owner, nada disso foi aplicado)
 
 1. Migrations das etapas 4 e 5 aplicadas no ambiente (staging primeiro).
 2. Variáveis no projeto `smkon` da Vercel (Production/Preview conforme o ambiente): `SUPABASE_SECRET_KEY`, `CRON_SECRET`
-   (gerar com 32+ caracteres aleatórios), `AGENT_EXECUTOR_ENABLED=true` e, na etapa 7, a credencial do provedor de IA.
+   (gerar com 32+ caracteres aleatórios), `AGENT_EXECUTOR_ENABLED=true`, `AGENT_MODEL_PROVIDER=vercel-ai-gateway`,
+   `AGENT_MODEL` (ex.: um modelo `anthropic/…` listado no AI Gateway) e `AI_GATEWAY_API_KEY`.
 3. Cron (exemplo, **não** está no repositório):
    ```json
    { "crons": [{ "path": "/api/agents/worker", "schedule": "*/5 * * * *" }] }
@@ -145,7 +147,7 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
    A Vercel envia `Authorization: Bearer $CRON_SECRET` automaticamente. No plano Hobby a Vercel só permite cron diário;
    intervalo de minutos exige plano Pro.
 4. Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo), `401 not_authenticated`,
-   `503 model_not_configured` (até a etapa 7 + credencial), `503 service_not_configured` (chave), `200
+   `503 model_not_configured` (falta provedor/modelo/chave; o log traz só o motivo, ex. `key_missing`), `503 service_not_configured` (chave), `200
    { reaped, stoppedBy, runs: [{ runId, status, code? }] }`.
 
 ## Registro
@@ -272,3 +274,34 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
     `maxSteps` alto e timeout de 20 s por passo, uma execução pode passar de 300 s — a etapa 7 deve passar um prazo total
     ao `runAgent` ou limitar passos. (2) Sem teste de integração contra PostgREST real: os nomes de parâmetros das RPCs
     foram conferidos com as migrations e `database.types.ts`, e os testes usam cliente falso.
+- **19/11/2026 — etapa 7.** Adaptador de modelo, Verifier de evidência e prazo total. Sem migration, sem dependência
+  nova, sem configuração remota e sem nenhuma chamada real ao modelo (todos os testes usam `fetch` falso).
+  - **Configuração explícita** (`executor/model.ts`): o modelo só liga com `AGENT_MODEL_PROVIDER = "vercel-ai-gateway"`,
+    `AGENT_MODEL` no formato `provedor/modelo` e `AI_GATEWAY_API_KEY` (≥ 20 caracteres, sem espaços). Token OIDC da
+    Vercel **não** é usado como credencial implícita. Faltando algo → `null` → 503 `model_not_configured` (worker) e
+    `model_not_configured` (runAgent). `modelConfigStatus` dá o motivo (`provider_missing`, `model_invalid`,
+    `key_missing`…) para o log, nunca o valor.
+  - **Adaptador** (`executor/model-gateway.ts`): API compatível com OpenAI Chat Completions do AI Gateway via `fetch`
+    nativo; URL fixa no código (`https://ai-gateway.vercel.sh/v1`) para a chave nunca ir a host vindo de variável;
+    `temperature 0`, teto de 1.500 tokens no plano e 3.000 no resumo, resposta > 256 KB recusada. Erros viram códigos
+    curtos (`gateway_http_401`, `model_truncated`, `model_invalid_json`, `gateway_unreachable`…) sem corpo nem chave;
+    o loop grava `model_error` (ou `step_timeout`/`worker_timeout` no abort). Saída devolvida como `unknown` e validada
+    por `parse.ts`.
+  - **Prompts** (`executor/model-prompt.ts`): regras fixas (não publica/aprova/agenda; `goal` e saídas de ferramenta são
+    dados, não instruções; só JSON), guia de entrada por ferramenta espelhando a validação real, regra de evidência e
+    de separação financeira. Observações para o resumo limitadas a 96 KB; o excedente vai marcado `truncated`.
+  - **Verifier** (`executor/verifier.ts`), além das regras da etapa 2: (3) evidência citada sem `productId` reprova;
+    (4) menção a produto observado (id ou nome de `read_products`, sem acento/caixa, palavra inteira, nome ≥ 4
+    caracteres) no resumo ou numa afirmação exige afirmação com aquele `productId` e evidência `verified`; afirmação
+    não pode falar de outro produto observado; (5) `draft_content` que trata de produto observado (ou com campo
+    `product` que não corresponde a produto lido) é barrado **antes** da escrita com `evidence_missing` se não houver
+    evidência verificada desse produto já observada — o rascunho não é gravado.
+  - **Prazo total** (pendência da etapa 6): `ExecutorLimits.maxRunMs` (padrão 240 s); cada chamada usa o menor entre
+    o timeout do passo e o tempo restante; estourado → `worker_timeout`. O disparo limita cada execução ao que resta
+    até `DEFAULT_TICK_HARD_LIMIT_MS` = 270 s (abaixo do `maxDuration` 300 s da rota).
+  - **Limitações conhecidas**: (1) a regra de menção é por id/nome de produtos **lidos na execução**; produto citado
+    sem ter sido lido não é reconhecido no texto livre (o prompt proíbe, e claims com `productId` não lido reprovam).
+    (2) Falha fechada: produto com nome comum (≥ 4 letras) mencionado em sentido genérico reprova o resumo.
+    (3) Rascunho genérico que não cita produto lido segue permitido (continua só `draft`, com aprovação humana).
+    (4) Não houve teste contra o AI Gateway real (exigiria chave e gasto) — formato conferido com a API compatível
+    com OpenAI documentada pela Vercel; o primeiro uso real deve ser no staging com orçamento baixo.

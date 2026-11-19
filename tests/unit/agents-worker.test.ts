@@ -307,7 +307,7 @@ test("tick sem modelo não toca na fila (execuções continuam queued)", async (
 test("tick: expira presas, reserva e executa de ponta a ponta (plan → execute → verify → finish)", async () => {
   const { queue, log } = memoryQueue([claimed()]);
   const memory = memoryStore();
-  const tools = { read_products: async () => ({ items: [{ id: "p1", name: "Produto" }], truncated: false }) };
+  const tools = { read_products: async () => ({ items: [{ id: "p1", name: "Garrafa Térmica" }], truncated: false }) };
   const result = await runWorkerTick({ queue, store: memory.store, model: fakeModel, tools, logger: quiet, leaseSeconds: 900 });
   assert.equal(result.status, "ok");
   assert.ok(result.status === "ok");
@@ -418,7 +418,7 @@ test("handler: barreiras na ordem certa, sem criar cliente service_role antes de
   assert.equal(noService.body.code, "service_not_configured");
 });
 
-test("handler: modelo padrão (etapa 6) não está configurado → 503 mesmo com tudo ligado", async () => {
+test("handler: sem AGENT_MODEL_PROVIDER/AGENT_MODEL/AI_GATEWAY_API_KEY o modelo padrão não liga → 503 mesmo com tudo ligado", async () => {
   assert.equal(resolveAgentModel({ ...ENABLED, AI_GATEWAY_API_KEY: "x" }), null);
   const response = await handleWorkerRequest(request(`Bearer ${SECRET}`), { env: ENABLED, logger: quiet, createClient: () => fakeClient().client });
   assert.equal(response.status, 503);
