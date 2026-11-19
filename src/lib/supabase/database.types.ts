@@ -19,6 +19,7 @@ export type Database = {
           agent: string
           cancel_reason: string | null
           cancelled_by: string | null
+          claimed_at: string | null
           created_at: string
           created_by: string
           error_code: string | null
@@ -36,6 +37,7 @@ export type Database = {
           agent: string
           cancel_reason?: string | null
           cancelled_by?: string | null
+          claimed_at?: string | null
           created_at?: string
           created_by: string
           error_code?: string | null
@@ -53,6 +55,7 @@ export type Database = {
           agent?: string
           cancel_reason?: string | null
           cancelled_by?: string | null
+          claimed_at?: string | null
           created_at?: string
           created_by?: string
           error_code?: string | null
@@ -1400,6 +1403,20 @@ export type Database = {
         Args: { p_reason: string; p_run_id: string }
         Returns: undefined
       }
+      agent_claim_next_run: {
+        Args: never
+        Returns: {
+          agent: string
+          claimed_at: string
+          created_by: string
+          goal: string
+          granted_tools: string[]
+          max_steps: number
+          organization_id: string
+          run_id: string
+          step_count: number
+        }[]
+      }
       agent_draft_content: {
         Args: { p_draft: Json; p_run_id: string }
         Returns: {
@@ -1408,6 +1425,10 @@ export type Database = {
           content_status: string
           content_version: number
         }[]
+      }
+      agent_reap_stale_runs: {
+        Args: { p_lease_seconds?: number }
+        Returns: number
       }
       agent_set_kill_switch: {
         Args: { p_on: boolean; p_organization_id: string; p_reason?: string }

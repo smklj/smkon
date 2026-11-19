@@ -117,7 +117,7 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 | 2 | Núcleo do executor (`src/lib/agents/executor/`): loop, limites, kill switch, timeout, payload; testes com modelo falso | ✅ concluída | ver PR `feature/s14-executor-core` | `test:unit` 87/87 (19 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
 | 3 | Ferramentas `read_*` reais, escopadas por organização, colunas mínimas, ≤ 50 itens / 64 KB; testes | ✅ concluída | ver PR `feature/s14-read-tools` | `test:unit` 103/103 (16 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
 | 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ✅ concluída | ver PR `feature/s14-draft-content` | `test:db` 14/14 arquivos (014: 40 asserções), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
-| 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ⬜ | — | — |
+| 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ✅ concluída | ver PR `feature/s14-claim-queue` | `test:db` 15/15 arquivos (015: 37 asserções), corrida real com 8 sessões (20 reservas, 0 duplicadas), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
 | 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ⬜ | — | — |
 | 7 | Adaptador de modelo sem chave (recusa `model_not_configured`); Verifier exige evidência `verified` | ⬜ | — | — |
 | 8 | UI: detalhe da execução em `/agentes` (passos resumidos, motivo de falha), sem publicar | ⬜ | — | — |
@@ -201,3 +201,30 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
   - **Para a etapa 6**: o handler TypeScript de `draft_content` (RPC `agent_draft_content` com o `runId` do contexto,
     nunca do modelo) entra junto com o worker, que é quem tem o cliente `service_role`; erros do banco mapeiam para
     `tool_error` sem vazar a mensagem.
+- **19/11/2026 — etapa 5.** Migration `20261119050000_agent_claim_queue.sql` (aditiva) e teste
+  `supabase/tests/015_agent_claim_queue.test.sql`. **Não aplicada** em staging nem produção (🔐 Owner).
+  - **Coluna** `agent_runs.claimed_at` (anulável) + `check (status <> 'queued' or claimed_at is null)` (vale para as
+    linhas existentes, todas com `claimed_at` nulo) e índice parcial `agent_runs_queued_idx (created_at, id)`.
+  - **`agent_claim_next_run()`** → zero ou uma linha `(run_id, organization_id, agent, goal, max_steps, step_count,
+    created_by, granted_tools text[], claimed_at)`, só `service_role`. Reserva a mais antiga da fila e move
+    `queued → planning` gravando `claimed_at`/`started_at`; não grava passo (o `plan` continua sendo do executor).
+    Contexto e ferramentas liberadas vêm das tabelas — é o `RunContext` do worker.
+  - **Sem corrida**: candidatas lidas sem trava; para cada uma, `pg_try_advisory_xact_lock` do workspace, depois
+    checagem de execução ativa no workspace e só então `FOR UPDATE SKIP LOCKED` da linha (com `status = 'queued'`
+    rechecado). Primeira versão travava todas as linhas varridas pelo cursor e um worker concorrente ficava sem
+    nada; corrigido antes do PR e confirmado com sessões reais.
+  - **Uma execução ativa por workspace**: se já há `planning/executing/verifying` no workspace, a próxima espera.
+  - **Na reserva**: workspace com kill switch → execução `killed` (`kill_switch`); autor que deixou de ser
+    owner/admin → `failed` (`run_owner_not_allowed`). Nada roda em nome de quem perdeu o acesso.
+  - **`agent_reap_stale_runs(p_lease_seconds = 600)`** (60–3600, senão `invalid_lease`) → quantas expirou. Ativa
+    sem atividade (maior entre último passo, `claimed_at`, `started_at`, `created_at`) além do lease vira `failed`
+    (`worker_timeout`); linhas travadas por worker em andamento são puladas (`SKIP LOCKED`).
+  - **Corrida real (Postgres 16 local, fora da suíte)**: sessão 1 reserva no workspace A e segura a transação 3 s;
+    sessão 2 concorrente reserva a do workspace B; terceira chamada não reserva nada (A ocupado, B reservado); a 2ª
+    execução de A segue `queued`. Em massa: 20 execuções em 20 workspaces, 8 sessões × 5 chamadas concorrentes →
+    20 reservas, 0 duplicadas.
+  - **Tipos**: `database.types.ts` ganhou `claimed_at` e as duas funções.
+  - **Para a etapa 6**: o worker chama `agent_reap_stale_runs` e depois `agent_claim_next_run` a cada disparo;
+    lease (600 s) precisa ficar acima da duração máxima da função na Vercel.
+  - **Limitação conhecida**: `agent_record_step` (S13) ainda aceita `plan` direto de `queued` sem reserva; o worker
+    só usa execuções reservadas. Exigir reserva no banco mudaria função do S13 — fica como proposta, não feito aqui.
