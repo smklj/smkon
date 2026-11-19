@@ -7,12 +7,12 @@ Branches `feature/s16-*` · migrations `20261119120000`–`20261119129999` · te
 
 | # | Etapa | Estado | PR |
 |---|---|---|---|
-| 1 | Diagnóstico das consultas reais com EXPLAIN ANALYZE em volume | ✅ feito (abaixo) | #(este PR) |
-| 2 | Paginação por cursor em `src/lib/pagination` + produtos, conteúdos e mídia | ✅ feito | #(este PR) |
+| 1 | Diagnóstico das consultas reais com EXPLAIN ANALYZE em volume | ✅ feito (abaixo) | #49 |
+| 2 | Paginação por cursor em `src/lib/pagination` + produtos, conteúdos e mídia | ✅ feito | #49 |
 | 2b | Paginação em `/agentes` (depois de `docs/S14_HANDOFF.md` na integração) e audiência (depois de `docs/S15_HANDOFF.md`) | ⏳ aguardando S14/S15 | — |
-| 3 | Migration de índices medidos + teste SQL + EXPLAIN de verificação | ✅ feito (`20261119120000`, `040_*`) · staging: pendente do CI | #(este PR) |
+| 3 | Migration de índices medidos + teste SQL + EXPLAIN de verificação | ✅ feito (`20261119120000`, `040_*`, CI verde) · staging: **aguarda confirmação do Owner** (ver abaixo) | #49 |
 | 4 | Cache seguro (sem vazamento entre usuários/workspaces) | ⏳ próxima execução | — |
-| 5 | Teste de carga em `scripts/` (node, alvo configurável, p50/p95) | ⏳ próxima execução | — |
+| 5 | Teste de carga em `scripts/` (node, alvo configurável, p50/p95) | ✅ script + resultados locais (escopo abaixo) | #49 |
 | 6 | `docs/S16_HANDOFF.md` + linha do S16 no ROADMAP | ⏳ | — |
 
 ## 1. Diagnóstico (19/11/2026)
@@ -119,16 +119,52 @@ Medido: com `numeric`, a página funda (K2) descartava **19 991 linhas** no filt
   definição dos índices, remoção dos substituídos, coluna gerada (valores, ordem equivalente, escrita recusada),
   EXPLAIN de verificação sob RLS e isolamento entre workspaces.
 
+## 5. Teste de carga (`scripts/load-test.mjs`)
+
+Node puro, sem dependências: concorrência fixa, aquecimento fora do relatório, mede até o fim do corpo, relata
+req/s e p50/p95/p99/máx por rota, sai com código 1 se houver 5xx/falha de rede. Alvo configurável
+(`--target`/`LOAD_TARGET`); alvo remoto só com `LOAD_ALLOW_REMOTE=1` (preview/staging, nunca produção);
+`LOAD_COOKIE` (só ambiente, nunca impresso) para rotas autenticadas. Testes: `tests/unit/load-test.test.ts` (3).
+
+Execução real em 19/11/2026: `next build` + `next start` local (2 vCPU), Supabase apontando para endereço local
+inexistente. **Escopo honesto:** sem sessão, as rotas protegidas param no Proxy (307 para `/login`) ou na
+autenticação da API (401); o resultado mede o custo do servidor Next e do Proxy, **não do banco**. O custo do
+banco está medido à parte com EXPLAIN ANALYZE (seções 1–3).
+
+```
+node scripts/load-test.mjs --target http://localhost:3100 --paths /login,/produtos,/api/products,/api/content \
+  --concurrency 20 --requests 2000 --warmup 50
+```
+
+| rota | concorrência | req | erros | status | req/s | p50 ms | p95 ms | p99 ms | máx ms |
+|---|---|---|---|---|---|---|---|---|---|
+| /login (SSR) | 1 | 300 | 0 | 200 | 182,8 | 4,6 | 9,6 | 15,6 | 40,1 |
+| /produtos (Proxy → 307) | 1 | 300 | 0 | 307 | 701,1 | 1,2 | 3,2 | 5,4 | 8,5 |
+| /api/products (401) | 1 | 300 | 0 | 401 | 478,8 | 1,6 | 4,9 | 7,6 | 14,0 |
+| /api/content (401) | 1 | 300 | 0 | 401 | 539,9 | 1,5 | 3,8 | 8,8 | 13,9 |
+| /login (SSR) | 20 | 2000 | 0 | 200 | 210,9 | 87,1 | 152,0 | 164,4 | 227,1 |
+| /produtos (Proxy → 307) | 20 | 2000 | 0 | 307 | 965,5 | 18,6 | 38,9 | 54,3 | 162,8 |
+| /api/products (401) | 20 | 2000 | 0 | 401 | 716,3 | 26,9 | 40,7 | 64,4 | 82,5 |
+| /api/content (401) | 20 | 2000 | 0 | 401 | 746,1 | 25,5 | 42,1 | 52,3 | 77,4 |
+
+Leitura: com 2 vCPU o servidor satura perto de 200 req/s no SSR de `/login` e 700–950 req/s nas respostas do
+Proxy/API; a latência sob concorrência 20 é fila de CPU (p50 de 1–5 ms isolado). Carga autenticada com banco real
+fica para um preview com `LOAD_COOKIE` de um usuário de teste do staging, decisão do Owner (é uma credencial).
+
 ## Validação local desta etapa (19/11/2026)
 
-- `npm ci` ok · `npm run typecheck` ok · `npm run lint` ok · `npm run test:unit` **167/167** · `npm run build` ok.
+- `npm ci` ok · `npm run typecheck` ok · `npm run lint` ok · `npm run test:unit` **170/170** (167 na 1ª versão + 3 do teste de carga) · `npm run build` ok.
 - `npm run test:db` (Postgres 16 local, cluster descartável): **18 arquivos** passaram, incluindo `040_*` (13 asserções).
-- Staging: migration ainda **não aplicada** (aguarda CI verde deste PR; autorizado pelo Owner em 19/11/2026).
+- CI do PR #49: "Typecheck, lint and build" ✅ e "Database migrations and SQL tests" ✅.
+- Staging: `apply_migration` em `xoyasrizivadxnpmzzno` **não concluiu** — a ferramenta pediu confirmação
+  interativa (a migration tem `drop index` de dois índices substituídos) e ninguém respondeu em 180 s. Conferido
+  depois: `score_rank` não existe no staging, nada foi aplicado. Fica pendente de o Owner confirmar a aplicação.
+  Até lá, `/produtos` usa o caminho de compatibilidade (200 linhas, sem próxima página).
 
 ## Pendências desta frente
 
-- Aplicar `20261119120000` no staging depois do CI e conferir advisors; só então incluir no E2E um teste de
-  paginação da API de produtos.
+- Aplicar `20261119120000` no staging (confirmação do Owner na ferramenta) e conferir advisors; só então incluir
+  no E2E um teste de paginação da API de produtos.
 - Migração de rascunhos do `localStorage` no Studio deduplica contra a 1ª página (50 mais recentes); rascunhos
   locais são sempre os mais novos, então o risco de duplicar é baixo, mas fica registrado.
 - Seletor de mídia do Studio usa só a 1ª página (200); busca por nome fica para quando houver demanda.
