@@ -14,7 +14,7 @@ import { log } from "../../observability/log.ts";
 import { isActive, isAgentTool, type RunStatus } from "../types.ts";
 import { fitsPayload, StepTimeoutError, withTimeout } from "./limits.ts";
 import { parsePlan, parseSummary } from "./parse.ts";
-import { verifyRun } from "./verifier.ts";
+import { checkDraftEvidence, verifyRun } from "./verifier.ts";
 import {
   DEFAULT_LIMITS,
   type AgentModel,
@@ -39,6 +39,8 @@ export interface ExecutorDeps {
   verify?: Verifier;
   limits?: Partial<ExecutorLimits>;
   logger?: ExecutorLogger;
+  /** Relógio injetável (testes do prazo total). */
+  now?: () => number;
 }
 
 const SCOPE = "agents.executor";
@@ -63,7 +65,14 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
   const verify = deps.verify ?? verifyRun;
   const limits: ExecutorLimits = { ...DEFAULT_LIMITS, ...deps.limits };
   const logger = deps.logger ?? log;
+  const now = deps.now ?? Date.now;
+  const deadline = now() + Math.max(limits.maxRunMs, 0);
   let steps = 0;
+
+  /** Tempo do próximo passo: o menor entre o timeout por passo e o que resta do prazo total. */
+  function stepBudget(): number {
+    return Math.max(1, Math.min(limits.stepTimeoutMs, deadline - now()));
+  }
 
   async function stopped(): Promise<Halt> {
     let runStatus: RunStatus | "unknown" = "unknown";
@@ -77,6 +86,10 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
   }
 
   async function ensureActive(): Promise<void> {
+    if (now() >= deadline) {
+      logger("warn", SCOPE, { event: "run_deadline", runId: ctx.runId, steps });
+      await failRun("worker_timeout");
+    }
     const status = await store.currentStatus(ctx.runId);
     if (!isActive(status)) {
       logger("info", SCOPE, { event: "stopped", runId: ctx.runId, runStatus: status, steps });
@@ -120,7 +133,7 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
   }
 
   const timeoutCode = (error: unknown, fallback: ExecutorErrorCode): ExecutorErrorCode =>
-    error instanceof StepTimeoutError ? "step_timeout" : fallback;
+    error instanceof StepTimeoutError ? (now() >= deadline ? "worker_timeout" : "step_timeout") : fallback;
 
   try {
     if (!model) return await failRun("model_not_configured");
@@ -133,7 +146,7 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
 
     let rawPlan: unknown;
     try {
-      rawPlan = await withTimeout(limits.stepTimeoutMs, (signal) =>
+      rawPlan = await withTimeout(stepBudget(), (signal) =>
         model.plan({ goal: ctx.goal, agent: ctx.agent, tools: ctx.grantedTools, maxCalls }, signal),
       );
     } catch (error) {
@@ -161,16 +174,26 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
       if (!granted) {
         // Não executa. O banco registra o passo como "rejected" (tool_not_allowed) e conta no limite.
         const seq = await record({ phase: "execute", tool: call.tool, input: call.input, output: {}, status: "ok" });
-        observations.push({ seq, tool: call.tool, status: "rejected", output: {} });
+        observations.push({ seq, tool: call.tool, status: "rejected", input: call.input, output: {} });
         continue;
       }
 
       const handler = tools[call.tool as keyof ToolRegistry];
       if (!handler) return await failStep({ phase: "execute", tool: call.tool, input: call.input }, "tool_error");
 
+      if (call.tool === "draft_content") {
+        // Rascunho sobre produto só depois de evidência verificada observada (o rascunho é gravado já aqui,
+        // antes do Verifier final, então a regra precisa valer antes da escrita).
+        const gate = checkDraftEvidence(observations, call.input);
+        if (!gate.ok) {
+          logger("warn", SCOPE, { event: "draft_blocked", runId: ctx.runId, reasons: gate.reasons });
+          return await failStep({ phase: "execute", tool: call.tool, input: call.input }, gate.code ?? "evidence_missing");
+        }
+      }
+
       let output: JsonObject;
       try {
-        output = await withTimeout(limits.stepTimeoutMs, (signal) => handler(ctx, call.input, signal));
+        output = await withTimeout(stepBudget(), (signal) => handler(ctx, call.input, signal));
       } catch (error) {
         if (error instanceof Halt) throw error;
         logger("warn", SCOPE, { event: "tool_error", runId: ctx.runId, tool: call.tool, message: String((error as Error)?.message ?? error) });
@@ -183,7 +206,7 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
         return await failStep({ phase: "execute", tool: call.tool, input: call.input }, "payload_too_large");
       }
       const seq = await record({ phase: "execute", tool: call.tool, input: call.input, output, status: "ok" });
-      observations.push({ seq, tool: call.tool, status: "ok", output });
+      observations.push({ seq, tool: call.tool, status: "ok", input: call.input, output });
     }
 
     // ---------------- Verifier ----------------
@@ -191,7 +214,7 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
     const verifyInput: JsonObject = { observed: observations.map(({ seq, tool, status }) => ({ seq, tool, status })) };
     let rawSummary: unknown;
     try {
-      rawSummary = await withTimeout(limits.stepTimeoutMs, (signal) =>
+      rawSummary = await withTimeout(stepBudget(), (signal) =>
         model.summarize({ goal: ctx.goal, agent: ctx.agent, observations }, signal),
       );
     } catch (error) {

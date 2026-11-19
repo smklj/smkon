@@ -11,7 +11,7 @@
  */
 import { log } from "../../observability/log.ts";
 import { jsonError } from "../../http/errors.ts";
-import { resolveAgentModel } from "../executor/model.ts";
+import { modelConfigStatus, resolveAgentModel } from "../executor/model.ts";
 import type { AgentRpcClient } from "../executor/rpc.ts";
 import { rpcAgentStore } from "../executor/store.ts";
 import { postgrestToolDb, type PostgrestLike } from "../executor/tools/db.ts";
@@ -63,7 +63,9 @@ export async function handleWorkerRequest(request: Request, deps: WorkerHandlerD
   }
   const model = (deps.resolveModel ?? resolveAgentModel)(deps.env);
   if (!model) {
-    logger("warn", SCOPE, { event: "model_not_configured" });
+    const status = modelConfigStatus(deps.env);
+    // Só o motivo (provider_missing, key_missing…), nunca valores das variáveis.
+    logger("warn", SCOPE, { event: "model_not_configured", reason: status.ok ? "resolver_returned_null" : status.reason });
     return withNoStore(jsonError(503, "model_not_configured", "Nenhum modelo de IA configurado."));
   }
   const client = deps.createClient();
