@@ -5,6 +5,7 @@
 -- representar um cliente grande, e os demais criam a distribuição multi-tenant.
 --   products ~50 mil · content_items ~50 mil · media_assets ~30 mil · media_licenses ~45 mil
 --   agent_runs 30 mil · agent_steps 150 mil
+--   contacts 50 mil · consent_events 100 mil · data_subject_requests ~400
 --
 -- Os gatilhos (auditoria, guards, snapshots) ficam desligados durante a carga
 -- (session_replication_role = replica): medem-se leituras, não as regras de escrita,
@@ -111,6 +112,47 @@ select r.organization_id, r.id, s,
 from public.agent_runs r
 cross join generate_series(1, 5) s;
 
+-- Audiência (/audiencia, S15): 50 mil contatos, ~2 eventos de consentimento por contato e
+-- ~1% com pedido do titular. 5% anonimizados (sem dado pessoal, como a anonimização deixa).
+-- created_at com granularidade de minuto: há empates, como nas demais listas.
+insert into public.contacts (organization_id, display_name, email, phone, source, purpose, legal_basis,
+                             created_by, created_at, updated_at, last_activity_at, anonymized_at, anonymized_by)
+select ('10000000-0000-4000-8000-' || lpad(p.org_n::text, 12, '0'))::uuid,
+       case when anon then null else 'Contato ' || p.n end,
+       case when anon then null else 'contato' || p.n || '@example.test' end,
+       case when anon or p.n % 3 <> 0 then null else '+55119' || lpad(p.n::text, 8, '0') end,
+       (array['manual','form','event','purchase','social','import'])[1 + (p.n % 6)],
+       'newsletter', 'consent',
+       ('00000000-0000-4000-8000-' || lpad(p.org_n::text, 12, '0'))::uuid,
+       t.at, t.at, t.at,
+       case when anon then t.at + interval '1 day' end,
+       case when anon then ('00000000-0000-4000-8000-' || lpad(p.org_n::text, 12, '0'))::uuid end
+from bench_org_pick p
+cross join lateral (
+  select date_trunc('minute', now()) - ((hashtext('ct' || p.n)::bigint & 2147483647) % 525600) * interval '1 minute' as at,
+         p.n % 20 = 0 as anon
+) t;
+
+insert into public.consent_events (organization_id, contact_id, action, purpose, channel, evidence_type,
+                                   evidence_ref, occurred_at, recorded_by, created_at)
+select c.organization_id, c.id,
+       case when s = 2 and (hashtext(c.id::text) & 3) = 0 then 'opt_out' else 'opt_in' end,
+       'newsletter', (array['email','whatsapp'])[s], 'form_checkbox', 'formulário bench',
+       c.created_at + s * interval '1 minute', c.created_by, c.created_at + s * interval '1 minute'
+from public.contacts c
+cross join generate_series(1, 2) s;
+
+insert into public.data_subject_requests (organization_id, contact_id, kind, received_via, received_at, due_at,
+                                          status, resolved_at, resolved_by, created_by, created_at)
+select c.organization_id, c.id, 'access', 'email', c.created_at, c.created_at + interval '15 days',
+       case when r.open then 'open' else 'completed' end,
+       case when r.open then null else c.created_at + interval '2 days' end,
+       case when r.open then null else c.created_by end,
+       c.created_by, c.created_at
+from public.contacts c
+cross join lateral (select (hashtext(c.id::text) & 1) = 0 as open) r
+where (hashtext('dsr' || c.id::text) & 127) = 0;
+
 set session_replication_role = origin;
 analyze;
 
@@ -119,4 +161,7 @@ union all select 'content_items', count(*) from public.content_items
 union all select 'media_assets', count(*) from public.media_assets
 union all select 'media_licenses', count(*) from public.media_licenses
 union all select 'agent_runs', count(*) from public.agent_runs
-union all select 'agent_steps', count(*) from public.agent_steps;
+union all select 'agent_steps', count(*) from public.agent_steps
+union all select 'contacts', count(*) from public.contacts
+union all select 'consent_events', count(*) from public.consent_events
+union all select 'data_subject_requests', count(*) from public.data_subject_requests;

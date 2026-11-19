@@ -10,11 +10,11 @@ Branches `feature/s16-*` · migrations `20261119120000`–`20261119129999` · te
 | 1 | Diagnóstico das consultas reais com EXPLAIN ANALYZE em volume | ✅ feito (abaixo) | #49 (mergeado) |
 | 2 | Paginação por cursor em `src/lib/pagination` + produtos, conteúdos e mídia | ✅ feito | #49 (mergeado) |
 | 2b | Paginação em `/agentes` (depois de `docs/S14_HANDOFF.md` na integração) | ✅ feito (sem índice novo: o existente basta, medido) | #51 |
-| 2c | Paginação da audiência (depois de `docs/S15_HANDOFF.md` na integração) | ⏳ aguardando S15 (PR #47 aberto, sem handoff) | — |
-| 3 | Migration de índices medidos + teste SQL + EXPLAIN de verificação | ✅ feito (`20261119120000`, `040_*`, CI verde) · staging: **aguarda confirmação do Owner** (2ª tentativa em 19/11 18:5x também sem resposta) | #49 (mergeado) |
+| 2c | Paginação da audiência (depois de `docs/S15_HANDOFF.md` na integração) | ✅ feito (sem índice novo: o existente basta, medido) | #53 |
+| 3 | Migration de índices medidos + teste SQL + EXPLAIN de verificação | ✅ feito (`20261119120000`, `040_*`, CI verde) · staging: **aguarda confirmação do Owner** (3 tentativas em 19/11; a ferramenta pede confirmação interativa por causa dos `drop index` e expira em 180 s) | #49 (mergeado) |
 | 4 | Cache seguro (sem vazamento entre usuários/workspaces) | ✅ decisão medida + `private, no-store` nas APIs de listas | #51 |
 | 5 | Teste de carga em `scripts/` (node, alvo configurável, p50/p95) | ✅ script + resultados locais; carga autenticada com Supabase falso (#51) | #49 (mergeado), #51 |
-| 6 | `docs/S16_HANDOFF.md` + linha do S16 no ROADMAP | ⏳ | — |
+| 6 | `docs/S16_HANDOFF.md` + linha do S16 no ROADMAP | ✅ feito | #53 |
 
 ## 1. Diagnóstico (19/11/2026)
 
@@ -239,6 +239,44 @@ Todas 200, sem erro. Chamadas ao Supabase por requisição (contadas): 2 `auth/v
 handler); `/api/content` na 1ª página faz 3 `HEAD` de contagem por status — candidato a uma RPC única se a
 latência real do PostgREST pesar (não medido no staging; fica registrado, sem mudança especulativa).
 
+## 2c. Paginação da audiência (19/11/2026, execução 3)
+
+- `src/lib/audience/contacts-page.ts`: `CONTACTS_KEYSET` (`created_at desc, id desc`), 50 por página (antes: 100
+  fixos, sem acesso aos demais) e `contactsListQuery` (filtros + keyset, testável sem rede).
+  `listContacts(…, { cursor })` → `{ items, nextCursor }`.
+- `/audiencia?cursor=`: `Pager` preservando busca e "incluir anonimizados"; abrir um contato mantém a página;
+  buscar volta à 1ª página. Cursor inválido mostra os mais recentes com aviso.
+- Busca + cursor: dois parâmetros `or` independentes; o PostgREST combina filtros de primeiro nível com AND.
+  O teste unitário monta a consulta com o query builder real do `postgrest-js` e confere a URL; conferido também
+  no servidor local com o Supabase falso (`STUB_LOG_QUERIES=1` imprime as consultas recebidas).
+- Testes: `tests/unit/audience-contacts-page.test.ts` (5): ordenação/limite, busca + cursor na URL, termo com
+  sintaxe do PostgREST saneado, cursor de outra lista recusado, 137 contatos com empates em páginas de 50.
+- Medição (`scripts/perf/explain-audience.sql`; seed com 50 mil contatos, 100 mil eventos de consentimento,
+  383 pedidos; 30 mil contatos no workspace alvo, 5% anonimizados; sob RLS; mediana de 3):
+
+  | Id | Consulta | Tempo | Plano |
+  |---|---|---|---|
+  | C0 | consulta anterior (100, sem desempate) | 0,21 ms | Index Scan `contacts_org_created_idx` |
+  | C1 | 1ª página com cursor (51) | 0,16 ms | mesmo índice + Incremental Sort só nos empates |
+  | C2 | página funda (linha 15 000) | 0,14 ms | `created_at <= cursor` como Index Cond |
+  | C3 | busca comum, 1ª página | 0,46 ms | mesmo índice, filtro descarta ~200 linhas |
+  | C4 | busca rara (1 resultado) — pior caso | **38,2 ms** | percorre as 30 mil linhas do workspace no filtro `ilike` |
+  | C5 | estado de consentimento dos 50 da página | 0,92 ms | `consent_events_contact_idx` (`contact_id = any`) |
+  | C6 | pedidos do titular em aberto | 0,11 ms | `dsr_org_status_idx` |
+
+  **Sem índice novo.** A lista e o consentimento já usam índices do S15. A busca por trecho (`ilike '%termo%'`)
+  não usa B-tree; o pior caso medido é 38 ms com 30 mil contatos. Um índice trigram (`pg_trgm`, GIN) resolveria,
+  mas exige extensão e custa escrita: fica registrado como próximo passo se algum workspace passar de ~100 mil
+  contatos ou a busca virar uso frequente (regra da frente: sem índice especulativo).
+
+## Validação local da execução 3 (19/11/2026)
+
+- typecheck, lint ok · `test:unit` **216/216** · `test:db` **19 arquivos** · `build` ok (sobre a integração com o S15).
+- Servidor local + Supabase falso: `/audiencia` 200; `?q=maria&cursor=…` com "Voltar ao início" e os dois
+  filtros `or` na consulta; `?cursor=lixo!` com o aviso e a 1ª página.
+- Staging: 3ª tentativa de `apply_migration` de `20261119120000` expirou de novo esperando a confirmação
+  interativa; conferido por leitura: `score_rank` ausente, índices antigos intactos, nada aplicado.
+
 ## Pendências desta frente
 
 - Aplicar `20261119120000` no staging (confirmação do Owner na ferramenta) e conferir advisors; só então incluir
@@ -246,5 +284,4 @@ latência real do PostgREST pesar (não medido no staging; fica registrado, sem 
 - Migração de rascunhos do `localStorage` no Studio deduplica contra a 1ª página (50 mais recentes); rascunhos
   locais são sempre os mais novos, então o risco de duplicar é baixo, mas fica registrado.
 - Seletor de mídia do Studio usa só a 1ª página (200); busca por nome fica para quando houver demanda.
-- Audiência (`/audiencia`, S15): aguardando `docs/S15_HANDOFF.md` na integração (PR #47 ainda aberto).
-- Handoff `docs/S16_HANDOFF.md` e linha do ROADMAP: depois da paginação da audiência.
+- Busca de contatos: índice trigram se o volume justificar (medido acima).
