@@ -5,9 +5,9 @@ Branch: `feature/s15-*` · Migrations: `20261119110000`–`20261119119999` · Te
 ## Checklist
 
 - [x] 1. Plano (este arquivo): modelo mínimo, bases legais, finalidades, retenção, direitos do titular.
-- [ ] 2. Banco: `contacts`, `consent_events`, estado derivado, `data_subject_requests`, anonimização, RLS, funções com papéis, auditoria sem dado pessoal, testes SQL.
-- [ ] 3. Servidor: `src/lib/audience/*` (validação, consultas, exportação JSON) com testes unitários.
-- [ ] 4. UI `/audiencia` no app shell (lista com busca, cadastro, histórico, revogar, exportar, pedido do titular, exclusão com confirmação). Sem envio real de mensagens.
+- [x] 2. Banco: `contacts`, `consent_events`, estado derivado, `data_subject_requests`, anonimização, RLS, funções com papéis, auditoria sem dado pessoal, testes SQL.
+- [x] 3. Servidor: `src/lib/audience/*` (validação, consultas, exportação JSON) com testes unitários.
+- [x] 4. UI `/audiencia` no app shell (lista com busca, cadastro, histórico, revogar, exportar, pedido do titular, exclusão com confirmação). Sem envio real de mensagens.
 - [ ] 5. Handoff `docs/S15_HANDOFF.md` + linha do S15 no ROADMAP.
 
 ## Plano
@@ -48,11 +48,11 @@ Branch: `feature/s15-*` · Migrations: `20261119110000`–`20261119119999` · Te
 |---|---|---|
 | `marketing` | Ofertas e campanhas | consentimento, legítimo interesse (com opt-out fácil) |
 | `newsletter` | Conteúdo periódico | consentimento, legítimo interesse |
-| `customer_service` | Responder dúvidas e suporte | execução de contrato, legítimo interesse |
+| `customer_service` | Responder dúvidas e suporte | execução de contrato, legítimo interesse, consentimento |
 | `order_fulfillment` | Pedido, entrega, garantia | execução de contrato |
 | `research` | Pesquisa de satisfação/produto | consentimento |
 
-Regras no banco: `order_fulfillment` exige `contract`; `research` exige `consent`; `contract` só com `order_fulfillment` ou `customer_service`. Cadastro com base `consent` exige um opt-in inicial com evidência no mesmo ato.
+Regras no banco (constraint `contacts_basis_purpose`, espelhada em `BASES_BY_PURPOSE`): `order_fulfillment` exige `contract`; `research` exige `consent`; `contract` só com `order_fulfillment` ou `customer_service`. Cadastro com base `consent` exige um opt-in inicial com evidência no mesmo ato.
 
 ### Retenção
 
@@ -79,3 +79,10 @@ Regras no banco: `order_fulfillment` exige `contract`; `research` exige `consent
 ## Registro de execução
 
 - 19/11/2026 13h UTC — plano criado; branch `feature/s15-audience-consent`.
+- 19/11/2026 — etapas 2, 3 e 4 implementadas na branch `feature/s15-audience-consent`:
+  - Migration `20261119110000_audience_consent.sql`; teste `supabase/tests/030_audience_consent.test.sql` com **76 asserções** (isolamento, papéis, append-only, revogação, estado derivado, prazo, exportação, anonimização, auditoria sem dado pessoal). Suíte local completa: **17 arquivos, 584 asserções, todas passando** (PostgreSQL 16 descartável).
+  - `src/lib/audience/{types,validation,server,export}.ts` + `tests/unit/audience.test.ts` (**13 testes**). Suíte unitária: **161/161**.
+  - Rota `GET /api/audience/contacts/[id]/export` (owner/admin, `no-store`, nome de arquivo sem dado pessoal, registrada no `audit_log`).
+  - UI `/audiencia` no app shell; navegação: área 07 passa a "Em construção" com link. Sem migration no ambiente, a página mostra aviso claro em vez de erro.
+  - `typecheck`, `lint` e `build` sem erros.
+  - Pendente: CI do PR, aplicar a migration no staging (autorizado), conferir permissões/RLS/advisors, e só então incluir `/audiencia` no `navigation.spec` e um E2E do fluxo.

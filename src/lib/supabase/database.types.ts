@@ -461,6 +461,105 @@ export type Database = {
         }
         Relationships: []
       }
+      consent_events: {
+        Row: {
+          action: string
+          channel: string
+          contact_id: string
+          created_at: string
+          evidence_ref: string | null
+          evidence_type: string
+          id: string
+          occurred_at: string
+          organization_id: string
+          purpose: string
+          recorded_by: string
+        }
+        Insert: {
+          action: string
+          channel: string
+          contact_id: string
+          created_at?: string
+          evidence_ref?: string | null
+          evidence_type: string
+          id?: string
+          occurred_at: string
+          organization_id: string
+          purpose: string
+          recorded_by: string
+        }
+        Update: {
+          action?: string
+          channel?: string
+          contact_id?: string
+          created_at?: string
+          evidence_ref?: string | null
+          evidence_type?: string
+          id?: string
+          occurred_at?: string
+          organization_id?: string
+          purpose?: string
+          recorded_by?: string
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          anonymized_at: string | null
+          anonymized_by: string | null
+          created_at: string
+          created_by: string
+          display_name: string | null
+          email: string | null
+          id: string
+          last_activity_at: string
+          legal_basis: string
+          organization_id: string
+          phone: string | null
+          purpose: string
+          source: string
+          source_detail: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          anonymized_at?: string | null
+          anonymized_by?: string | null
+          created_at?: string
+          created_by: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_activity_at?: string
+          legal_basis: string
+          organization_id: string
+          phone?: string | null
+          purpose: string
+          source: string
+          source_detail?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          anonymized_at?: string | null
+          anonymized_by?: string | null
+          created_at?: string
+          created_by?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_activity_at?: string
+          legal_basis?: string
+          organization_id?: string
+          phone?: string | null
+          purpose?: string
+          source?: string
+          source_detail?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       content_approvals: {
         Row: {
           content_hash: string
@@ -652,6 +751,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      data_subject_requests: {
+        Row: {
+          contact_id: string
+          created_at: string
+          created_by: string
+          details: string | null
+          due_at: string
+          id: string
+          kind: string
+          organization_id: string
+          received_at: string
+          received_via: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          created_by: string
+          details?: string | null
+          due_at: string
+          id?: string
+          kind: string
+          organization_id: string
+          received_at: string
+          received_via: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          created_by?: string
+          details?: string | null
+          due_at?: string
+          id?: string
+          kind?: string
+          organization_id?: string
+          received_at?: string
+          received_via?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       external_events: {
         Row: {
@@ -1423,6 +1573,18 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_consent_state: {
+        Row: {
+          channel: string | null
+          contact_id: string | null
+          event_id: string | null
+          granted: boolean | null
+          occurred_at: string | null
+          organization_id: string | null
+          purpose: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       agent_cancel_run: {
@@ -1515,6 +1677,66 @@ export type Database = {
           invitation_expires_at: string
           invitation_id: string
         }[]
+      }
+      anonymize_contact: {
+        Args: { p_contact_id: string; p_reason: string }
+        Returns: string
+      }
+      create_contact: {
+        Args: {
+          p_consent_channel?: string
+          p_consent_occurred_at?: string
+          p_display_name: string | null
+          p_email: string | null
+          p_evidence_ref?: string
+          p_evidence_type?: string
+          p_legal_basis: string
+          p_organization_id: string
+          p_phone: string | null
+          p_purpose: string
+          p_source: string
+          p_source_detail: string | null
+        }
+        Returns: string
+      }
+      export_contact_data: {
+        Args: { p_contact_id: string }
+        Returns: Json
+      }
+      record_consent: {
+        Args: {
+          p_action: string
+          p_channel: string
+          p_contact_id: string
+          p_evidence_ref?: string
+          p_evidence_type: string
+          p_occurred_at?: string
+          p_purpose: string
+        }
+        Returns: string
+      }
+      register_data_subject_request: {
+        Args: { p_contact_id: string; p_details?: string; p_kind: string; p_received_at?: string; p_received_via: string }
+        Returns: string
+      }
+      resolve_data_subject_request: {
+        Args: { p_note?: string; p_request_id: string; p_status: string }
+        Returns: undefined
+      }
+      revoke_all_consents: {
+        Args: { p_contact_id: string; p_evidence_ref?: string; p_evidence_type: string }
+        Returns: number
+      }
+      update_contact: {
+        Args: {
+          p_contact_id: string
+          p_display_name: string | null
+          p_email: string | null
+          p_legal_basis: string
+          p_phone: string | null
+          p_purpose: string
+        }
+        Returns: undefined
       }
       ensure_workspace: {
         Args: never
