@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
+import { Toaster } from "@/components/ui/Toaster";
 import { NAV_ITEMS, STATUS_LABEL, isActive } from "@/lib/navigation";
 
 type AppShellProps = {
@@ -61,7 +62,7 @@ export function AppShell({ children, userEmail, signOutAction }: AppShellProps) 
                   </span>
                   <span className="app-nav-label">{item.label}</span>
                   {item.status !== "available" ? (
-                    <span className="app-nav-tag">{item.status === "building" ? "Em breve" : "Planejado"}</span>
+                    <span className={`app-nav-tag app-nav-tag-${item.status}`}>{item.status === "building" ? "Beta" : "Planejado"}</span>
                   ) : null}
                 </>
               );
@@ -106,6 +107,8 @@ export function AppShell({ children, userEmail, signOutAction }: AppShellProps) 
       <main id="conteudo" className="app-main">
         {children}
       </main>
+
+      <Toaster />
     </div>
   );
 }

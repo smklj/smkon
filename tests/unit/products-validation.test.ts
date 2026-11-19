@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isHttpsUrl, parseDecimal, parseEvidenceInput, parseProductInput, parseReviewInput } from "../../src/lib/products/validation.ts";
+import { isHttpsUrl, parseDecimal, parseEvidenceInput, parseProductInput, parseReviewInput, workspaceDate } from "../../src/lib/products/validation.ts";
 import { ValidationError } from "../../src/lib/http/errors.ts";
 
 const now = new Date("2026-11-18T15:00:00Z");
@@ -58,7 +58,7 @@ test("evidência: fonte https e data no passado", () => {
   assert.throws(() => parseEvidenceInput({ kind: "other", claim: "Algo", source_url: "https://a.com/x", observed_at: "2026-12-01" }, now), /futuro/);
   assert.equal(
     parseEvidenceInput({ kind: "other", claim: "Algo", source_url: "https://a.com/x", observed_at: "2026-11-01" }, now).observed_at,
-    "2026-11-01T12:00:00.000Z",
+    "2026-11-01T15:00:00.000Z",
   );
   assert.throws(() => parseEvidenceInput({ kind: "other", claim: "Algo", source_url: "https://a.com/x", observed_at: "ontem" }, now), /inválida/);
   assert.throws(() => parseEvidenceInput({ kind: "outro", claim: "Algo", source_url: "https://a.com/x" }, now), /Tipo/);
@@ -70,4 +70,16 @@ test("revisão: rejeição exige motivo", () => {
   assert.throws(() => parseReviewInput({ evidence_id: id, decision: "rejected" }), /motivo/);
   assert.throws(() => parseReviewInput({ evidence_id: "x", decision: "verified" }), /Evidência inválida/);
   assert.throws(() => parseReviewInput({ evidence_id: id, decision: "aprovado" }), /Decisão/);
+});
+
+test("evidência: data de hoje vale no fuso de Brasília a qualquer hora", () => {
+  // 02:20 UTC de 19/11 = 23:20 de 18/11 em Brasília.
+  const lateNight = new Date("2026-11-19T02:20:00Z");
+  assert.equal(workspaceDate(lateNight), "2026-11-18");
+  const today = parseEvidenceInput({ kind: "other", claim: "Algo", source_url: "https://a.com/x", observed_at: "2026-11-18" }, lateNight);
+  assert.equal(today.observed_at, lateNight.toISOString(), "hoje usa o instante atual");
+  assert.throws(() => parseEvidenceInput({ kind: "other", claim: "Algo", source_url: "https://a.com/x", observed_at: "2026-11-19" }, lateNight), /futuro/);
+  // 08:00 em Brasília (11:00 UTC): antes, "hoje" virava meio-dia UTC e era recusado como futuro.
+  const morning = new Date("2026-11-19T11:00:00Z");
+  assert.equal(parseEvidenceInput({ kind: "other", claim: "Algo", source_url: "https://a.com/x", observed_at: "2026-11-19" }, morning).observed_at, morning.toISOString());
 });

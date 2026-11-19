@@ -33,7 +33,7 @@ export function ScheduleForm({ contents, defaultWhen }: { contents: ApprovedCont
       {state?.error ? <p className="feedback feedback-error field-wide" role="alert">{state.error}</p> : null}
       {state?.ok ? <p className="feedback feedback-ok field-wide" role="status">{state.ok}</p> : null}
       <div className="form-actions">
-        <button type="submit" className="button button-primary" disabled={pending}>{pending ? "Agendando…" : "Agendar (dry-run)"}</button>
+        <button type="submit" className="button button-primary" disabled={pending} aria-busy={pending}>{pending ? "Agendando…" : "Agendar (dry-run)"}</button>
         <span className="muted">Nenhuma publicação real é feita nesta fase.</span>
       </div>
     </form>

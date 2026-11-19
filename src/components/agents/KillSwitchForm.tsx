@@ -14,7 +14,7 @@ export function KillSwitchForm({ on }: { on: boolean }) {
           <input id="kill-reason" name="reason" maxLength={500} placeholder="Motivo (obrigatório)" required minLength={3} disabled={pending} />
         </>
       )}
-      <button type="submit" className={on ? "button button-secondary" : "button button-danger"} disabled={pending}>
+      <button type="submit" className={on ? "button button-secondary" : "button button-danger"} disabled={pending} aria-busy={pending}>
         {pending ? "Aplicando…" : on ? "Desligar kill switch" : "Ligar kill switch"}
       </button>
       {state?.error ? <p className="feedback feedback-error" role="alert">{state.error}</p> : null}

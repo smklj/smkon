@@ -9,7 +9,7 @@ export function AcceptForm({ token }: { token: string }) {
     <form action={formAction} className="invite-form">
       <input type="hidden" name="token" value={token} />
       {state?.error ? <p className="feedback feedback-error" role="alert">{state.error}</p> : null}
-      <button type="submit" className="button button-primary" disabled={pending}>
+      <button type="submit" className="button button-primary" disabled={pending} aria-busy={pending}>
         {pending ? "Aceitando…" : "Aceitar convite"}
       </button>
     </form>

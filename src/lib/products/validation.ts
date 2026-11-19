@@ -15,6 +15,14 @@ import {
 
 type Raw = Record<string, unknown>;
 
+/** Fuso do workspace (Brasil, sem horário de verão desde 2019). */
+const WORKSPACE_OFFSET = "-03:00";
+
+/** Data de hoje (AAAA-MM-DD) no fuso do workspace, para o campo date e para a validação. */
+export function workspaceDate(now: Date = new Date()): string {
+  return new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 export type ProductInput = {
   name: string;
   source: ProductSource;
@@ -133,8 +141,14 @@ export function parseEvidenceInput(raw: Raw, now: Date = new Date()): EvidenceIn
 
   const observedRaw = text(raw, "observed_at");
   let observed = now;
-  if (observedRaw) {
-    observed = new Date(/^\d{4}-\d{2}-\d{2}$/.test(observedRaw) ? `${observedRaw}T12:00:00Z` : observedRaw);
+  if (observedRaw && /^\d{4}-\d{2}-\d{2}$/.test(observedRaw)) {
+    // Data sem hora (campo date) é um dia no fuso do workspace: hoje = agora; dia passado = meio-dia de Brasília.
+    const today = workspaceDate(now);
+    if (observedRaw > today) throw new ValidationError("A data de observação não pode estar no futuro.");
+    observed = observedRaw === today ? now : new Date(`${observedRaw}T12:00:00${WORKSPACE_OFFSET}`);
+    if (Number.isNaN(observed.getTime())) throw new ValidationError("Data de observação inválida.");
+  } else if (observedRaw) {
+    observed = new Date(observedRaw);
     if (Number.isNaN(observed.getTime())) throw new ValidationError("Data de observação inválida.");
   }
   if (observed.getTime() > now.getTime() + 5 * 60 * 1000) throw new ValidationError("A data de observação não pode estar no futuro.");
