@@ -120,8 +120,8 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 | 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ✅ concluída | ver PR `feature/s14-claim-queue` | `test:db` 15/15 arquivos (015: 37 asserções), corrida real com 8 sessões (20 reservas, 0 duplicadas), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
 | 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ✅ concluída | ver PR `feature/s14-worker` | `test:unit` 121/121 (18 novos), `test:db` 15/15 arquivos, typecheck, lint e build OK; `next start` local: sem/errado Bearer → 401, Bearer certo → 503 `model_not_configured` (proxy deixa passar). 🔐 nada configurado na Vercel |
 | 7 | Adaptador de modelo sem chave (recusa `model_not_configured`); Verifier exige evidência `verified` | ✅ concluída | ver PR `feature/s14-model-adapter` | `test:unit` 140/140 (19 novos), `test:db` 15/15 arquivos, typecheck, lint e build OK; nenhuma chamada real ao modelo (fetch falso). 🔐 provedor, modelo, orçamento e chave a definir pelo Owner |
-| 8 | UI: detalhe da execução em `/agentes` (passos resumidos, motivo de falha), sem publicar | ⬜ | — | — |
-| 9 | Handoff `docs/S14_HANDOFF.md` + estado no `docs/ROADMAP_SPLITS.md` | ⬜ | — | — |
+| 8 | UI: detalhe da execução em `/agentes` (passos resumidos, motivo de falha), sem publicar | ✅ concluída | ver PR `feature/s14-run-detail` | `test:unit` 166/166 (10 novos), `test:db` 17/17 arquivos, typecheck, lint e build OK; E2E do detalhe no `agents.spec` (staging, migration 20261119060000 aplicada lá) |
+| 9 | Handoff `docs/S14_HANDOFF.md` + estado no `docs/ROADMAP_SPLITS.md` | ✅ concluída | ver PR `feature/s14-run-detail` | Só documentação; estado dos bancos conferido com `list_migrations` |
 
 ## Autorizações do Owner (🔐) — estado em 19/11/2026
 
@@ -134,7 +134,8 @@ custo, ~US$ 0,002 por execução), teto US$ 5/mês por ambiente, Preview e Produ
 - ✅ Vercel (projeto `smkon`, Production e Preview): `CRON_SECRET` (sensitive, valores diferentes por ambiente),
   `AGENT_EXECUTOR_ENABLED=true`, `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL=anthropic/claude-haiku-5.5`,
   `AGENT_MODEL_AUTH=oidc` (token OIDC do deployment, sem chave guardada) e `AGENT_MONTHLY_BUDGET_USD=5`.
-- ⏳ Migration `20261119060000_agent_model_usage.sql` (consumo e teto): aplicar após o CI do PR (staging → produção).
+- ✅ Migration `20261119060000_agent_model_usage.sql` aplicada no staging (conferido com `list_migrations` em 19/11/2026).
+  🔐 Produção: pendente, só com autorização do Owner.
 - 🔐 **Falta (só o Owner)**: criar a chave secreta do Supabase (Dashboard → Project Settings → API Keys → *secret key*)
   em cada projeto e cadastrá-la na Vercel como `SUPABASE_SECRET_KEY` (tipo *sensitive*): a de staging em Preview, a de
   produção em Production. Não colar a chave no chat. Sem ela o worker responde `503 service_not_configured`.
@@ -324,3 +325,17 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
   - **Cron**: `vercel.json` com `/api/agents/worker` diário às 11:17 UTC.
   - **Não verificado ainda**: chamada real ao Gateway e presença do header OIDC no runtime (exige `SUPABASE_SECRET_KEY`
     e crédito no Gateway); no primeiro disparo, `reason: "oidc_token_missing"` no log indicaria problema no token.
+- **19/11/2026 — PR #42 (complemento da etapa 7).** O Playwright falhou por indisponibilidade do espelho Ubuntu
+  (`apt` 503 ao instalar dependências do navegador), não por código; merge da integração (#44) na head refez o CI.
+- **19/11/2026 — etapa 8.** Detalhe da execução em `/agentes/[id]`. Sem migration e sem dependência nova.
+  - `src/lib/agents/detail.ts` (puro, testado): motivo legível para todo código de `EXECUTOR_ERROR_CODES` e para os
+    códigos do banco (`step_limit`, `kill_switch`, `run_owner_not_allowed`…); código desconhecido aparece entre
+    parênteses só se tiver formato de código (texto arbitrário não é ecoado); resumo de entrada/saída em uma linha
+    (profundidade 2, 4 itens, 280 caracteres) e JSON completo cortado em 8 KB; soma de consumo em micro-dólares
+    (aceita `numeric` como número ou texto); rascunho só é mostrado se `draft_content` ok com `content_status = draft`.
+  - `loadRunDetail()` filtra por `organization_id` do usuário além da RLS; `agent_model_usage` ausente
+    (`PGRST205`/`42P01`) vira "migration pendente" em vez de erro.
+  - Página sem ação de publicar/aprovar; o rascunho aponta para revisão humana no Content Studio; cancelar continua
+    restrito a owner/admin em execução ativa. Ações revalidam `/agentes` como layout (inclui o detalhe).
+- **19/11/2026 — etapa 9.** `docs/S14_HANDOFF.md` e linha do S14 no `docs/ROADMAP_SPLITS.md`. Frente concluída no código;
+  pendências do Owner no handoff.
