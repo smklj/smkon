@@ -1,25 +1,60 @@
 /**
- * Headers de segurança aplicados a todas as respostas (via next.config.ts).
+ * Headers de segurança.
  *
- * CSP de base, compatível com os scripts inline do App Router: bloqueia scripts e
- * conexões de terceiros, iframes da aplicação em outros sites, plugins e troca de
- * <base>. Evolução prevista: CSP com nonce (exige renderização dinâmica em todas as rotas).
+ * - `securityHeaders()`: headers fixos, aplicados a todas as respostas via next.config.ts.
+ * - `contentSecurityPolicy({ nonce })`: CSP por requisição, montada no Proxy (src/proxy.ts)
+ *   com um nonce novo a cada requisição. O Next.js lê o nonce do cabeçalho
+ *   `Content-Security-Policy` da requisição e o aplica aos seus scripts e estilos inline.
+ *
+ * Decisões (docs/S6_1_PROGRESS.md):
+ * - script-src sem 'unsafe-inline' e sem 'strict-dynamic': os chunks do Next vêm de 'self';
+ *   'strict-dynamic' desligaria a allowlist de host (https://vercel.live, barra dos Previews).
+ * - style-src: elementos <style> só com nonce; atributos style="" liberados em style-src-attr
+ *   (usados em gráficos e acentos; não executam código e não aceitam nonce).
  */
 
-type Options = { supabaseUrl?: string; isDev?: boolean };
+type CspOptions = { nonce: string; supabaseUrl?: string; isDev?: boolean };
 
-export function contentSecurityPolicy({ supabaseUrl, isDev = false }: Options = {}): string {
-  const supabase = supabaseUrl ? new URL(supabaseUrl).origin : "https://*.supabase.co";
-  const supabaseWs = supabase.replace(/^https:/, "wss:");
+export const NONCE_HEADER = "x-nonce";
+export const CSP_HEADER = "Content-Security-Policy";
+
+const NONCE_PATTERN = /^[A-Za-z0-9+/]{16,}={0,2}$/;
+
+/** Nonce imprevisível de 128 bits em base64 (Web Crypto: funciona no Proxy e no Node). */
+export function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function supabaseOrigins(supabaseUrl?: string): { http: string; ws: string } {
+  let http = "https://*.supabase.co";
+  if (supabaseUrl) {
+    try {
+      http = new URL(supabaseUrl).origin;
+    } catch {
+      // URL inválida: mantém o curinga do Supabase em vez de derrubar a requisição.
+    }
+  }
+  return { http, ws: http.replace(/^https:/, "wss:").replace(/^http:/, "ws:") };
+}
+
+export function contentSecurityPolicy({ nonce, supabaseUrl, isDev = false }: CspOptions): string {
+  if (!NONCE_PATTERN.test(nonce)) throw new Error("CSP nonce inválido.");
+  const supabase = supabaseOrigins(supabaseUrl);
+  const nonceSource = `'nonce-${nonce}'`;
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : []), "https://vercel.live"],
-    "style-src": ["'self'", "'unsafe-inline'"],
+    "script-src": ["'self'", nonceSource, ...(isDev ? ["'unsafe-eval'"] : []), "https://vercel.live"],
+    "style-src": ["'self'", nonceSource],
+    "style-src-attr": ["'unsafe-inline'"],
     // Mídia do workspace vem do Storage por URL assinada.
-    "img-src": ["'self'", "data:", "blob:", supabase],
-    "media-src": ["'self'", "blob:", supabase],
+    "img-src": ["'self'", "data:", "blob:", supabase.http],
+    "media-src": ["'self'", "blob:", supabase.http],
     "font-src": ["'self'", "data:"],
-    "connect-src": ["'self'", supabase, supabaseWs, "https://vercel.live", ...(isDev ? ["ws:"] : [])],
+    "connect-src": ["'self'", supabase.http, supabase.ws, "https://vercel.live", ...(isDev ? ["ws:"] : [])],
     "frame-src": ["https://vercel.live"],
     "frame-ancestors": ["'none'"],
     "form-action": ["'self'"],
@@ -32,9 +67,8 @@ export function contentSecurityPolicy({ supabaseUrl, isDev = false }: Options = 
     .join("; ");
 }
 
-export function securityHeaders(options: Options = {}): Array<{ key: string; value: string }> {
+export function securityHeaders(): Array<{ key: string; value: string }> {
   return [
-    { key: "Content-Security-Policy", value: contentSecurityPolicy(options) },
     { key: "X-Frame-Options", value: "DENY" },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
