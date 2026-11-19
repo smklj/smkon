@@ -308,7 +308,7 @@ test("tick: expira presas, reserva e executa de ponta a ponta (plan → execute 
   const { queue, log } = memoryQueue([claimed()]);
   const memory = memoryStore();
   const tools = { read_products: async () => ({ items: [{ id: "p1", name: "Garrafa Térmica" }], truncated: false }) };
-  const result = await runWorkerTick({ queue, store: memory.store, model: fakeModel, tools, logger: quiet, leaseSeconds: 900 });
+  const result = await runWorkerTick({ queue, store: memory.store, model: () => fakeModel, tools, logger: quiet, leaseSeconds: 900 });
   assert.equal(result.status, "ok");
   assert.ok(result.status === "ok");
   assert.deepEqual(result.runs, [{ runId: RUN, status: "succeeded" }]);
@@ -324,7 +324,7 @@ test("tick respeita maxRuns e o orçamento de tempo para começar execuções no
   const execute = async () => ({ status: "succeeded" as const, steps: 3 });
 
   const capped = memoryQueue(many());
-  const byCount = await runWorkerTick({ queue: capped.queue, store: memoryStore().store, model: fakeModel, tools: {}, logger: quiet, maxRuns: 2, execute });
+  const byCount = await runWorkerTick({ queue: capped.queue, store: memoryStore().store, model: () => fakeModel, tools: {}, logger: quiet, maxRuns: 2, execute });
   assert.ok(byCount.status === "ok");
   assert.deepEqual(byCount.runs.map((r) => r.runId), ["r1", "r2"]);
   assert.equal(byCount.stoppedBy, "max_runs");
@@ -332,7 +332,7 @@ test("tick respeita maxRuns e o orçamento de tempo para começar execuções no
   let clock = 0;
   const timed = memoryQueue(many());
   const byBudget = await runWorkerTick({
-    queue: timed.queue, store: memoryStore().store, model: fakeModel, tools: {}, logger: quiet, maxRuns: 10, budgetMs: 1000,
+    queue: timed.queue, store: memoryStore().store, model: () => fakeModel, tools: {}, logger: quiet, maxRuns: 10, budgetMs: 1000,
     now: () => clock,
     execute: async () => {
       clock += 600;
@@ -350,7 +350,7 @@ test("tick: reserva inconsistente é falhada com internal_error e o disparo cont
   const memory = memoryStore();
   const executed: string[] = [];
   const result = await runWorkerTick({
-    queue, store: memory.store, model: fakeModel, tools: {}, logger: quiet,
+    queue, store: memory.store, model: () => fakeModel, tools: {}, logger: quiet,
     execute: async (ctx) => {
       executed.push(ctx.runId);
       return { status: "failed", code: "tool_error", steps: 2 };
@@ -369,7 +369,7 @@ test("tick: reserva inconsistente é falhada com internal_error e o disparo cont
 // Handler HTTP
 // ---------------------------------------------------------------------------------------------------------------
 
-const ENABLED = { AGENT_EXECUTOR_ENABLED: "true", CRON_SECRET: SECRET };
+const ENABLED = { AGENT_EXECUTOR_ENABLED: "true", CRON_SECRET: SECRET, AGENT_MODEL: "anthropic/claude-haiku-5.5", AGENT_MONTHLY_BUDGET_USD: "5" };
 
 function request(authorization?: string) {
   return new Request("https://smkon.test/api/agents/worker", { headers: authorization ? { authorization } : {} });
@@ -390,7 +390,7 @@ async function call(env: Record<string, string>, authorization: string | undefin
 }
 
 test("handler: barreiras na ordem certa, sem criar cliente service_role antes de passar todas", async () => {
-  const disabled = await call({ CRON_SECRET: SECRET }, `Bearer ${SECRET}`);
+  const disabled = await call({ ...ENABLED, AGENT_EXECUTOR_ENABLED: "false" }, `Bearer ${SECRET}`);
   assert.equal(disabled.response.status, 503);
   assert.equal(disabled.body.code, "executor_disabled");
   assert.equal(disabled.clientCreated, 0);
@@ -413,6 +413,17 @@ test("handler: barreiras na ordem certa, sem criar cliente service_role antes de
   assert.equal(noModel.body.code, "model_not_configured");
   assert.equal(noModel.clientCreated, 0);
 
+  for (const env of [
+    { ...ENABLED, AGENT_MONTHLY_BUDGET_USD: "" },
+    { ...ENABLED, AGENT_MONTHLY_BUDGET_USD: "0" },
+    { ...ENABLED, AGENT_MODEL: "anthropic/modelo-sem-preco" },
+  ]) {
+    const noBudget = await call(env, `Bearer ${SECRET}`);
+    assert.equal(noBudget.response.status, 503);
+    assert.equal(noBudget.body.code, "budget_not_configured");
+    assert.equal(noBudget.clientCreated, 0);
+  }
+
   const noService = await call(ENABLED, `Bearer ${SECRET}`, { client: null });
   assert.equal(noService.response.status, 503);
   assert.equal(noService.body.code, "service_not_configured");
@@ -426,11 +437,30 @@ test("handler: sem AGENT_MODEL_PROVIDER/AGENT_MODEL/AI_GATEWAY_API_KEY o modelo 
 });
 
 test("handler autorizado: fila vazia → 200 só com contadores; falha do banco → 500 sem detalhes", async () => {
-  const { client, calls } = fakeClient({ rpc: { agent_reap_stale_runs: () => ({ data: 0, error: null }), agent_claim_next_run: () => ({ data: [], error: null }) } });
-  const ok = await call(ENABLED, `Bearer ${SECRET}`, { client });
-  assert.equal(ok.response.status, 200);
-  assert.deepEqual(ok.body, { reaped: 0, stoppedBy: "empty_queue", runs: [] });
-  assert.deepEqual(calls.map((c) => c.kind === "rpc" && c.fn), ["agent_reap_stale_runs", "agent_claim_next_run"]);
+  const { client, calls } = fakeClient({
+    rpc: {
+      agent_reap_stale_runs: () => ({ data: 0, error: null }),
+      agent_model_spend_since: () => ({ data: 1.25, error: null }),
+      agent_claim_next_run: () => ({ data: [], error: null }),
+    },
+  });
+  const response = await handleWorkerRequest(request(`Bearer ${SECRET}`), {
+    env: ENABLED, logger: quiet, resolveModel: () => fakeModel, createClient: () => client,
+    now: () => new Date("2026-11-19T10:00:00Z"),
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { reaped: 0, stoppedBy: "empty_queue", runs: [] });
+  assert.deepEqual(calls.map((c) => c.kind === "rpc" && [c.fn, c.args]), [
+    ["agent_reap_stale_runs", { p_lease_seconds: 600 }],
+    ["agent_model_spend_since", { p_since: "2026-11-01T00:00:00.000Z" }],
+    ["agent_claim_next_run", undefined],
+  ], "gasto do mês (UTC) lido antes de reservar");
+
+  const capped = fakeClient({ rpc: { agent_reap_stale_runs: () => ({ data: 0, error: null }), agent_model_spend_since: () => ({ data: "5.000001", error: null }) } });
+  const exhausted = await call(ENABLED, `Bearer ${SECRET}`, { client: capped.client });
+  assert.equal(exhausted.response.status, 200);
+  assert.equal(exhausted.body.stoppedBy, "budget_exhausted");
+  assert.ok(!capped.calls.some((c) => c.kind === "rpc" && c.fn === "agent_claim_next_run"), "teto atingido: nada reservado");
 
   const broken = fakeClient({ rpc: { agent_reap_stale_runs: () => ({ data: null, error: { message: "permission denied for function agent_reap_stale_runs", code: "42501" } }) } });
   const failed = await call(ENABLED, `Bearer ${SECRET}`, { client: broken.client });
