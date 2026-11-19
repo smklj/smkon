@@ -64,6 +64,10 @@ function startServer(port) {
     }
     const key = `${req.method} ${url.pathname}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
+    // STUB_LOG_QUERIES=1 imprime as consultas do PostgREST (conferir filtros montados pelo app).
+    if (process.env.STUB_LOG_QUERIES === "1" && url.pathname.startsWith("/rest/v1/")) {
+      console.error(`${key}${decodeURIComponent(url.search)}`);
+    }
     req.resume();
     req.on("end", () => {
       const json = (status, body, headers = {}) => {

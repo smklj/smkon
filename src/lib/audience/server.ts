@@ -1,4 +1,6 @@
+import { decodeCursor, toPage, type Page } from "@/lib/pagination/keyset";
 import type { createClient } from "@/lib/supabase/server";
+import { CONTACTS_KEYSET, CONTACT_PAGE_SIZE, contactsListQuery } from "./contacts-page";
 import type { ConsentEventRow, ConsentStateRow, ContactRow, RequestRow } from "./types";
 import type { ConsentEventInput, ContactInput, ContactUpdateInput, RequestInput } from "./validation";
 import { sanitizeSearch } from "./validation";
@@ -10,7 +12,7 @@ export const CONTACT_COLUMNS =
 export const CONSENT_COLUMNS = "id,contact_id,action,purpose,channel,evidence_type,evidence_ref,occurred_at,created_at";
 export const REQUEST_COLUMNS = "id,contact_id,kind,received_via,details,received_at,due_at,status,resolution_note,resolved_at";
 
-export const CONTACT_PAGE_SIZE = 100;
+export { CONTACT_PAGE_SIZE };
 
 /** Só owner e admin alteram cadastro, consentimento e pedidos; os demais papéis leem. */
 export function canManageAudience(role: string): boolean {
@@ -20,20 +22,20 @@ export function canManageAudience(role: string): boolean {
 export async function listContacts(
   supabase: SupabaseClient,
   organizationId: string,
-  options: { search?: string; includeAnonymized?: boolean } = {},
-): Promise<ContactRow[]> {
-  let query = supabase
-    .from("contacts")
-    .select(CONTACT_COLUMNS)
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false })
-    .limit(CONTACT_PAGE_SIZE);
-  if (!options.includeAnonymized) query = query.is("anonymized_at", null);
-  const term = sanitizeSearch(options.search);
-  if (term) query = query.or(`display_name.ilike."*${term}*",email.ilike."*${term}*",phone.ilike."*${term}*"`);
-  const { data, error } = await query;
+  options: { search?: string; includeAnonymized?: boolean; cursor?: string | null; pageSize?: number } = {},
+): Promise<Page<ContactRow>> {
+  // Cursor inválido lança InvalidCursorError (ValidationError) antes de qualquer consulta.
+  const after = decodeCursor(CONTACTS_KEYSET, options.cursor);
+  const pageSize = options.pageSize ?? CONTACT_PAGE_SIZE;
+  const { data, error } = await contactsListQuery(supabase.from("contacts").select(CONTACT_COLUMNS), {
+    organizationId,
+    term: sanitizeSearch(options.search),
+    includeAnonymized: Boolean(options.includeAnonymized),
+    after,
+    pageSize,
+  });
   if (error) throw error;
-  return (data ?? []) as unknown as ContactRow[];
+  return toPage(CONTACTS_KEYSET, (data ?? []) as unknown as ContactRow[], pageSize);
 }
 
 export async function getContact(supabase: SupabaseClient, organizationId: string, id: string): Promise<ContactRow | null> {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
+import { Pager } from "@/components/ui/Pager";
 import {
   AnonymizeForm,
   ConsentForm,
@@ -39,6 +40,7 @@ import { sanitizeSearch } from "@/lib/audience/validation";
 import { isUuid } from "@/lib/content/server";
 import { todayInBrazil } from "@/lib/media/types";
 import { errorFields, log } from "@/lib/observability/log";
+import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { createClient } from "@/lib/supabase/server";
 import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
 
@@ -54,6 +56,9 @@ type Data =
       state: "ok";
       workspace: Workspace;
       contacts: ContactRow[];
+      nextCursor: string | null;
+      /** O cursor da URL não servia: mostra a 1ª página com aviso. */
+      cursorReset: boolean;
       consent: ConsentStateRow[];
       openRequests: RequestRow[];
       contactsById: Map<string, ContactRow>;
@@ -66,7 +71,7 @@ function isMissingRelation(error: unknown): boolean {
   return code === "PGRST205" || code === "42P01";
 }
 
-async function load(search: string, includeAnonymized: boolean, contactId: string | null): Promise<Data> {
+async function load(search: string, includeAnonymized: boolean, contactId: string | null, cursor: string | null): Promise<Data> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -74,8 +79,18 @@ async function load(search: string, includeAnonymized: boolean, contactId: strin
     const workspace = await findWorkspace(supabase, user.id);
     if (!workspace) return { state: "no-workspace" };
     const org = workspace.organizationId;
-    const [contacts, openRequests, selected] = await Promise.all([
-      listContacts(supabase, org, { search, includeAnonymized }),
+    let cursorReset = false;
+    const page = async () => {
+      try {
+        return await listContacts(supabase, org, { search, includeAnonymized, cursor });
+      } catch (error) {
+        if (!(error instanceof InvalidCursorError)) throw error;
+        cursorReset = true;
+        return listContacts(supabase, org, { search, includeAnonymized });
+      }
+    };
+    const [{ items: contacts, nextCursor }, openRequests, selected] = await Promise.all([
+      page(),
       listRequests(supabase, org, { openOnly: true }),
       contactId ? getContact(supabase, org, contactId) : Promise.resolve(null),
     ]);
@@ -94,7 +109,7 @@ async function load(search: string, includeAnonymized: boolean, contactId: strin
     const extra = await Promise.all(Array.from(new Set(missing)).slice(0, 50).map((id) => getContact(supabase, org, id)));
     const contactsById = new Map<string, ContactRow>();
     for (const contact of [...contacts, ...extra, selected]) if (contact) contactsById.set(contact.id, contact);
-    return { state: "ok", workspace, contacts, consent, openRequests, contactsById, detail };
+    return { state: "ok", workspace, contacts, nextCursor, cursorReset, consent, openRequests, contactsById, detail };
   } catch (error) {
     if (isMissingRelation(error)) return { state: "not-migrated" };
     log("error", "page.audiencia", errorFields(error));
@@ -125,10 +140,11 @@ function ConsentSummary({ state }: { state: ConsentStateRow[] }) {
   return <Badge tone="ok">{granted.length} consentimento(s) ativo(s)</Badge>;
 }
 
-function hrefFor(params: { q?: string; anonimizados?: boolean; contato?: string }): string {
+function hrefFor(params: { q?: string; anonimizados?: boolean; contato?: string; cursor?: string | null }): string {
   const query = new URLSearchParams();
   if (params.q) query.set("q", params.q);
   if (params.anonimizados) query.set("anonimizados", "1");
+  if (params.cursor) query.set("cursor", params.cursor);
   if (params.contato) query.set("contato", params.contato);
   const value = query.toString();
   return value ? `/audiencia?${value}` : "/audiencia";
@@ -137,13 +153,16 @@ function hrefFor(params: { q?: string; anonimizados?: boolean; contato?: string 
 export default async function AudiencePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; contato?: string; anonimizados?: string }>;
+  searchParams: Promise<{ q?: string; contato?: string; anonimizados?: string; cursor?: string }>;
 }) {
   const params = await searchParams;
   const search = sanitizeSearch(params.q);
   const includeAnonymized = params.anonimizados === "1";
   const contactId = isUuid(params.contato) ? params.contato : null;
-  const data = await load(search, includeAnonymized, contactId);
+  const rawCursor = typeof params.cursor === "string" ? params.cursor : null;
+  const data = await load(search, includeAnonymized, contactId, rawCursor);
+  // Cursor só é mantido nos links quando foi aceito.
+  const cursor = data.state === "ok" && !data.cursorReset ? rawCursor : null;
   const canManage = data.state === "ok" && canManageAudience(data.workspace.role);
   const today = todayInBrazil();
   const now = new Date();
@@ -203,7 +222,7 @@ export default async function AudiencePage({
 
       {data.state === "ok" ? (
         <section className="panel" aria-labelledby="contatos-titulo">
-          <SectionHeading id="contatos-titulo" title="Contatos" aside={<span className="muted">{data.contacts.length}{data.contacts.length === 100 ? "+" : ""}</span>} />
+          <SectionHeading id="contatos-titulo" title="Contatos" aside={<span className="muted">{cursor ? "páginas anteriores" : "mais recentes primeiro"}</span>} />
           <form className="inline-form" method="get" action="/audiencia" role="search">
             <label className="sr-only" htmlFor="busca-contatos">Buscar por nome, e-mail ou telefone</label>
             <input id="busca-contatos" name="q" type="search" defaultValue={search} maxLength={80} placeholder="Buscar por nome, e-mail ou telefone" />
@@ -211,6 +230,9 @@ export default async function AudiencePage({
             <button type="submit" className="button button-secondary button-small">Buscar</button>
             {search || includeAnonymized ? <Link className="link" href="/audiencia">Limpar</Link> : null}
           </form>
+          {data.cursorReset ? (
+            <p className="feedback feedback-info stack-top" role="status">O link de paginação não é mais válido. Mostrando os contatos mais recentes.</p>
+          ) : null}
           {data.contacts.length === 0 ? (
             <div className="empty stack-top">
               <p className="empty-title">{search ? "Nenhum contato encontrado" : "Nenhum contato ainda"}</p>
@@ -222,7 +244,7 @@ export default async function AudiencePage({
                 <li className="row" key={contact.id}>
                   <div className="row-main">
                     <p className="row-title">
-                      <Link className="link" href={hrefFor({ q: search, anonimizados: includeAnonymized, contato: contact.id })}>{contactLabel(contact)}</Link>
+                      <Link className="link" href={hrefFor({ q: search, anonimizados: includeAnonymized, cursor, contato: contact.id })}>{contactLabel(contact)}</Link>
                     </p>
                     <p className="row-meta">
                       {contact.anonymized_at ? `Anonimizado em ${formatDate(contact.anonymized_at)}` : [contact.email, contact.phone].filter(Boolean).join(" · ")}
@@ -236,6 +258,11 @@ export default async function AudiencePage({
               ))}
             </ul>
           )}
+          <Pager
+            shown={data.contacts.length}
+            nextHref={data.nextCursor ? hrefFor({ q: search, anonimizados: includeAnonymized, cursor: data.nextCursor }) : null}
+            firstHref={cursor ? hrefFor({ q: search, anonimizados: includeAnonymized }) : null}
+          />
         </section>
       ) : null}
 
