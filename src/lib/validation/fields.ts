@@ -110,6 +110,21 @@ export function isHttpsUrl(value: string): boolean {
   }
 }
 
+/**
+ * Variante permissiva do Studio (conteúdo): vazio é aceito e qualquer URL com
+ * protocolo https: passa (sem exigir ponto no host nem recusar credenciais;
+ * o tamanho é cortado em 2048 por quem chama). Mantida separada de isHttpsUrl
+ * porque unificar recusaria links que o Studio hoje aceita.
+ */
+export function isOptionalHttpsUrl(value: string): boolean {
+  if (!value) return true;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /** Data de calendário AAAA-MM-DD (campo date). */
 export const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 

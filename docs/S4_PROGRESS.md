@@ -10,7 +10,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 1 | Plano (este arquivo) + conferência dos tipos gerados do staging | ✅ feito | #54 |
 | 2 | Validação centralizada `src/lib/validation/fields.ts` + testes | ✅ feito | #54 |
 | 2a | Produtos | ✅ feito | #54 |
-| 2b | Conteúdo (Studio) e publicação/calendário | ⏳ | — |
+| 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #PR2B |
 | 2c | Mídia e licenças | ⏳ | — |
 | 2d | Financeiro (comissões) | ⏳ | — |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
@@ -70,3 +70,12 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - `src/lib/validation/fields.ts` (novo) e `tests/unit/validation-fields.test.ts` (10 testes novos).
 - Produtos: `validation.ts` → `schema.ts` (reexport mantido para o teste existente); `server.ts` → `repository.ts` (dados) + `service.ts` (`canEditProducts`, `canAddEvidence`, `registerProduct`, `submitEvidence`, `decideEvidence`); `server.ts` removido, imports atualizados em `produtos/actions.ts`, `produtos/page.tsx`, `produtos/[id]/page.tsx` e `api/products/route.ts`.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **226/226** (216 existentes sem edição + 10 novos), `npm run build` ✅, `npm run test:db` **19/19 arquivos** (Postgres 16 local).
+
+### Etapa 2b — conteúdo e publicação (19/11/2026)
+
+- `src/lib/content/`: `schema.ts` (`parseContentPayload`, `readContentJson`, `parseContentId`, `parseApproveInput`, `parseContentStatusFilter`, `CONTENT_HASH_PATTERN`, `CONTENT_STATUSES`), `repository.ts` (`CONTENT_SELECT_COLUMNS`, `CONTENT_KEYSET`, `listContentPage`, `countByStatus`, `insertContent`, `updateContent`, `deleteContent`, `approveContentVersion`) e `service.ts` (`canEditContent`, `listLibrary`, `approveExactVersion`). `server.ts` virou só reexport (o teste `content-server.test.ts` e o `validation-fields.test.ts` importam dele). O repository usa imports relativos com `.ts` e o cliente só como tipo, para ser carregável em `node --test`.
+- `src/app/api/content/route.ts` e `src/app/api/content/approve/route.ts` passam a usar schema/repository/service; mesma ordem (auth → validação → workspace → permissão → dados), mesmas mensagens e status HTTP. A validação do approve agora lança `ValidationError`, que `toErrorResponse` converte no mesmo 400 `invalid_input` com a mesma mensagem (sem log, como antes).
+- `src/lib/publication/`: `server.ts` → `repository.ts` (renomeado, sem mudança de consulta), `schema.ts` (`parseScheduleRequest`, `parseJobId`, `parseCancelRequest`, mesmas mensagens e mesma ordem; campos não aparados como antes, só o motivo) e `service.ts` (`canOperateCalendar`, `scheduleDryRun`, `runJobDryRun`, `cancelJob`). Imports atualizados em `calendario/actions.ts`, `calendario/page.tsx` e `components/publication/ScheduleForm.tsx` (só tipo).
+- Divergência preservada: o Studio aceita link HTTPS vazio, host sem ponto e credenciais na URL (corta em 2048), mais permissivo que `isHttpsUrl` de produtos. Virou a variante nomeada `isOptionalHttpsUrl` em `validation/fields.ts`.
+- Os demais usos de `isUuid` via `@/lib/content/server` (convites, audiência, agentes, admin, mídia) continuam funcionando pelo reexport e serão trocados para `@/lib/validation/fields` na etapa de cada módulo.
+- Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **238/238** (226 existentes sem edição + 12 novos em `content-schema.test.ts` e `publication-schema.test.ts`), `npm run build` ✅, `npm run test:db` **19/19 arquivos** (Postgres 16 local).

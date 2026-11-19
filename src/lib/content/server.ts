@@ -1,29 +1,9 @@
-/** Utilidades server-side compartilhadas pelas rotas de conteúdo. */
-import type { KeysetSpec } from "../pagination/keyset.ts";
-import type { ContentStatusApi } from "./types.ts";
-
-export const CONTENT_SELECT_COLUMNS =
-  "id,title,product,source_url,asset_url,script,caption,cta,hashtags,channels,rights_confirmed,media_asset_id,status,version,content_hash,approved_version,approved_at,created_at,updated_at";
-
-/** Mantido por compatibilidade: a definição única está em src/lib/validation/fields.ts (S4). */
+/**
+ * Compatibilidade (S4): o conteúdo foi dividido em schema.ts (validação),
+ * repository.ts (dados) e service.ts (regras). Este arquivo só reexporta o que
+ * os testes existentes importam; o código da aplicação importa dos arquivos novos.
+ */
+export { CONTENT_KEYSET, CONTENT_SELECT_COLUMNS } from "./repository.ts";
+export { CONTENT_HASH_PATTERN, CONTENT_STATUSES, parseContentStatusFilter } from "./schema.ts";
+/** A definição única de UUID estrito está em src/lib/validation/fields.ts. */
 export { isUuid } from "../validation/fields.ts";
-
-export const CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/;
-
-/** Biblioteca do Studio: editado por último primeiro, id como desempate. Índice content_items_org_updated_id_idx (S16). */
-export const CONTENT_KEYSET: KeysetSpec = {
-  id: "content:v1",
-  direction: "desc",
-  keys: [
-    { column: "updated_at", type: "timestamp" },
-    { column: "id", type: "uuid" },
-  ],
-};
-
-export const CONTENT_STATUSES: readonly ContentStatusApi[] = ["draft", "approved", "archived"];
-
-/** Filtro de status da lista (?status=); ausente ou "all" lista todos. Valor desconhecido é recusado. */
-export function parseContentStatusFilter(raw: string | null): ContentStatusApi | null | "invalid" {
-  if (raw === null || raw === "" || raw === "all") return null;
-  return (CONTENT_STATUSES as readonly string[]).includes(raw) ? (raw as ContentStatusApi) : "invalid";
-}
