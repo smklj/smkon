@@ -6,6 +6,7 @@ import { LimitsForm } from "@/components/agents/LimitsForm";
 import { StartRunForm } from "@/components/agents/StartRunForm";
 import { ToolToggle } from "@/components/agents/ToolToggle";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
+import { Pager, pageHref } from "@/components/ui/Pager";
 import { failureReason } from "@/lib/agents/detail";
 import { loadAgents, type AgentOverview } from "@/lib/agents/server";
 import {
@@ -18,6 +19,7 @@ import {
   RUN_STATUS_TONE,
   STEP_PHASE_LABEL,
 } from "@/lib/agents/types";
+import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { WORKSPACE_TIMEZONE } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
@@ -28,16 +30,21 @@ export const metadata: Metadata = { title: "Agentes de IA" };
 type Data =
   | { state: "no-workspace" }
   | { state: "error" }
-  | { state: "ok"; role: MemberRole; agents: AgentOverview };
+  | { state: "ok"; role: MemberRole; agents: AgentOverview; cursorReset: boolean };
 
-async function load(): Promise<Data> {
+async function load(cursor: string | null): Promise<Data> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { state: "no-workspace" };
     const workspace = await findWorkspace(supabase, user.id);
     if (!workspace) return { state: "no-workspace" };
-    return { state: "ok", role: workspace.role, agents: await loadAgents(supabase, workspace.organizationId) };
+    try {
+      return { state: "ok", role: workspace.role, agents: await loadAgents(supabase, workspace.organizationId, { cursor }), cursorReset: false };
+    } catch (error) {
+      if (!(error instanceof InvalidCursorError)) throw error;
+      return { state: "ok", role: workspace.role, agents: await loadAgents(supabase, workspace.organizationId), cursorReset: true };
+    }
   } catch (error) {
     log("error", "page.agentes", errorFields(error));
     return { state: "error" };
@@ -52,8 +59,10 @@ const dateTime = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit",
 });
 
-export default async function AgentsPage() {
-  const data = await load();
+export default async function AgentsPage({ searchParams }: { searchParams: Promise<{ cursor?: string }> }) {
+  const params = await searchParams;
+  const cursor = typeof params.cursor === "string" ? params.cursor : null;
+  const data = await load(cursor);
   const ok = data.state === "ok" ? data : null;
   const isOwner = ok?.role === "owner";
   const canOperate = ok?.role === "owner" || ok?.role === "admin";
@@ -135,7 +144,14 @@ export default async function AgentsPage() {
           ) : null}
 
           <section className="panel" aria-labelledby="execucoes-titulo">
-            <SectionHeading id="execucoes-titulo" title="Execuções recentes" aside={<span className="muted">últimas 20</span>} />
+            <SectionHeading
+              id="execucoes-titulo"
+              title="Execuções recentes"
+              aside={<span className="muted">{cursor && !ok.cursorReset ? "páginas anteriores" : "mais recentes primeiro"}</span>}
+            />
+            {ok.cursorReset ? (
+              <p className="feedback feedback-info" role="status">O link de paginação não é mais válido. Mostrando as execuções mais recentes.</p>
+            ) : null}
             {ok.agents.runs.length === 0 ? (
               <div className="empty"><p className="empty-title">Nenhuma execução</p><p>Execuções criadas aparecem aqui com cada passo registrado.</p></div>
             ) : (
@@ -168,6 +184,11 @@ export default async function AgentsPage() {
                 ))}
               </ul>
             )}
+            <Pager
+              shown={ok.agents.runs.length}
+              nextHref={ok.agents.nextCursor ? pageHref("/agentes", { cursor: ok.agents.nextCursor }) : null}
+              firstHref={cursor && !ok.cursorReset ? pageHref("/agentes", {}) : null}
+            />
           </section>
         </>
       ) : null}
