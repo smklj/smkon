@@ -7,9 +7,9 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 
 | # | Etapa | Estado | PR |
 |---|---|---|---|
-| 1 | Plano (este arquivo) + conferência dos tipos gerados do staging | ✅ feito | (PR da etapa 1–2a) |
-| 2 | Validação centralizada `src/lib/validation/fields.ts` + testes | ✅ feito | (PR da etapa 1–2a) |
-| 2a | Produtos | ✅ feito | (PR da etapa 1–2a) |
+| 1 | Plano (este arquivo) + conferência dos tipos gerados do staging | ✅ feito | #54 |
+| 2 | Validação centralizada `src/lib/validation/fields.ts` + testes | ✅ feito | #54 |
+| 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ⏳ | — |
 | 2c | Mídia e licenças | ⏳ | — |
 | 2d | Financeiro (comissões) | ⏳ | — |
