@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { scheduleAction, type CalendarState } from "@/app/(app)/calendario/actions";
-import type { ApprovedContent } from "@/lib/publication/server";
+import type { ApprovedContent } from "@/lib/publication/repository";
 
 export function ScheduleForm({ contents, defaultWhen }: { contents: ApprovedContent[]; defaultWhen: string }) {
   const [state, action, pending] = useActionState<CalendarState, FormData>(scheduleAction, null);

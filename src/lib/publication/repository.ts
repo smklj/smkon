@@ -1,7 +1,13 @@
+/**
+ * Publicação (calendário em dry-run) · repository: acesso a dados (S4).
+ * Só consultas e RPCs; permissões em service.ts e validação em schema.ts.
+ * schedule_publication, run_publication_dry_run e cancel_publication conferem no
+ * banco a versão aprovada, o papel e o workspace. Nada aqui publica em rede social.
+ */
 import type { createClient } from "@/lib/supabase/server";
 import { toChecks, type PublicationChannel, type PublicationJobRow, type PublicationStatus } from "./types";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export type ApprovedContent = { id: string; title: string; version: number; channels: string[] };
 
