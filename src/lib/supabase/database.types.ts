@@ -1381,6 +1381,32 @@ export type Database = {
           },
         ]
       }
+      user_active_workspace: {
+        Row: {
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          organization_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_active_workspace_organization_id_user_id_fkey"
+            columns: ["organization_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["organization_id", "user_id"]
+          },
+        ]
+      }
     }
     Views: {
       affiliate_commission_summary: {
@@ -1534,6 +1560,34 @@ export type Database = {
       revoke_invitation: {
         Args: { p_invitation_id: string }
         Returns: undefined
+      }
+      change_member_role: {
+        Args: { p_organization_id: string; p_role: string; p_user_id: string }
+        Returns: {
+          changed: boolean
+          member_role: string
+          user_id: string
+        }[]
+      }
+      list_workspace_members: {
+        Args: { p_organization_id: string }
+        Returns: {
+          email: string | null
+          joined_at: string
+          member_role: string
+          user_id: string
+        }[]
+      }
+      remove_member: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      set_active_workspace: {
+        Args: { p_organization_id: string }
+        Returns: {
+          member_role: string
+          workspace_id: string
+        }[]
       }
       workspace_overview: {
         Args: { p_organization_id: string }
