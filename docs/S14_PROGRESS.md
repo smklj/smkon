@@ -113,8 +113,8 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 
 | # | Etapa | Status | PR | Validação real |
 |---|---|---|---|---|
-| 1 | Plano: este arquivo (arquitetura, contratos, checklist) | ✅ concluída | ver PR desta etapa | Só documentação; nenhum código alterado |
-| 2 | Núcleo do executor (`src/lib/agents/executor/`): loop, limites, kill switch, timeout, payload; testes com modelo falso | ⬜ | — | — |
+| 1 | Plano: este arquivo (arquitetura, contratos, checklist) | ✅ concluída | #35 | Só documentação; nenhum código alterado |
+| 2 | Núcleo do executor (`src/lib/agents/executor/`): loop, limites, kill switch, timeout, payload; testes com modelo falso | ✅ concluída | ver PR `feature/s14-executor-core` | `test:unit` 87/87 (19 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
 | 3 | Ferramentas `read_*` reais, escopadas por organização, colunas mínimas, ≤ 50 itens / 64 KB; testes | ⬜ | — | — |
 | 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ⬜ | — | — |
 | 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ⬜ | — | — |
@@ -136,3 +136,19 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
 - **19/11/2026 — etapa 1.** Plano criado após inspeção de `20261119020000_agent_runs.sql` (estados, `agent_record_step`
   aceitando `plan` a partir de `queued`, limites de 64 KB), `content_items`/`content_items_guard` (autor obrigatório,
   hash por gatilho) e `product_evidence.review_status`. Sem alterações de código ou banco.
+- **19/11/2026 — etapa 2.** Núcleo puro do executor em `src/lib/agents/executor/` (`types.ts`, `run.ts`, `limits.ts`,
+  `parse.ts`, `verifier.ts`), sem dependências novas e sem Supabase/fetch. Contratos fixados:
+  - `runAgent(ctx, { model, store, tools, verify?, limits?, logger? })` → `succeeded` | `failed` (código) | `stopped`
+    (execução deixou de estar ativa; nenhuma escrita a mais).
+  - Orçamento de passos: `1 plan + N execute + 1 verify ≤ maxSteps`; plano maior é `invalid_plan`. Se o banco aplicar
+    `step_limit` (`seq` nulo), o loop para sem chamar `agent_fail_run`.
+  - Estado relido antes de cada fase/ferramenta (kill switch); `run_not_active` vindo do banco também vira `stopped`.
+  - Ferramenta fora do grant **não executa**: o passo vai ao banco, que grava `rejected`.
+  - Erros de passo são gravados como passo `error` com `detail` = código e depois `agent_fail_run(código)`.
+    Códigos novos além do plano: `invalid_summary` e `internal_error`.
+  - Payload: `jsonBytes` reproduz `octet_length(jsonb::text)` (JSON + espaços do jsonb); conferido contra o Postgres 16
+    local (50 = 50 bytes num JSON aninhado com UTF-8).
+  - Verifier determinístico já aplica a regra de evidência sobre o que foi **observado** nesta execução por
+    `read_product_evidence` (`review_status = verified`, mesmo produto). Contrato de saída esperado de
+    `read_product_evidence`: `{ items: [{ id, product_id, review_status, ... }] }` (implementado na etapa 3).
+    A etapa 7 liga o adaptador de modelo e confirma a regra com dados reais.
