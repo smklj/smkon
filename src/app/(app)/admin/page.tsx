@@ -5,6 +5,7 @@ import { ContentList } from "@/components/admin/ContentList";
 import { DomainCard } from "@/components/admin/DomainCard";
 import { IntegrationPlaceholders } from "@/components/admin/IntegrationPlaceholders";
 import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
+import { MembersPanel } from "@/components/admin/MembersPanel";
 import { PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { AREAS, REVENUE_DOMAINS } from "@/lib/admin/constants";
 
@@ -22,8 +23,13 @@ export default function AdminPage() {
         description="Membros, modelo operacional, domínios financeiros e conexões reais do workspace."
       />
 
+      <section className="panel" aria-labelledby="membros-titulo">
+        <SectionHeading id="membros-titulo" title="Membros" aside={<span className="muted">papéis e acesso</span>} />
+        <MembersPanel />
+      </section>
+
       <section className="panel" aria-labelledby="convites-titulo">
-        <SectionHeading id="convites-titulo" title="Membros e convites" aside={<span className="muted">acesso somente por convite</span>} />
+        <SectionHeading id="convites-titulo" title="Convites" aside={<span className="muted">acesso somente por convite</span>} />
         <InvitationsPanel />
       </section>
 
