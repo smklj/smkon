@@ -1,7 +1,7 @@
 # S7.2 — Movimento e feedback (fases A e B)
 
 **Branch:** `feature/s7-2-motion-feedback` → PR para `feature/smkon-production-readiness`
-**Base:** `docs/DESIGN_MOTION_STUDY.md`. Decisão do Owner: fases A e B juntas. A fase C (gráficos) aguarda a escolha de cor.
+**Base:** `docs/DESIGN_MOTION_STUDY.md`. Decisão do Owner: fases A e B juntas. Fase C delegada ("faça o que achar melhor"): **monocromático, cor só para estado**, seguindo a decisão oficial de identidade.
 
 ## O que mudou
 
@@ -28,10 +28,24 @@ A primeira execução do E2E falhou em `products.spec` com "A data de observaç�
 - Correção: `workspaceDate()` calcula o dia no fuso de Brasília. "Hoje" usa o instante atual, e um dia passado vira meio-dia de Brasília. Arquivos: `src/lib/products/validation.ts` e `src/app/(app)/produtos/[id]/page.tsx`. Teste unitário novo para 23h20 e 8h de Brasília.
 
 ## Testes
-- `npm run test:unit`: 67/67 (5 da fila de toasts e 1 do fuso das evidências).
+- `npm run test:unit`: 68/68 (inclui toasts, fuso das evidências e séries diárias).
+- `npm run test:db`: 13/13 arquivos; `013_overview_trends` 10/10.
 - `typecheck`, `lint` e `build`: sem erros.
 - Revisão visual em página de teste local com o CSS compilado: métricas, linhas, botão em envio, esqueleto e toasts.
 - CI e E2E: ver PR.
 
+## Fase C — leitura de dados e hierarquia
+
+| Mudança | Arquivos |
+|---|---|
+| `workspace_overview` passa a devolver `trends`: conteúdos criados (14 dias), publicações agendadas (próximos 7 dias) e execuções de agentes (14 dias), por dia no fuso de Brasília, com todos os dias preenchidos. As chaves anteriores não mudam | `supabase/migrations/20261119030000_workspace_overview_trends.sql`, `supabase/tests/013_overview_trends.test.sql` (10 checagens) |
+| Barras diárias (série única, escala a partir de zero, dia atual destacado, tooltip ao passar o mouse, tabela para leitores de tela) | `src/components/charts/DailyBars.tsx` |
+| Barra segmentada dos estados da comissão: degraus de cinza (estágio mais avançado mais claro) e vermelho só para estorno, com legenda em texto e valores | `src/components/charts/StateBar.tsx` |
+| Visão geral: indicadores sem caixa (números maiores), painel "Ritmo da operação" e barra de estados em Afiliados | `src/app/(app)/page.tsx`, `globals.css` |
+| Admin: "Modelo operacional" e "Integrações planejadas" viram seções recolhíveis (referência) | `src/app/(app)/admin/page.tsx` |
+| Estados vazios da visão geral com o próximo passo (criar conteúdo, agendar) | `src/app/(app)/page.tsx` |
+
+Ambientes: migration aplicada no **staging**. A função confere por md5 (`cbe6fe06…`) com um banco local montado a partir do Git e foi executada como membro real (14/7/14 dias; último dia = hoje em Brasília). A produção é aplicada junto do release.
+
 ## Pendências
-- Fase C: gráficos e hierarquia. Depende da decisão de cor (monocromático ou acento único).
+- Gráficos de financeiro por período (comissões por dia) quando houver ingestão real (S11).
