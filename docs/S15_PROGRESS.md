@@ -86,3 +86,9 @@ Regras no banco (constraint `contacts_basis_purpose`, espelhada em `BASES_BY_PUR
   - UI `/audiencia` no app shell; navegação: área 07 passa a "Em construção" com link. Sem migration no ambiente, a página mostra aviso claro em vez de erro.
   - `typecheck`, `lint` e `build` sem erros.
   - Pendente: CI do PR, aplicar a migration no staging (autorizado), conferir permissões/RLS/advisors, e só então incluir `/audiencia` no `navigation.spec` e um E2E do fluxo.
+- 19/11/2026 13h25 UTC — PR #47 aberto. Job "Database migrations and SQL tests" verde no CI (push). Com os testes SQL verdes localmente e no CI, migration `20261119110000_audience_consent` **aplicada no staging** (`xoyasrizivadxnpmzzno`), conforme autorização do Owner de 19/11.
+  - Conferência: o MD5 de `pg_get_functiondef` das 18 funções, da definição da view e das constraints das três tabelas é **idêntico** entre staging e o banco local migrado a partir do repositório.
+  - Permissões no staging: RLS ligada nas três tabelas; `authenticated` sem insert/update/delete; `anon` sem select nas tabelas e na view; funções internas (`audience_*`) sem execute para `anon`/`authenticated`; 8 funções públicas só para `authenticated`.
+  - `get_advisors` (segurança): para o S15 aparecem apenas os avisos esperados `authenticated_security_definer_function_executable` das 8 RPCs públicas (mesmo padrão dos outros módulos; cada uma checa sessão e papel). Nenhum aviso de view security definer, RLS desligada ou acesso anônimo do S15. Avisos pré-existentes de outras frentes não foram tocados.
+  - E2E: `/audiencia` entrou no `navigation.spec` e foi criado `tests/e2e/audience.spec.mjs` (cadastro com prova → revogar tudo → exportação JSON → exclusão com confirmação; o contato de teste termina anonimizado).
+  - Produção: migration **não** aplicada (exige autorização explícita do Owner).
