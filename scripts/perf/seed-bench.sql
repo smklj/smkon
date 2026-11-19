@@ -4,6 +4,7 @@
 -- Volume: 20 workspaces; o workspace "alvo" concentra a maior parte das linhas para
 -- representar um cliente grande, e os demais criam a distribuição multi-tenant.
 --   products ~50 mil · content_items ~50 mil · media_assets ~30 mil · media_licenses ~45 mil
+--   agent_runs 30 mil · agent_steps 150 mil
 --
 -- Os gatilhos (auditoria, guards, snapshots) ficam desligados durante a carga
 -- (session_replication_role = replica): medem-se leituras, não as regras de escrita,
@@ -84,10 +85,38 @@ select ('10000000-0000-4000-8000-' || lpad(p.org_n::text, 12, '0'))::uuid,
        date_trunc('minute', now() - (random() * interval '180 days'))
 from bench_org_pick p;
 
+-- Execuções de agentes (lista de /agentes): 30 mil execuções, 5 passos cada (150 mil passos).
+insert into public.agent_runs (organization_id, agent, goal, status, max_steps, step_count, created_by,
+                               created_at, started_at, finished_at)
+select ('10000000-0000-4000-8000-' || lpad(p.org_n::text, 12, '0'))::uuid,
+       (array['product_research','content_drafting','operations_review'])[1 + (p.n % 3)],
+       'Objetivo de benchmark ' || p.n,
+       (array['succeeded','failed','cancelled','killed'])[1 + (p.n % 4)],
+       12, 5,
+       ('00000000-0000-4000-8000-' || lpad(p.org_n::text, 12, '0'))::uuid,
+       t.at, t.at, t.at + interval '30 seconds'
+from bench_org_pick p
+-- Um instante por linha (a expressão depende de p.n; random() num lateral sem correlação
+-- seria avaliado uma vez só). Granularidade de minuto em 365 dias: há empates.
+cross join lateral (
+  select date_trunc('minute', now()) - ((hashtext('run' || p.n)::bigint & 2147483647) % 525600) * interval '1 minute' as at
+) t
+where p.n <= 30000;
+
+insert into public.agent_steps (organization_id, run_id, seq, phase, tool, status, detail, created_at)
+select r.organization_id, r.id, s,
+       case when s = 1 then 'plan' when s = 5 then 'verify' else 'execute' end,
+       case when s in (1, 5) then null else 'read_products' end,
+       'ok', 'passo ' || s, r.created_at + s * interval '1 second'
+from public.agent_runs r
+cross join generate_series(1, 5) s;
+
 set session_replication_role = origin;
 analyze;
 
 select 'products' as tabela, count(*) from public.products
 union all select 'content_items', count(*) from public.content_items
 union all select 'media_assets', count(*) from public.media_assets
-union all select 'media_licenses', count(*) from public.media_licenses;
+union all select 'media_licenses', count(*) from public.media_licenses
+union all select 'agent_runs', count(*) from public.agent_runs
+union all select 'agent_steps', count(*) from public.agent_steps;

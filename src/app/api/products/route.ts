@@ -29,7 +29,8 @@ export async function GET(request: Request) {
       cursor: params.get("cursor"),
       pageSize: parsePageSize(params.get("limit")),
     });
-    return NextResponse.json({ items: page.items, nextCursor: page.nextCursor });
+    // Dados do workspace do usuário: nenhum cache compartilhado (CDN/proxy) nem do navegador (S16).
+    return NextResponse.json({ items: page.items, nextCursor: page.nextCursor }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return toErrorResponse("api.products.get", error, "Não foi possível consultar produtos.");
   }

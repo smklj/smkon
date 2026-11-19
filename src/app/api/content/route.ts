@@ -70,6 +70,9 @@ function toRow(payload: ContentPayload) {
   };
 }
 
+// Dados do workspace do usuário: nenhum cache compartilhado (CDN/proxy) nem do navegador (S16).
+const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" };
+
 /**
  * Biblioteca do Studio paginada por cursor: ?cursor=&limit= (até 100) e ?status=draft|approved|archived.
  * Na primeira página (sem cursor) também devolve as contagens por status do workspace inteiro,
@@ -89,7 +92,7 @@ export async function GET(request: Request) {
 
     // Leitura sem efeito colateral: sem workspace, não há conteúdo.
     const workspace = await findWorkspace(supabase, user.id);
-    if (!workspace) return NextResponse.json({ items: [], nextCursor: null, counts: after ? null : emptyCounts(), role: null });
+    if (!workspace) return NextResponse.json({ items: [], nextCursor: null, counts: after ? null : emptyCounts(), role: null }, { headers: PRIVATE_NO_STORE });
 
     let query = supabase.from("content_items").select(CONTENT_SELECT_COLUMNS).eq("organization_id", workspace.organizationId);
     if (status) query = query.eq("status", status);
@@ -100,7 +103,7 @@ export async function GET(request: Request) {
     ]);
     if (list.error) throw list.error;
     const page = toPage(CONTENT_KEYSET, list.data ?? [], pageSize);
-    return NextResponse.json({ items: page.items, nextCursor: page.nextCursor, counts, role: workspace.role });
+    return NextResponse.json({ items: page.items, nextCursor: page.nextCursor, counts, role: workspace.role }, { headers: PRIVATE_NO_STORE });
   } catch (error) {
     return toErrorResponse("api.content.get", error, "Não foi possível carregar os conteúdos.");
   }
