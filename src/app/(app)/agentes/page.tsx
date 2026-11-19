@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CancelRunForm } from "@/components/agents/CancelRunForm";
 import { KillSwitchForm } from "@/components/agents/KillSwitchForm";
 import { LimitsForm } from "@/components/agents/LimitsForm";
 import { StartRunForm } from "@/components/agents/StartRunForm";
 import { ToolToggle } from "@/components/agents/ToolToggle";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
+import { failureReason } from "@/lib/agents/detail";
 import { loadAgents, type AgentOverview } from "@/lib/agents/server";
 import {
   AGENT_LABEL,
@@ -141,10 +143,10 @@ export default async function AgentsPage() {
                 {ok.agents.runs.map((run) => (
                   <li className="row row-top" key={run.id}>
                     <div className="row-main">
-                      <p className="row-title">{isAgentKind(run.agent) ? AGENT_LABEL[run.agent] : run.agent} · {run.goal}</p>
+                      <Link className="row-title" href={`/agentes/${run.id}`}>{isAgentKind(run.agent) ? AGENT_LABEL[run.agent] : run.agent} · {run.goal}</Link>
                       <p className="row-meta">
                         {dateTime.format(new Date(run.created_at))} · {run.step_count}/{run.max_steps} passos
-                        {run.error_code ? ` · ${run.error_code}` : ""}
+                        {run.error_code ? ` · ${failureReason(run.error_code)}` : ""}
                         {run.cancel_reason ? ` · ${run.cancel_reason}` : ""}
                       </p>
                       {run.steps.length > 0 ? (

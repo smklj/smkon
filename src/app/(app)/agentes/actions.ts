@@ -21,7 +21,8 @@ async function context(roles: MemberRole[]) {
 }
 
 function done(ok: string): AgentState {
-  revalidatePath("/agentes");
+  // "layout" inclui o detalhe /agentes/[id], que também mostra o estado e o botão de cancelar.
+  revalidatePath("/agentes", "layout");
   return { ok, at: Date.now() };
 }
 
