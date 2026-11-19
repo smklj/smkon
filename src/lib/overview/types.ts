@@ -55,8 +55,17 @@ export type ConnectionItem = {
   last_synced_at: string | null;
 };
 
+export type DailyPoint = { day: string; count: number };
+
+export type Trends = {
+  content_created: DailyPoint[];
+  publications_scheduled: DailyPoint[];
+  agent_runs: DailyPoint[];
+};
+
 export type WorkspaceOverview = {
   generated_at: string;
+  trends: Trends;
   content: ContentCounts;
   approval_queue: ApprovalQueueItem[];
   products: ProductCounts;
@@ -119,6 +128,12 @@ function nullableStr(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+function series(value: unknown): DailyPoint[] {
+  return list(value)
+    .filter((row) => typeof row.day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.day as string))
+    .map((row) => ({ day: row.day as string, count: Math.max(0, Math.round(num(row.count))) }));
+}
+
 function connectionStatus(value: unknown): ConnectionStatus {
   return (CONNECTION_STATUSES as readonly string[]).includes(value as string) ? (value as ConnectionStatus) : "error";
 }
@@ -130,9 +145,15 @@ export function parseOverview(raw: unknown): WorkspaceOverview {
   const publication = obj(root.publication);
   const finance = obj(root.finance);
   const connections = obj(root.connections);
+  const trends = obj(root.trends);
 
   return {
     generated_at: str(root.generated_at),
+    trends: {
+      content_created: series(trends.content_created),
+      publications_scheduled: series(trends.publications_scheduled),
+      agent_runs: series(trends.agent_runs),
+    },
     content: {
       total: num(content.total),
       draft: num(content.draft),
@@ -232,4 +253,9 @@ export function costPerClick(totals: PaidMediaTotals): number | null {
 
 export function providerLabel(provider: string): string {
   return PROVIDER_LABEL[provider] ?? provider;
+}
+
+/** Soma de uma série diária. */
+export function seriesTotal(points: DailyPoint[]): number {
+  return points.reduce((sum, point) => sum + point.count, 0);
 }
