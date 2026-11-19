@@ -66,7 +66,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S15** · contatos, consentimento append-only, pedidos do titular e anonimização implementados e testados (`docs/S15_PROGRESS.md`); migration `20261119110000` aguardando staging | Audiência e CRM com consentimento (LGPD) |
+| **S15** · ✅ implementado e testado (`docs/S15_HANDOFF.md`): contatos com base legal, consentimento append-only, pedidos do titular com prazo e exclusão por anonimização; migration `20261119110000` no staging, produção aguardando autorização 🔐 | Audiência e CRM com consentimento (LGPD) |
 | **S16** | Performance, paginação, cache, testes de carga |
 
 ## Bloqueios de ambiente conhecidos

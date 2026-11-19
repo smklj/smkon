@@ -8,7 +8,7 @@ Branch: `feature/s15-*` · Migrations: `20261119110000`–`20261119119999` · Te
 - [x] 2. Banco: `contacts`, `consent_events`, estado derivado, `data_subject_requests`, anonimização, RLS, funções com papéis, auditoria sem dado pessoal, testes SQL.
 - [x] 3. Servidor: `src/lib/audience/*` (validação, consultas, exportação JSON) com testes unitários.
 - [x] 4. UI `/audiencia` no app shell (lista com busca, cadastro, histórico, revogar, exportar, pedido do titular, exclusão com confirmação). Sem envio real de mensagens.
-- [ ] 5. Handoff `docs/S15_HANDOFF.md` + linha do S15 no ROADMAP.
+- [x] 5. Handoff `docs/S15_HANDOFF.md` + linha do S15 no ROADMAP.
 
 ## Plano
 
@@ -92,3 +92,4 @@ Regras no banco (constraint `contacts_basis_purpose`, espelhada em `BASES_BY_PUR
   - `get_advisors` (segurança): para o S15 aparecem apenas os avisos esperados `authenticated_security_definer_function_executable` das 8 RPCs públicas (mesmo padrão dos outros módulos; cada uma checa sessão e papel). Nenhum aviso de view security definer, RLS desligada ou acesso anônimo do S15. Avisos pré-existentes de outras frentes não foram tocados.
   - E2E: `/audiencia` entrou no `navigation.spec` e foi criado `tests/e2e/audience.spec.mjs` (cadastro com prova → revogar tudo → exportação JSON → exclusão com confirmação; o contato de teste termina anonimizado).
   - Produção: migration **não** aplicada (exige autorização explícita do Owner).
+- 19/11/2026 13h35 UTC — E2E corrigido (seletor ambíguo no teste, não no app); handoff `docs/S15_HANDOFF.md` escrito e linha do S15 atualizada no ROADMAP.
