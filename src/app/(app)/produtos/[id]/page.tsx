@@ -10,6 +10,7 @@ import { isUuid } from "@/lib/content/server";
 import { formatMoney } from "@/lib/finance/commissions";
 import { errorFields, log } from "@/lib/observability/log";
 import { canAddEvidence, canEditProducts, getProduct, listEvidence } from "@/lib/products/server";
+import { workspaceDate } from "@/lib/products/validation";
 import {
   EVIDENCE_KIND_META,
   REVENUE_DOMAIN_LABEL,
@@ -80,7 +81,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const { product, evidence, workspace } = data;
   const canEdit = canEditProducts(workspace.role);
   const pending = evidence.filter((item) => item.review_status === "pending").length;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = workspaceDate();
   const affiliateHost = safeHost(product.affiliate_url);
 
   return (
