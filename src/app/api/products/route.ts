@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { parsePageSize } from "@/lib/pagination/keyset";
-import { canEditProducts, createProduct, listProducts } from "@/lib/products/server";
-import { parseProductInput } from "@/lib/products/validation";
+import { listProducts } from "@/lib/products/repository";
+import { canEditProducts, registerProduct } from "@/lib/products/service";
 import { findWorkspace } from "@/lib/tenancy/workspace";
+import { isPlainObject } from "@/lib/validation/fields";
 
 async function context() {
   const supabase = await createClient();
@@ -48,9 +49,9 @@ export async function POST(request: Request) {
     } catch {
       return jsonError(400, "invalid_input", "Corpo da requisição inválido.");
     }
-    if (!body || typeof body !== "object" || Array.isArray(body)) return jsonError(400, "invalid_input", "Corpo da requisição inválido.");
+    if (!isPlainObject(body)) return jsonError(400, "invalid_input", "Corpo da requisição inválido.");
 
-    const id = await createProduct(ctx.supabase, ctx.workspace.organizationId, parseProductInput(body));
+    const id = await registerProduct(ctx.supabase, ctx.workspace.organizationId, body);
     return NextResponse.json({ id, score: null, note: "Produto salvo sem score: adicione e verifique evidências." }, { status: 201 });
   } catch (error) {
     return toErrorResponse("api.products.post", error, "Não foi possível salvar o produto.");

@@ -1,10 +1,16 @@
+/**
+ * Produtos · repository: acesso a dados (Supabase) do catálogo e das evidências (S4).
+ * Só consultas e chamadas de RPC; regras de permissão ficam em service.ts e a
+ * validação de entrada em schema.ts. O isolamento por workspace é garantido
+ * pela RLS e reforçado pelo filtro organization_id em cada consulta.
+ */
 import { log } from "@/lib/observability/log";
 import type { createClient } from "@/lib/supabase/server";
 import { applyKeyset, decodeCursor, DEFAULT_PAGE_SIZE, toPage, type KeysetSpec, type Page } from "@/lib/pagination/keyset";
 import type { EvidenceRow, ProductRow } from "./types";
-import type { EvidenceInput, ProductInput } from "./validation";
+import type { EvidenceInput, ProductInput } from "./schema";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export const PRODUCT_COLUMNS =
   "id,name,source,type,status,revenue_domain,price_cents,currency,commission_percent,affiliate_url,external_id,score,score_reasons,updated_at";
@@ -139,12 +145,4 @@ export async function reviewEvidence(
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   return row?.product_score ?? null;
-}
-
-export function canEditProducts(role: string): boolean {
-  return role === "owner" || role === "admin";
-}
-
-export function canAddEvidence(role: string): boolean {
-  return role === "owner" || role === "admin" || role === "analyst";
 }
