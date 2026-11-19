@@ -1,0 +1,103 @@
+/**
+ * S14 etapa 6 — um disparo do worker: expira execuções presas, reserva e executa até N execuções.
+ *
+ * Puro em relação a infraestrutura: fila, store, modelo e ferramentas são injetados. A rota
+ * /api/agents/worker monta as dependências reais (cliente service_role) e chama esta função.
+ *
+ * - Sem modelo configurado: nada é reservado nem expirado (as execuções continuam na fila) e o disparo
+ *   devolve model_not_configured. runAgent também recusa sem modelo, como segunda barreira.
+ * - Começa execuções novas só dentro do orçamento de tempo (budgetMs) e até maxRuns por disparo.
+ *   Uma execução já iniciada não é interrompida pelo orçamento; se a função da Vercel for encerrada no meio,
+ *   o lease (agent_reap_stale_runs) falha a execução com worker_timeout no disparo seguinte.
+ */
+import { log } from "../../observability/log.ts";
+import { runAgent, type ExecutorLogger } from "../executor/run.ts";
+import type { AgentModel, AgentStore, ExecutorLimits, RunResult, ToolRegistry } from "../executor/types.ts";
+import { toRunContext, type WorkerQueue } from "./queue.ts";
+
+export const DEFAULT_LEASE_SECONDS = 600;
+export const DEFAULT_MAX_RUNS_PER_TICK = 3;
+export const DEFAULT_TICK_BUDGET_MS = 120_000;
+
+export interface WorkerTickDeps {
+  queue: WorkerQueue;
+  store: AgentStore;
+  model: AgentModel | null;
+  tools: ToolRegistry;
+  limits?: Partial<ExecutorLimits>;
+  leaseSeconds?: number;
+  maxRuns?: number;
+  budgetMs?: number;
+  now?: () => number;
+  logger?: ExecutorLogger;
+  /** Injeção para testes; padrão runAgent. */
+  execute?: typeof runAgent;
+}
+
+export type TickRun =
+  | { runId: string; status: RunResult["status"]; code?: string }
+  | { runId: string; status: "invalid"; code: "internal_error"; reason: string };
+
+export type WorkerTickResult =
+  | { status: "model_not_configured" }
+  | { status: "ok"; reaped: number; runs: TickRun[]; stoppedBy: "empty_queue" | "max_runs" | "budget" };
+
+const SCOPE = "agents.worker";
+
+export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickResult> {
+  const logger = deps.logger ?? log;
+  if (!deps.model) {
+    logger("warn", SCOPE, { event: "model_not_configured" });
+    return { status: "model_not_configured" };
+  }
+
+  const now = deps.now ?? Date.now;
+  const execute = deps.execute ?? runAgent;
+  const maxRuns = deps.maxRuns ?? DEFAULT_MAX_RUNS_PER_TICK;
+  const budgetMs = deps.budgetMs ?? DEFAULT_TICK_BUDGET_MS;
+  const startedAt = now();
+
+  const reaped = await deps.queue.reap(deps.leaseSeconds ?? DEFAULT_LEASE_SECONDS);
+  if (reaped > 0) logger("warn", SCOPE, { event: "reaped", count: reaped });
+
+  const runs: TickRun[] = [];
+  let stoppedBy: "empty_queue" | "max_runs" | "budget" = "max_runs";
+  while (runs.length < maxRuns) {
+    if (now() - startedAt >= budgetMs) {
+      stoppedBy = "budget";
+      break;
+    }
+    const claimed = await deps.queue.claim();
+    if (!claimed) {
+      stoppedBy = "empty_queue";
+      break;
+    }
+
+    const mapped = toRunContext(claimed);
+    if ("invalid" in mapped) {
+      logger("error", SCOPE, { event: "invalid_claim", runId: claimed.runId, reason: mapped.invalid });
+      try {
+        await deps.store.fail(claimed.runId, "internal_error");
+      } catch (error) {
+        logger("error", SCOPE, { event: "fail_invalid_claim_error", runId: claimed.runId, message: String((error as Error)?.message ?? error) });
+      }
+      runs.push({ runId: claimed.runId, status: "invalid", code: "internal_error", reason: mapped.invalid });
+      continue;
+    }
+
+    logger("info", SCOPE, { event: "claimed", runId: claimed.runId, agent: mapped.ctx.agent });
+    const result = await execute(mapped.ctx, {
+      model: deps.model,
+      store: deps.store,
+      tools: deps.tools,
+      limits: deps.limits,
+      logger,
+    });
+    runs.push(result.status === "failed"
+      ? { runId: claimed.runId, status: "failed", code: result.code }
+      : { runId: claimed.runId, status: result.status });
+  }
+
+  logger("info", SCOPE, { event: "tick_done", reaped, runs: runs.length, stoppedBy, ms: now() - startedAt });
+  return { status: "ok", reaped, runs, stoppedBy };
+}

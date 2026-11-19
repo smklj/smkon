@@ -118,7 +118,7 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 | 3 | Ferramentas `read_*` reais, escopadas por organização, colunas mínimas, ≤ 50 itens / 64 KB; testes | ✅ concluída | ver PR `feature/s14-read-tools` | `test:unit` 103/103 (16 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
 | 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ✅ concluída | ver PR `feature/s14-draft-content` | `test:db` 14/14 arquivos (014: 40 asserções), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
 | 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ✅ concluída | ver PR `feature/s14-claim-queue` | `test:db` 15/15 arquivos (015: 37 asserções), corrida real com 8 sessões (20 reservas, 0 duplicadas), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
-| 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ⬜ | — | — |
+| 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ✅ concluída | ver PR `feature/s14-worker` | `test:unit` 121/121 (18 novos), `test:db` 15/15 arquivos, typecheck, lint e build OK; `next start` local: sem/errado Bearer → 401, Bearer certo → 503 `model_not_configured` (proxy deixa passar). 🔐 nada configurado na Vercel |
 | 7 | Adaptador de modelo sem chave (recusa `model_not_configured`); Verifier exige evidência `verified` | ⬜ | — | — |
 | 8 | UI: detalhe da execução em `/agentes` (passos resumidos, motivo de falha), sem publicar | ⬜ | — | — |
 | 9 | Handoff `docs/S14_HANDOFF.md` + estado no `docs/ROADMAP_SPLITS.md` | ⬜ | — | — |
@@ -128,8 +128,25 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que depender dele.
 
 - Aplicar no staging e depois na produção as migrations das etapas 4 e 5.
-- Configurar `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED` e `SUPABASE_SERVICE_ROLE_KEY` (se ainda não existir no servidor) na Vercel, e o cron do worker.
+- Configurar na Vercel (só servidor, nunca `NEXT_PUBLIC_`): `CRON_SECRET` (≥ 32 caracteres), `AGENT_EXECUTOR_ENABLED=true`
+  (só quando quiser ligar) e `SUPABASE_SECRET_KEY` (chave secreta/service_role do Supabase; hoje não existe no projeto),
+  e o cron do worker (ver "Configuração do worker" abaixo).
 - Escolher provedor de IA (Vercel AI Gateway ou Anthropic), modelo e orçamento; criar a chave.
+
+## Configuração do worker (etapa 6 — 🔐 a fazer pelo Owner, nada disso foi aplicado)
+
+1. Migrations das etapas 4 e 5 aplicadas no ambiente (staging primeiro).
+2. Variáveis no projeto `smkon` da Vercel (Production/Preview conforme o ambiente): `SUPABASE_SECRET_KEY`, `CRON_SECRET`
+   (gerar com 32+ caracteres aleatórios), `AGENT_EXECUTOR_ENABLED=true` e, na etapa 7, a credencial do provedor de IA.
+3. Cron (exemplo, **não** está no repositório):
+   ```json
+   { "crons": [{ "path": "/api/agents/worker", "schedule": "*/5 * * * *" }] }
+   ```
+   A Vercel envia `Authorization: Bearer $CRON_SECRET` automaticamente. No plano Hobby a Vercel só permite cron diário;
+   intervalo de minutos exige plano Pro.
+4. Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo), `401 not_authenticated`,
+   `503 model_not_configured` (até a etapa 7 + credencial), `503 service_not_configured` (chave), `200
+   { reaped, stoppedBy, runs: [{ runId, status, code? }] }`.
 
 ## Registro
 
@@ -228,3 +245,30 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
     lease (600 s) precisa ficar acima da duração máxima da função na Vercel.
   - **Limitação conhecida**: `agent_record_step` (S13) ainda aceita `plan` direto de `queued` sem reserva; o worker
     só usa execuções reservadas. Exigir reserva no banco mudaria função do S13 — fica como proposta, não feito aqui.
+- **19/11/2026 — etapa 6.** Worker HTTP, store real e `draft_content` em TypeScript. Sem migration, sem dependência
+  nova, sem configuração remota.
+  - **Rota** `src/app/api/agents/worker/route.ts` (GET, `runtime = nodejs`, `dynamic = force-dynamic`,
+    `maxDuration = 300` < lease de 600 s). Lógica em `src/lib/agents/worker/handler.ts`, testável sem o Next. Barreiras,
+    nesta ordem e sem efeito colateral antes de passar todas: flag `AGENT_EXECUTOR_ENABLED === "true"` → segredo
+    `CRON_SECRET` (≥ 32 caracteres) → `Authorization: Bearer` comparado em tempo constante (SHA-256 dos dois lados +
+    `timingSafeEqual`, `worker/auth.ts`) → modelo configurado → chave `SUPABASE_SECRET_KEY`. Só então o cliente
+    `service_role` (`src/lib/supabase/service.ts`) é criado. Respostas com `Cache-Control: no-store`, só ids e códigos
+    (nada de objetivo, saída de ferramenta ou dado de produto); erro inesperado → 500 sem detalhes (detalhe só no log).
+  - **Proxy**: `/api/agents/worker` é a única "rota de máquina" (`isMachineRoute`): o proxy não exige sessão nem toca
+    cookies nela; a rota se autentica sozinha. Demais `/api/*` continuam 401 sem sessão (conferido com `next start`).
+  - **Disparo** (`worker/tick.ts`): sem modelo não reserva nem expira nada (execuções continuam `queued`); com modelo,
+    `agent_reap_stale_runs(600)` e depois até 3 reservas (`agent_claim_next_run`) dentro de 120 s para *começar*
+    execuções. Reserva inconsistente (agente desconhecido, contexto vazio, passos já existentes) é falhada com
+    `internal_error` em vez de adivinhar. Ferramentas liberadas são filtradas pela allowlist do código também.
+  - **Store** (`executor/store.ts`): `agent_record_step` / `agent_finish_run` / `agent_fail_run` e leitura só de
+    `agent_runs.status`; erros do banco viram `AgentDbError` com o código (`run_not_active` etc.), que o loop já trata.
+  - **`draft_content`** (`executor/tools/draft.ts`): RPC `agent_draft_content` com `runId` do contexto (nunca da entrada);
+    entrada vai inteira ao banco, que a valida estritamente; saída só `content_id`, `content_version`,
+    `content_status`; qualquer status diferente de `draft` é erro; mensagem de erro desconhecida vira `draft_failed`.
+  - **Modelo**: `executor/model.ts` devolve sempre `null` nesta etapa — a rota responde `503 model_not_configured`
+    mesmo com tudo ligado. A etapa 7 liga o adaptador.
+  - **Limitações conhecidas**: (1) uma execução já iniciada não é cortada pelo orçamento do disparo; se a Vercel encerrar
+    a função no meio, o lease falha a execução com `worker_timeout` no disparo seguinte (até ~10 min depois). Com
+    `maxSteps` alto e timeout de 20 s por passo, uma execução pode passar de 300 s — a etapa 7 deve passar um prazo total
+    ao `runAgent` ou limitar passos. (2) Sem teste de integração contra PostgREST real: os nomes de parâmetros das RPCs
+    foram conferidos com as migrations e `database.types.ts`, e os testes usam cliente falso.
