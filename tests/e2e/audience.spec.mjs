@@ -40,7 +40,7 @@ test("Audiência: cadastro com prova de consentimento, revogação, exportação
   expect(exported.consent_events).toHaveLength(2);
 
   // Exclusão exige a palavra de confirmação; depois disso o contato fica anonimizado.
-  await detail.getByText("Excluir dados pessoais", { exact: true }).click();
+  await detail.locator("summary", { hasText: "Excluir dados pessoais" }).click();
   const anonymize = page.getByRole("form", { name: "Excluir dados pessoais do contato" });
   await anonymize.getByLabel("Motivo (sem dados pessoais)").fill("Limpeza do teste E2E");
   await anonymize.getByLabel(/Digite EXCLUIR/).fill("excluir");
