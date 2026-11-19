@@ -40,7 +40,7 @@ export function EvidenceForm({ productId, today }: { productId: string; today: s
       {state?.error ? <p className="feedback feedback-error field-wide" role="alert">{state.error}</p> : null}
       {state?.ok ? <p className="feedback feedback-ok field-wide" role="status">{state.ok}</p> : null}
       <div className="form-actions">
-        <button type="submit" className="button button-secondary" disabled={pending}>{pending ? "Registrando…" : "Registrar evidência"}</button>
+        <button type="submit" className="button button-secondary" disabled={pending} aria-busy={pending}>{pending ? "Registrando…" : "Registrar evidência"}</button>
         <span className="muted">Evidências não podem ser editadas depois. Para corrigir, registre outra.</span>
       </div>
     </form>

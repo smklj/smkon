@@ -27,7 +27,7 @@ export function StartRunForm({ limit, disabled }: { limit: number; disabled: boo
       {state?.error ? <p className="feedback feedback-error field-wide" role="alert">{state.error}</p> : null}
       {state?.ok ? <p className="feedback feedback-ok field-wide" role="status">{state.ok}</p> : null}
       <div className="form-actions">
-        <button type="submit" className="button button-primary" disabled={pending || disabled}>{pending ? "Criando…" : "Criar execução"}</button>
+        <button type="submit" className="button button-primary" disabled={pending || disabled} aria-busy={pending}>{pending ? "Criando…" : "Criar execução"}</button>
       </div>
     </form>
   );

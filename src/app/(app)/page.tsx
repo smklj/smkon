@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CountUp } from "@/components/ui/CountUp";
 import { Icon } from "@/components/ui/Icon";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { formatMoney } from "@/lib/finance/commissions";
@@ -74,11 +75,12 @@ function isPublicationStatus(value: string): value is PublicationStatus {
   return value in PUBLICATION_STATUS_LABEL;
 }
 
-function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
+/** Valor numérico anima na primeira exibição; texto (ex.: "—", "2/3") é mostrado como está. */
+function Metric({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
     <div className="metric">
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong>{typeof value === "number" ? <CountUp value={value} /> : value}</strong>
       {hint ? <small className="metric-hint">{hint}</small> : null}
     </div>
   );
@@ -145,17 +147,17 @@ export default async function OverviewPage() {
       <section className="metrics" aria-label="Indicadores principais">
         <Metric
           label="Aguardando aprovação"
-          value={show(data?.content.draft, true)}
+          value={data ? data.content.draft : "—"}
           hint={data ? `${integer.format(data.content.total)} conteúdos no total` : undefined}
         />
         <Metric
           label="Publicações em 7 dias"
-          value={show(data?.publication.next_7_days)}
+          value={complete && data ? data.publication.next_7_days : "—"}
           hint={complete && data ? `${integer.format(data.publication.dry_run_failed)} com dry-run reprovado` : undefined}
         />
         <Metric
           label="Evidências para revisar"
-          value={show(data?.products.evidence_pending)}
+          value={complete && data ? data.products.evidence_pending : "—"}
           hint={complete && data ? `${integer.format(data.products.total)} produtos no catálogo` : undefined}
         />
         <Metric

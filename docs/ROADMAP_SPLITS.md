@@ -53,8 +53,14 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S13** · implementado e testado (`docs/S13_HANDOFF.md`); migration `20261119020000` aguardando staging/produção 🔐; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
+| **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
 | **S14** | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+
+## Experiência (proposto)
+
+| Split | Escopo |
+|---|---|
+| **S7.2** · fases A e B implementadas (`docs/S7_2_HANDOFF.md`); fase C aguarda decisão de cor | Movimento e feedback: tokens de motion, transições, `loading.tsx`/`error.tsx`, toasts, destaque de linha alterada, contagem nas métricas, sparklines em SVG, hierarquia visual |
 
 ## P4 — Escala e experiência
 

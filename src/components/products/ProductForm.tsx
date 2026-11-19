@@ -53,7 +53,7 @@ export function ProductForm() {
       </label>
       {state?.error ? <p className="feedback feedback-error field-wide" role="alert">{state.error}</p> : null}
       <div className="form-actions">
-        <button type="submit" className="button button-primary" disabled={pending}>{pending ? "Salvando…" : "Cadastrar produto"}</button>
+        <button type="submit" className="button button-primary" disabled={pending} aria-busy={pending}>{pending ? "Salvando…" : "Cadastrar produto"}</button>
         <span className="muted">O produto nasce sem score até ter evidências verificadas.</span>
       </div>
     </form>

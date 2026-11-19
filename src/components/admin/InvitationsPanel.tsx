@@ -139,7 +139,7 @@ export function InvitationsPanel() {
           <option value="analyst">Analista</option>
           <option value="admin">Admin</option>
         </select>
-        <button type="submit" className="button button-primary" disabled={busy}>
+        <button type="submit" className="button button-primary" disabled={busy} aria-busy={busy}>
           {busy ? "Enviando…" : "Convidar"}
         </button>
       </form>
