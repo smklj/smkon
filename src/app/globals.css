@@ -556,3 +556,8 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   .metrics-open .metric:nth-child(even) { padding-left: 16px; }
   .metrics-open .metric strong { font-size: 32px; }
 }
+
+/* S16 · paginação por cursor */
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 16px; margin-top: 8px; border-top: 1px solid var(--line); }
+.pager-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.studio-load-more { display: flex; justify-content: center; padding: 12px 0 4px; }
