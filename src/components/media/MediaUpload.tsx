@@ -45,7 +45,7 @@ export function MediaUpload({ organizationId }: { organizationId: string }) {
       <div className="inline-form">
         <label className="sr-only" htmlFor="media-file">Arquivo de mídia</label>
         <input id="media-file" ref={input} type="file" accept={MEDIA_ACCEPT} disabled={busy} />
-        <button type="submit" className="button button-primary" disabled={busy}>{busy ? "Enviando…" : "Enviar arquivo"}</button>
+        <button type="submit" className="button button-primary" disabled={busy} aria-busy={busy}>{busy ? "Enviando…" : "Enviar arquivo"}</button>
       </div>
       <p className="muted">MP4, MOV, JPG, PNG ou WebP, até 50 MB. O arquivo fica privado no workspace.</p>
       {error ? <p className="feedback feedback-error" role="alert">{error}</p> : null}

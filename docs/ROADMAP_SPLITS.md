@@ -60,7 +60,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S7.2** · estudo pronto (`docs/DESIGN_MOTION_STUDY.md`), aguardando decisão do Owner | Movimento e feedback: tokens de motion, transições, `loading.tsx`/`error.tsx`, toasts, destaque de linha alterada, contagem nas métricas, sparklines em SVG, hierarquia visual |
+| **S7.2** · fases A e B implementadas (`docs/S7_2_HANDOFF.md`); fase C aguarda decisão de cor | Movimento e feedback: tokens de motion, transições, `loading.tsx`/`error.tsx`, toasts, destaque de linha alterada, contagem nas métricas, sparklines em SVG, hierarquia visual |
 
 ## P4 — Escala e experiência
 

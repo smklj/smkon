@@ -13,7 +13,7 @@ export function PasswordForm({ next }: { next: string }) {
       <label htmlFor="confirmation">Confirme a senha</label>
       <input id="confirmation" name="confirmation" type="password" autoComplete="new-password" required minLength={8} maxLength={128} />
       {state?.error ? <p className="feedback feedback-error" role="alert">{state.error}</p> : null}
-      <button type="submit" className="button button-primary" disabled={pending}>
+      <button type="submit" className="button button-primary" disabled={pending} aria-busy={pending}>
         {pending ? "Salvando…" : "Definir senha"}
       </button>
     </form>

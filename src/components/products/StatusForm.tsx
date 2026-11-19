@@ -13,7 +13,7 @@ export function StatusForm({ productId, status }: { productId: string; status: P
       <select id="product-status" name="status" defaultValue={status} disabled={pending}>
         {PRODUCT_STATUSES.map((value) => <option key={value} value={value}>{STATUS_LABEL[value]}</option>)}
       </select>
-      <button type="submit" className="button button-secondary button-small" disabled={pending}>{pending ? "Salvando…" : "Alterar status"}</button>
+      <button type="submit" className="button button-secondary button-small" disabled={pending} aria-busy={pending}>{pending ? "Salvando…" : "Alterar status"}</button>
       {state?.error ? <span className="feedback feedback-error" role="alert">{state.error}</span> : null}
       {state?.ok ? <span className="muted" role="status">{state.ok}</span> : null}
     </form>

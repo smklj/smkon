@@ -50,7 +50,7 @@ export function LicenseForm({ mediaId, mediaName, today }: { mediaId: string; me
         {state?.error ? <p className="feedback feedback-error field-wide" role="alert">{state.error}</p> : null}
         {state?.ok ? <p className="feedback feedback-ok field-wide" role="status">{state.ok}</p> : null}
         <div className="form-actions">
-          <button type="submit" className="button button-secondary" disabled={pending}>{pending ? "Salvando…" : "Salvar licença"}</button>
+          <button type="submit" className="button button-secondary" disabled={pending} aria-busy={pending}>{pending ? "Salvando…" : "Salvar licença"}</button>
           <span className="muted">Licenças não são editadas. Para corrigir, revogue e registre outra.</span>
         </div>
       </form>
