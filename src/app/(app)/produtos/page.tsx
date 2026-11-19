@@ -7,7 +7,8 @@ import { Pager, pageHref } from "@/components/ui/Pager";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
 import { InvalidCursorError } from "@/lib/pagination/keyset";
-import { canEditProducts, listProducts } from "@/lib/products/server";
+import { listProducts } from "@/lib/products/repository";
+import { canEditProducts } from "@/lib/products/service";
 import { REVENUE_DOMAIN_LABEL, SOURCE_LABEL, STATUS_LABEL, type ProductRow } from "@/lib/products/types";
 import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
 

@@ -5,11 +5,8 @@ import type { ContentStatusApi } from "./types.ts";
 export const CONTENT_SELECT_COLUMNS =
   "id,title,product,source_url,asset_url,script,caption,cta,hashtags,channels,rights_confirmed,media_asset_id,status,version,content_hash,approved_version,approved_at,created_at,updated_at";
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-export function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
-}
+/** Mantido por compatibilidade: a definição única está em src/lib/validation/fields.ts (S4). */
+export { isUuid } from "../validation/fields.ts";
 
 export const CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/;
 
