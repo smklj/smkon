@@ -513,6 +513,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          agent_run_id: string | null
           approved_version: number | null
           asset_url: string
           caption: string
@@ -537,6 +538,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          agent_run_id?: string | null
           approved_version?: number | null
           asset_url?: string
           caption?: string
@@ -561,6 +563,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          agent_run_id?: string | null
           approved_version?: number | null
           asset_url?: string
           caption?: string
@@ -583,6 +586,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "content_items_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_items_organization_id_fkey"
             columns: ["organization_id"]
@@ -1389,6 +1399,15 @@ export type Database = {
       agent_cancel_run: {
         Args: { p_reason: string; p_run_id: string }
         Returns: undefined
+      }
+      agent_draft_content: {
+        Args: { p_draft: Json; p_run_id: string }
+        Returns: {
+          content_hash: string
+          content_id: string
+          content_status: string
+          content_version: number
+        }[]
       }
       agent_set_kill_switch: {
         Args: { p_on: boolean; p_organization_id: string; p_reason?: string }

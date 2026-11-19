@@ -116,7 +116,7 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 | 1 | Plano: este arquivo (arquitetura, contratos, checklist) | ✅ concluída | #35 | Só documentação; nenhum código alterado |
 | 2 | Núcleo do executor (`src/lib/agents/executor/`): loop, limites, kill switch, timeout, payload; testes com modelo falso | ✅ concluída | ver PR `feature/s14-executor-core` | `test:unit` 87/87 (19 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
 | 3 | Ferramentas `read_*` reais, escopadas por organização, colunas mínimas, ≤ 50 itens / 64 KB; testes | ✅ concluída | ver PR `feature/s14-read-tools` | `test:unit` 103/103 (16 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
-| 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ⬜ | — | — |
+| 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ✅ concluída | ver PR `feature/s14-draft-content` | `test:db` 14/14 arquivos (014: 40 asserções), `test:unit` 103/103, typecheck, lint e build OK. 🔐 migration não aplicada em staging/produção |
 | 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ⬜ | — | — |
 | 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ⬜ | — | — |
 | 7 | Adaptador de modelo sem chave (recusa `model_not_configured`); Verifier exige evidência `verified` | ⬜ | — | — |
@@ -179,3 +179,25 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
   - **Para a etapa 6**: o cliente Supabase tipado não é atribuível diretamente a `PostgrestLike` (TS2589, tipo
     profundo demais); o worker fará a conversão explícita para `PostgrestLike` só nesse ponto — o comportamento do
     adaptador já está coberto pelos testes com builder falso.
+- **19/11/2026 — etapa 4.** Migration `20261119040000_agent_draft_content.sql` (aditiva) e teste
+  `supabase/tests/014_agent_draft_content.test.sql`. **Não aplicada** em staging nem produção (🔐 Owner).
+  - **Coluna** `content_items.agent_run_id` (FK `agent_runs`, `on delete restrict`, índice parcial). Gatilho
+    `content_items_a_agent_guard` (security invoker, roda antes do `content_items_guard`): `anon`/`authenticated` não
+    criam conteúdo com marca de agente (`agent_run_reserved`) e ninguém altera a marca depois (`agent_run_immutable`).
+  - **Função** `agent_draft_content(p_run_id uuid, p_draft jsonb)` → `(content_id, content_version, content_hash,
+    content_status)`, só `service_role`. Exige: execução em `planning`/`executing` (fila, verificação e encerradas
+    recusam `run_not_active`), kill switch desligado, `draft_content` liberado no workspace (`tool_not_allowed`),
+    autor da execução ainda owner/admin do workspace (`run_owner_not_allowed`, mesma regra da criação manual) e no máximo
+    5 rascunhos por execução (`draft_limit_reached`).
+  - **Entrada estrita** (`invalid_draft`): só `title` (obrigatório, ≤ 180), `product` (≤ 180), `script` (≤ 8.000),
+    `caption` (≤ 2.200), `cta` (≤ 300), `hashtags` (≤ 500) e `channels` (subconjunto de YouTube/Instagram/TikTok,
+    deduplicado). `status`, `rights_confirmed`, `source_url`, `asset_url`, mídia e `organization_id` não são aceitos:
+    o rascunho nasce `draft`, sem direitos declarados, sem fonte externa e sem mídia; o workspace vem da execução.
+  - **Sem aprovação nem agendamento**: o teste confirma zero `content_approvals` e zero `publication_jobs`; tentar
+    `status = 'approved'` sem decisão falha em `approval_required`; a aprovação continua sendo `approve_content` por
+    owner/admin com o hash exato (viewer recusado). Histórico em `content_versions` e `audit_log` como qualquer conteúdo
+    (com `actor_id`/`created_by` nulos no histórico, porque o executor não tem sessão de usuário).
+  - **Tipos**: `database.types.ts` ganhou `agent_run_id` e a assinatura de `agent_draft_content`.
+  - **Para a etapa 6**: o handler TypeScript de `draft_content` (RPC `agent_draft_content` com o `runId` do contexto,
+    nunca do modelo) entra junto com o worker, que é quem tem o cliente `service_role`; erros do banco mapeiam para
+    `tool_error` sem vazar a mensagem.
