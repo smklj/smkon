@@ -8,15 +8,30 @@ import { appOrigin, bypassHeaders, expect, test } from "./fixtures.mjs";
  */
 const PAGES = ["/", "/produtos", "/studio", "/agentes", "/financeiro", "/calendario", "/midia", "/admin", "/conta/senha"];
 
+/**
+ * A barra de comentários da Vercel (só em Previews, nunca em produção) injeta <style> sem o nosso
+ * nonce e é bloqueada pela CSP; ela também mantém a rede ocupada. O header oficial
+ * `x-vercel-skip-toolbar` a desliga só nas requisições à própria aplicação. A falha anterior
+ * (run 44527391146) mostrou que todas as violações vinham de vercel.live/_next-live/feedback.
+ */
+async function skipVercelToolbar(context) {
+  await context.route(`${appOrigin}/**`, (route) =>
+    route.fallback({ headers: { ...route.request().headers(), "x-vercel-skip-toolbar": "1" } }),
+  );
+}
+
 function nonceFrom(csp) {
   return /'nonce-([^']+)'/.exec(csp ?? "")?.[1];
 }
 
 for (const path of PAGES) {
   test(`CSP com nonce sem violações em ${path}`, async ({ page }) => {
+    await skipVercelToolbar(page.context());
     const violations = [];
     page.on("console", (message) => {
-      if (/content security policy|refused to (load|execute|apply)/i.test(message.text())) violations.push(message.text());
+      if (/content security policy|refused to (load|execute|apply)/i.test(message.text())) {
+        violations.push(`${message.text()} @ ${message.location().url}`);
+      }
     });
     await page.addInitScript(() => {
       document.addEventListener("securitypolicyviolation", (event) => {
@@ -33,14 +48,15 @@ for (const path of PAGES) {
     expect(nonce).toBeTruthy();
     expect(scriptSrc).toContain(`'nonce-${nonce}'`);
 
-    await page.waitForLoadState("networkidle");
+    // Sem "networkidle": conexões de longa duração de terceiros não devem travar o teste.
+    await page.waitForLoadState("load");
+    await page.waitForFunction(() => typeof window.next === "object");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const tags = await page.$$eval("script, style", (nodes) =>
       nodes.map((node) => ({ tag: node.tagName, nonce: node.nonce, src: node.getAttribute("src") ?? "" })),
     );
     const withoutNonce = tags.filter((tag) => tag.nonce !== nonce && !tag.src.startsWith("https://vercel.live"));
     expect(withoutNonce, JSON.stringify(withoutNonce)).toEqual([]);
-    // Hidratou: o roteador do Next está ativo no cliente.
-    expect(await page.evaluate(() => typeof window.next === "object")).toBe(true);
     expect(violations, violations.join("\n")).toEqual([]);
   });
 }

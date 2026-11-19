@@ -27,6 +27,6 @@ Sem migrations (a frente não precisa de banco).
 ## Checklist
 
 - [x] 1. Plano (este arquivo)
-- [~] 2. CSP com nonce no proxy + testes unitários + build + E2E sem erros de CSP — implementado; unit 162/162, typecheck, lint e build OK; verificação local com Chromium (/login e 404 → 12 scripts, todos com o nonce da resposta, 0 violações; nonce muda a cada requisição; worker responde pela própria rota). E2E no Preview: aguardando CI
+- [~] 2. CSP com nonce no proxy + testes unitários + build + E2E sem erros de CSP — implementado; unit 162/162, typecheck, lint e build OK; verificação local com Chromium (/login e 404 → 12 scripts, todos com o nonce da resposta, 0 violações; nonce muda a cada requisição; worker responde pela própria rota). E2E no Preview, 1ª execução (run 44527391146): todas as violações vieram **só** da barra de comentários da Vercel (`vercel.live/_next-live/feedback/feedback.js` injeta `<style>` sem nonce); o app em si ficou limpo e os demais 6 specs passaram. O teste também travava em `networkidle` (conexão aberta da barra). Correção no spec: header oficial `x-vercel-skip-toolbar: 1` só para a origem do app e espera por hidratação/h1 em vez de `networkidle`. Reexecução: aguardando CI
 - [x] 3. Destino externo de logs (sink HTTP) + testes unitários (8 em `tests/unit/log-sink.test.ts`) + variáveis em `.env.example`
 - [ ] 4. Handoff `docs/S6_1_HANDOFF.md` + linha do S6 no ROADMAP
