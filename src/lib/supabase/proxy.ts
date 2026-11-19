@@ -14,6 +14,16 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
+/**
+ * Rotas de máquina: autenticadas pela própria rota (segredo em tempo constante), não por sessão de usuário.
+ * O proxy não lê nem renova cookies nelas. Hoje só o worker dos agentes (S14), que é desligado por padrão.
+ */
+const MACHINE_API_PATHS = new Set(["/api/agents/worker"]);
+
+export function isMachineRoute(pathname: string): boolean {
+  return MACHINE_API_PATHS.has(pathname);
+}
+
 function isApiRoute(pathname: string): boolean {
   return pathname === "/api" || pathname.startsWith("/api/");
 }
@@ -30,6 +40,8 @@ export async function updateSession(request: NextRequest) {
       ? NextResponse.json({ error: "Serviço indisponível.", code: "auth_not_configured" }, { status: 503 })
       : new NextResponse("Serviço indisponível: autenticação não configurada.", { status: 503 });
   }
+
+  if (isMachineRoute(pathname)) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
 
