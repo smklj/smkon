@@ -46,6 +46,8 @@ test("Audiência: cadastro com prova de consentimento, revogação, exportação
   await anonymize.getByLabel(/Digite EXCLUIR/).fill("excluir");
   await anonymize.getByRole("button", { name: "Excluir dados pessoais" }).click();
   await expect(anonymize.getByRole("alert")).toContainText("Digite EXCLUIR");
+  // O React limpa o formulário depois de cada envio (inclusive com erro): preencher de novo.
+  await anonymize.getByLabel("Motivo (sem dados pessoais)").fill("Limpeza do teste E2E");
   await anonymize.getByLabel(/Digite EXCLUIR/).fill("EXCLUIR");
   await anonymize.getByRole("button", { name: "Excluir dados pessoais" }).click();
 
