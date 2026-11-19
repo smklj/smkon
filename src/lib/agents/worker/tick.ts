@@ -6,13 +6,17 @@
  *
  * - Sem modelo configurado: nada é reservado nem expirado (as execuções continuam na fila) e o disparo
  *   devolve model_not_configured. runAgent também recusa sem modelo, como segunda barreira.
+ * - Teto de gasto: antes de CADA reserva o gasto do mês é relido; atingido o teto, nada mais é reservado
+ *   (stoppedBy = budget_exhausted). Teto "suave": a execução em andamento termina, então o gasto pode passar do
+ *   teto pelo custo de uma execução (frações de centavo com o modelo padrão).
  * - Começa execuções novas só dentro do orçamento de tempo (budgetMs) e até maxRuns por disparo.
  *   Uma execução já iniciada não é interrompida pelo orçamento; se a função da Vercel for encerrada no meio,
  *   o lease (agent_reap_stale_runs) falha a execução com worker_timeout no disparo seguinte.
  */
 import { log } from "../../observability/log.ts";
 import { runAgent, type ExecutorLogger } from "../executor/run.ts";
-import { DEFAULT_LIMITS, type AgentModel, type AgentStore, type ExecutorLimits, type RunResult, type ToolRegistry } from "../executor/types.ts";
+import { DEFAULT_LIMITS, type AgentModel, type AgentStore, type ExecutorLimits, type RunContext, type RunResult, type ToolRegistry } from "../executor/types.ts";
+import type { Budget } from "./budget.ts";
 import { toRunContext, type WorkerQueue } from "./queue.ts";
 
 export const DEFAULT_LEASE_SECONDS = 600;
@@ -27,7 +31,10 @@ export const DEFAULT_TICK_HARD_LIMIT_MS = 270_000;
 export interface WorkerTickDeps {
   queue: WorkerQueue;
   store: AgentStore;
-  model: AgentModel | null;
+  /** Modelo por execução (o registro de consumo precisa do runId); null = não configurado. */
+  model: ((ctx: RunContext) => AgentModel) | null;
+  /** Teto mensal; a rota sempre passa um. Ausente só em testes. */
+  budget?: Budget;
   tools: ToolRegistry;
   limits?: Partial<ExecutorLimits>;
   leaseSeconds?: number;
@@ -46,7 +53,10 @@ export type TickRun =
 
 export type WorkerTickResult =
   | { status: "model_not_configured" }
-  | { status: "ok"; reaped: number; runs: TickRun[]; stoppedBy: "empty_queue" | "max_runs" | "budget" };
+  | { status: "ok"; reaped: number; runs: TickRun[]; stoppedBy: StoppedBy };
+
+/** budget = orçamento de TEMPO do disparo; budget_exhausted = teto mensal de GASTO atingido. */
+export type StoppedBy = "empty_queue" | "max_runs" | "budget" | "budget_exhausted";
 
 const SCOPE = "agents.worker";
 
@@ -68,11 +78,19 @@ export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickRes
   if (reaped > 0) logger("warn", SCOPE, { event: "reaped", count: reaped });
 
   const runs: TickRun[] = [];
-  let stoppedBy: "empty_queue" | "max_runs" | "budget" = "max_runs";
+  let stoppedBy: StoppedBy = "max_runs";
   while (runs.length < maxRuns) {
     if (now() - startedAt >= budgetMs) {
       stoppedBy = "budget";
       break;
+    }
+    if (deps.budget) {
+      const spent = await deps.budget.spent();
+      if (spent >= deps.budget.limitUsd) {
+        logger("warn", SCOPE, { event: "budget_exhausted", spentUsd: spent, limitUsd: deps.budget.limitUsd });
+        stoppedBy = "budget_exhausted";
+        break;
+      }
     }
     const claimed = await deps.queue.claim();
     if (!claimed) {
@@ -96,7 +114,7 @@ export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickRes
     const remainingMs = startedAt + hardLimitMs - now();
     const maxRunMs = Math.max(1, Math.min(deps.limits?.maxRunMs ?? DEFAULT_LIMITS.maxRunMs, remainingMs));
     const result = await execute(mapped.ctx, {
-      model: deps.model,
+      model: deps.model(mapped.ctx),
       store: deps.store,
       tools: deps.tools,
       limits: { ...deps.limits, maxRunMs },

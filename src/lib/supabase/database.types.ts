@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_model_usage: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          id: number
+          input_tokens: number
+          model: string
+          organization_id: string
+          output_tokens: number
+          phase: string
+          run_id: string
+        }
+        Insert: {
+          cost_usd: number
+          created_at?: string
+          id?: number
+          input_tokens: number
+          model: string
+          organization_id: string
+          output_tokens: number
+          phase: string
+          run_id: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          id?: number
+          input_tokens?: number
+          model?: string
+          organization_id?: string
+          output_tokens?: number
+          phase?: string
+          run_id?: string
+        }
+        Relationships: []
+      }
       agent_runs: {
         Row: {
           agent: string
@@ -1614,9 +1650,24 @@ export type Database = {
           content_version: number
         }[]
       }
+      agent_model_spend_since: {
+        Args: { p_since: string }
+        Returns: number
+      }
       agent_reap_stale_runs: {
         Args: { p_lease_seconds?: number }
         Returns: number
+      }
+      agent_record_model_usage: {
+        Args: {
+          p_cost_usd: number
+          p_input_tokens: number
+          p_model: string
+          p_output_tokens: number
+          p_phase: string
+          p_run_id: string
+        }
+        Returns: undefined
       }
       agent_set_kill_switch: {
         Args: { p_on: boolean; p_organization_id: string; p_reason?: string }
