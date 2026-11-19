@@ -115,7 +115,7 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 |---|---|---|---|---|
 | 1 | Plano: este arquivo (arquitetura, contratos, checklist) | ✅ concluída | #35 | Só documentação; nenhum código alterado |
 | 2 | Núcleo do executor (`src/lib/agents/executor/`): loop, limites, kill switch, timeout, payload; testes com modelo falso | ✅ concluída | ver PR `feature/s14-executor-core` | `test:unit` 87/87 (19 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
-| 3 | Ferramentas `read_*` reais, escopadas por organização, colunas mínimas, ≤ 50 itens / 64 KB; testes | ⬜ | — | — |
+| 3 | Ferramentas `read_*` reais, escopadas por organização, colunas mínimas, ≤ 50 itens / 64 KB; testes | ✅ concluída | ver PR `feature/s14-read-tools` | `test:unit` 103/103 (16 novos), `test:db` 13/13 arquivos, typecheck, lint e build OK |
 | 4 | `draft_content`: migration + função `service_role` só de rascunho + `supabase/tests/014_*.test.sql` | ⬜ | — | — |
 | 5 | Claim da fila: migration `agent_claim_next_run()` com `FOR UPDATE SKIP LOCKED` + lease + testes SQL | ⬜ | — | — |
 | 6 | Worker `/api/agents/worker` (CRON_SECRET em tempo constante; desligado por flag; `service_role` só no servidor) | ⬜ | — | — |
@@ -152,3 +152,30 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
     `read_product_evidence` (`review_status = verified`, mesmo produto). Contrato de saída esperado de
     `read_product_evidence`: `{ items: [{ id, product_id, review_status, ... }] }` (implementado na etapa 3).
     A etapa 7 liga o adaptador de modelo e confirma a regra com dados reais.
+- **19/11/2026 — etapa 3.** Ferramentas de leitura em `src/lib/agents/executor/tools/` (`db.ts`, `read.ts`), sem
+  dependências novas e sem migration.
+  - **Porta `ToolDb`**: a ferramenta descreve a consulta (tabela da allowlist `READ_TABLES`, colunas, filtros, ordem,
+    limite) e o adaptador `postgrestToolDb` aplica `organization_id = ctx.organizationId` **sempre, antes de qualquer
+    filtro**; filtro manual de `organization_id`, coluna fora de `^[a-z_][a-z0-9_]*$`, tabela fora da lista ou
+    organização vazia são recusados antes de tocar o banco. Como o worker roda com `service_role` (sem RLS), essa é a
+    barreira de tenant das leituras; há teste de mutação (remover o filtro quebra a suíte). Erro do banco não vaza a
+    mensagem original (só tabela e código).
+  - **Ferramentas**: `read_products` (sem arquivados por padrão, ordem por score), `read_product_evidence` (filtro por
+    até 20 produtos e status; saída `{ items: [{ id, product_id, review_status, ... }] }` em minúsculas, o contrato do
+    Verifier), `read_content` (sem arquivados; textos cortados), `read_publication_queue` (próximos e não cancelados por
+    padrão), `read_finance_summary` (7/30/90 dias).
+  - **Saída**: ≤ 50 itens e ≤ 60.000 bytes (`TOOL_OUTPUT_MAX_BYTES`, folga sob os 64 KB do banco); pedimos `limit + 1`
+    para devolver `truncated = true` quando havia mais. Sem `created_by`, `captured_by`, `reviewed_by`, `approved_by`,
+    `cancelled_by`, e-mail, `affiliate_url`, `external_id` ou `review_note` (lista `FORBIDDEN_COLUMNS`, testada).
+  - **Entrada estrita**: chave desconhecida (inclusive `organization_id`) ou valor fora do domínio lança
+    `invalid_input` → o executor grava `tool_error`; entrada inválida não consulta o banco.
+  - **Financeiro**: afiliados (estado atual do ciclo de vida, por status, da visão `affiliate_commission_summary`),
+    vendas próprias (bruto e taxas sem cancelados; reembolsos à parte) e mídia paga (gasto como custo; dia de São Paulo)
+    em blocos separados, por moeda, sem total entre domínios. Soma em inteiro escalado 10⁴ (`numeric(18,4)`), sem
+    ponto flutuante; valores saem como texto decimal.
+  - **Limitação conhecida**: vendas e mídia são agregadas no servidor lendo até `FINANCE_SCAN_LIMIT` = 5.000 linhas
+    por domínio; acima disso o bloco sai com `truncated = true` (o modelo é avisado, nada é inventado). Se o volume
+    real passar disso, a correção é uma função SQL `service_role` de agregação (migration própria, com autorização).
+  - **Para a etapa 6**: o cliente Supabase tipado não é atribuível diretamente a `PostgrestLike` (TS2589, tipo
+    profundo demais); o worker fará a conversão explícita para `PostgrestLike` só nesse ponto — o comportamento do
+    adaptador já está coberto pelos testes com builder falso.
