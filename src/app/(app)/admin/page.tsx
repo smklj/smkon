@@ -27,14 +27,16 @@ export default function AdminPage() {
         <InvitationsPanel />
       </section>
 
-      <section className="panel" aria-labelledby="areas-titulo">
-        <SectionHeading id="areas-titulo" title="Modelo operacional" aside={<span className="muted">8 áreas</span>} />
+      <details className="panel panel-collapsible">
+        <summary>
+          <SectionHeading id="areas-titulo" title="Modelo operacional" aside={<span className="muted">8 áreas · referência</span>} />
+        </summary>
         <ul className="rows">
           {AREAS.map((area) => (
             <AreaCard key={area.id} area={area} />
           ))}
         </ul>
-      </section>
+      </details>
 
       <section className="panel" aria-labelledby="dominios-titulo">
         <SectionHeading id="dominios-titulo" title="Domínios financeiros" aside={<span className="muted">custo · venda · comissão</span>} />
@@ -55,10 +57,12 @@ export default function AdminPage() {
         <ConnectionsPanel />
       </section>
 
-      <section className="panel" aria-labelledby="planejadas-titulo">
-        <SectionHeading id="planejadas-titulo" title="Integrações planejadas" aside={<span className="muted">ainda não validadas</span>} />
+      <details className="panel panel-collapsible">
+        <summary>
+          <SectionHeading id="planejadas-titulo" title="Integrações planejadas" aside={<span className="muted">ainda não validadas</span>} />
+        </summary>
         <IntegrationPlaceholders />
-      </section>
+      </details>
     </div>
   );
 }

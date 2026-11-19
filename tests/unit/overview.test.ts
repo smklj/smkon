@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { affiliateOpen, costPerClick, emptyOverview, parseOverview, providerLabel } from "../../src/lib/overview/types.ts";
+import { affiliateOpen, costPerClick, emptyOverview, parseOverview, providerLabel, seriesTotal } from "../../src/lib/overview/types.ts";
 
 test("resposta ausente vira painel zerado, sem lançar", () => {
   const empty = emptyOverview();
@@ -60,4 +60,21 @@ test("domínios financeiros: em aberto e CPC sem número inventado", () => {
 test("rótulo de provedor", () => {
   assert.equal(providerLabel("mercado_livre"), "Mercado Livre");
   assert.equal(providerLabel("novo_provedor"), "novo_provedor");
+});
+
+test("séries diárias: só datas válidas, contagens inteiras e não negativas", () => {
+  const parsed = parseOverview({
+    trends: {
+      content_created: [{ day: "2026-11-18", count: 2 }, { day: "ontem", count: 5 }, { day: "2026-11-19", count: -1 }, { day: "2026-11-20", count: "3" }],
+      publications_scheduled: "lixo",
+    },
+  });
+  assert.deepEqual(parsed.trends.content_created, [
+    { day: "2026-11-18", count: 2 },
+    { day: "2026-11-19", count: 0 },
+    { day: "2026-11-20", count: 3 },
+  ]);
+  assert.deepEqual(parsed.trends.publications_scheduled, []);
+  assert.deepEqual(parsed.trends.agent_runs, []);
+  assert.equal(seriesTotal(parsed.trends.content_created), 5);
 });

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { DailyBars } from "@/components/charts/DailyBars";
+import { StateBar } from "@/components/charts/StateBar";
 import { CountUp } from "@/components/ui/CountUp";
 import { Icon } from "@/components/ui/Icon";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
@@ -144,7 +146,7 @@ export default async function OverviewPage() {
         </p>
       ) : null}
 
-      <section className="metrics" aria-label="Indicadores principais">
+      <section className="metrics metrics-open" aria-label="Indicadores principais">
         <Metric
           label="Aguardando aprovação"
           value={data ? data.content.draft : "—"}
@@ -179,6 +181,7 @@ export default async function OverviewPage() {
             <div className="empty">
               <p className="empty-title">Nada aguardando aprovação</p>
               <p>Rascunhos salvos no Content Studio aparecem aqui até serem aprovados.</p>
+              <Link className="button button-secondary button-small empty-action" href="/studio">Criar conteúdo</Link>
             </div>
           ) : data ? (
             <ul className="rows">
@@ -208,6 +211,7 @@ export default async function OverviewPage() {
             <div className="empty">
               <p className="empty-title">Nada agendado</p>
               <p>Conteúdo aprovado pode ser agendado no calendário. Nada é publicado de verdade: a fila roda em dry-run.</p>
+              <Link className="button button-secondary button-small empty-action" href="/calendario">Agendar no calendário</Link>
             </div>
           ) : (
             <ul className="rows">
@@ -229,6 +233,35 @@ export default async function OverviewPage() {
         </section>
       </div>
 
+      {complete && data ? (
+        <section className="panel" aria-labelledby="ritmo-titulo">
+          <SectionHeading id="ritmo-titulo" title="Ritmo da operação" aside={<span className="muted">por dia · horário de Brasília</span>} />
+          <div className="trends">
+            <DailyBars
+              title="Conteúdos criados · 14 dias"
+              points={data.trends.content_created}
+              unit={["conteúdo", "conteúdos"]}
+              today={data.trends.content_created.at(-1)?.day}
+              emptyText="Nenhum conteúdo criado no período."
+            />
+            <DailyBars
+              title="Publicações agendadas · próximos 7 dias"
+              points={data.trends.publications_scheduled}
+              unit={["publicação", "publicações"]}
+              today={data.trends.publications_scheduled[0]?.day}
+              emptyText="Nada agendado para a semana (dry-run)."
+            />
+            <DailyBars
+              title="Execuções de agentes · 14 dias"
+              points={data.trends.agent_runs}
+              unit={["execução", "execuções"]}
+              today={data.trends.agent_runs.at(-1)?.day}
+              emptyText="Nenhuma execução no período."
+            />
+          </div>
+        </section>
+      ) : null}
+
       <section className="panel" aria-labelledby="financeiro-titulo">
         <SectionHeading
           id="financeiro-titulo"
@@ -246,12 +279,24 @@ export default async function OverviewPage() {
               <EmptyDomain text="Nenhuma comissão registrada." />
             ) : (
               data.finance.affiliate.map((row) => (
-                <dl className="domain-figures" key={row.currency}>
+                <div key={row.currency}>
+                <StateBar
+                  label={`Comissões em ${row.currency} por estado`}
+                  segments={[
+                    { key: "forecast", label: "Prevista", value: row.forecast, display: formatMoney(row.forecast, row.currency), tone: "s1" },
+                    { key: "approved", label: "Aprovada", value: row.approved, display: formatMoney(row.approved, row.currency), tone: "s2" },
+                    { key: "settled", label: "Liquidada", value: row.settled, display: formatMoney(row.settled, row.currency), tone: "s3" },
+                    { key: "paid", label: "Paga", value: row.paid, display: formatMoney(row.paid, row.currency), tone: "s4" },
+                    { key: "reversed", label: "Estornada", value: row.reversed, display: formatMoney(row.reversed, row.currency), tone: "danger" },
+                  ]}
+                />
+                <dl className="domain-figures">
                   <div><dt>Em aberto</dt><dd>{formatMoney(affiliateOpen(row), row.currency)}</dd></div>
                   <div><dt>Paga</dt><dd>{formatMoney(row.paid, row.currency)}</dd></div>
                   <div><dt>Estornada</dt><dd>{formatMoney(row.reversed, row.currency)}</dd></div>
                   <div><dt>Conversões</dt><dd>{integer.format(row.conversions)}</dd></div>
                 </dl>
+                </div>
               ))
             )}
           </FinanceDomain>
