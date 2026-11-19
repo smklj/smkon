@@ -1,3 +1,4 @@
+import { applyKeyset, decodeCursor, DEFAULT_PAGE_SIZE, toPage, type KeysetSpec, type Page } from "@/lib/pagination/keyset";
 import type { createClient } from "@/lib/supabase/server";
 import { MEDIA_BUCKET, type LicenseRow, type MediaRow } from "./types";
 import type { LicenseInput } from "./validation";
@@ -10,22 +11,32 @@ const LICENSE_COLUMNS =
 
 export type MediaWithLicenses = MediaRow & { licenses: LicenseRow[]; signedUrl: string | null };
 
+/** Biblioteca: envio mais recente primeiro, id como desempate. Índice media_assets_org_created_id_idx (S16). */
+export const MEDIA_KEYSET: KeysetSpec = {
+  id: "media:v1",
+  direction: "desc",
+  keys: [
+    { column: "created_at", type: "timestamp" },
+    { column: "id", type: "uuid" },
+  ],
+};
+
+export type ListMediaOptions = { includeArchived?: boolean; signUrls?: boolean; cursor?: string | null; pageSize?: number };
+
+/** Uma página da biblioteca com as licenças de cada arquivo. Cursor inválido lança InvalidCursorError. */
 export async function listMedia(
   supabase: SupabaseClient,
   organizationId: string,
-  { includeArchived = false, signUrls = false } = {},
-): Promise<MediaWithLicenses[]> {
-  let query = supabase
-    .from("media_assets")
-    .select(MEDIA_COLUMNS)
-    .eq("organization_id", organizationId)
-    .order("created_at", { ascending: false })
-    .limit(200);
+  { includeArchived = false, signUrls = false, cursor = null, pageSize = DEFAULT_PAGE_SIZE }: ListMediaOptions = {},
+): Promise<Page<MediaWithLicenses>> {
+  const after = decodeCursor(MEDIA_KEYSET, cursor);
+  let query = supabase.from("media_assets").select(MEDIA_COLUMNS).eq("organization_id", organizationId);
   if (!includeArchived) query = query.is("archived_at", null);
-  const { data, error } = await query;
+  const { data, error } = await applyKeyset(query, MEDIA_KEYSET, after, pageSize);
   if (error) throw error;
-  const assets = (data ?? []) as MediaRow[];
-  if (assets.length === 0) return [];
+  const page = toPage(MEDIA_KEYSET, (data ?? []) as MediaRow[], pageSize);
+  const assets = page.items;
+  if (assets.length === 0) return { items: [], nextCursor: null };
 
   const licenses = await supabase
     .from("media_licenses")
@@ -48,12 +59,15 @@ export async function listMedia(
     }
   }
 
-  return assets.map((asset) => ({
-    ...asset,
-    size_bytes: Number(asset.size_bytes),
-    licenses: byAsset.get(asset.id) ?? [],
-    signedUrl: signed.get(asset.storage_path) ?? null,
-  }));
+  return {
+    items: assets.map((asset) => ({
+      ...asset,
+      size_bytes: Number(asset.size_bytes),
+      licenses: byAsset.get(asset.id) ?? [],
+      signedUrl: signed.get(asset.storage_path) ?? null,
+    })),
+    nextCursor: page.nextCursor,
+  };
 }
 
 export async function registerMedia(supabase: SupabaseClient, storagePath: string, originalName: string): Promise<string> {

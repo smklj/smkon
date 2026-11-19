@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { CHANNELS, type ContentPayload, type WritableContentStatus } from "@/lib/content/types";
 import { ValidationError, jsonError, toErrorResponse } from "@/lib/http/errors";
 import { canEditContent, ensureWorkspace, findWorkspace } from "@/lib/tenancy/workspace";
-import { CONTENT_SELECT_COLUMNS, isUuid } from "@/lib/content/server";
+import { CONTENT_KEYSET, CONTENT_SELECT_COLUMNS, CONTENT_STATUSES, isUuid, parseContentStatusFilter } from "@/lib/content/server";
+import { applyKeyset, decodeCursor, parsePageSize, toPage } from "@/lib/pagination/keyset";
 
 const allowedChannels = new Set<string>(CHANNELS);
 const WRITABLE_STATUSES = new Set<WritableContentStatus>(["draft", "archived"]);
@@ -69,27 +70,69 @@ function toRow(payload: ContentPayload) {
   };
 }
 
-export async function GET() {
+// Dados do workspace do usuário: nenhum cache compartilhado (CDN/proxy) nem do navegador (S16).
+const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" };
+
+/**
+ * Biblioteca do Studio paginada por cursor: ?cursor=&limit= (até 100) e ?status=draft|approved|archived.
+ * Na primeira página (sem cursor) também devolve as contagens por status do workspace inteiro,
+ * para os indicadores não dependerem de quantas peças já foram carregadas.
+ */
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return jsonError(401, "not_authenticated", "Não autenticado.");
 
+    const params = new URL(request.url).searchParams;
+    const status = parseContentStatusFilter(params.get("status"));
+    if (status === "invalid") throw new ValidationError("Filtro de status inválido.");
+    const after = decodeCursor(CONTENT_KEYSET, params.get("cursor"));
+    const pageSize = parsePageSize(params.get("limit"));
+
     // Leitura sem efeito colateral: sem workspace, não há conteúdo.
     const workspace = await findWorkspace(supabase, user.id);
-    if (!workspace) return NextResponse.json({ items: [], role: null });
+    if (!workspace) return NextResponse.json({ items: [], nextCursor: null, counts: after ? null : emptyCounts(), role: null }, { headers: PRIVATE_NO_STORE });
 
-    const { data, error } = await supabase
-      .from("content_items")
-      .select(CONTENT_SELECT_COLUMNS)
-      .eq("organization_id", workspace.organizationId)
-      .order("updated_at", { ascending: false });
+    let query = supabase.from("content_items").select(CONTENT_SELECT_COLUMNS).eq("organization_id", workspace.organizationId);
+    if (status) query = query.eq("status", status);
 
-    if (error) throw error;
-    return NextResponse.json({ items: data ?? [], role: workspace.role });
+    const [list, counts] = await Promise.all([
+      applyKeyset(query, CONTENT_KEYSET, after, pageSize),
+      after ? Promise.resolve(null) : countByStatus(supabase, workspace.organizationId),
+    ]);
+    if (list.error) throw list.error;
+    const page = toPage(CONTENT_KEYSET, list.data ?? [], pageSize);
+    return NextResponse.json({ items: page.items, nextCursor: page.nextCursor, counts, role: workspace.role }, { headers: PRIVATE_NO_STORE });
   } catch (error) {
     return toErrorResponse("api.content.get", error, "Não foi possível carregar os conteúdos.");
   }
+}
+
+type StatusCounts = { total: number; draft: number; approved: number; archived: number };
+
+function emptyCounts(): StatusCounts {
+  return { total: 0, draft: 0, approved: 0, archived: 0 };
+}
+
+/** Contagem exata por status (index-only scan em content_items_org_status_idx), sob a RLS do usuário. */
+async function countByStatus(supabase: Awaited<ReturnType<typeof createClient>>, organizationId: string): Promise<StatusCounts> {
+  const results = await Promise.all(
+    CONTENT_STATUSES.map((value) =>
+      supabase
+        .from("content_items")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("status", value),
+    ),
+  );
+  const counts = emptyCounts();
+  results.forEach((result, index) => {
+    if (result.error) throw result.error;
+    counts[CONTENT_STATUSES[index]] = result.count ?? 0;
+  });
+  counts.total = counts.draft + counts.approved + counts.archived;
+  return counts;
 }
 
 export async function POST(request: Request) {

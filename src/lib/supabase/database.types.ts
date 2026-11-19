@@ -1231,6 +1231,7 @@ export type Database = {
           price_cents: number | null
           revenue_domain: Database["public"]["Enums"]["smkon_revenue_domain"]
           score: number | null
+          score_rank: number
           score_reasons: Json
           source: string
           status: string
@@ -1251,6 +1252,7 @@ export type Database = {
           price_cents?: number | null
           revenue_domain?: Database["public"]["Enums"]["smkon_revenue_domain"]
           score?: number | null
+          score_rank?: never
           score_reasons?: Json
           source: string
           status?: string
@@ -1271,6 +1273,7 @@ export type Database = {
           price_cents?: number | null
           revenue_domain?: Database["public"]["Enums"]["smkon_revenue_domain"]
           score?: number | null
+          score_rank?: never
           score_reasons?: Json
           source?: string
           status?: string

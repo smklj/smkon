@@ -1,6 +1,8 @@
+import { applyKeyset, decodeCursor, toPage } from "@/lib/pagination/keyset";
 import type { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaObject } from "@/lib/tenancy/members";
 import type { UsageRow } from "./detail";
+import { AGENT_RUNS_KEYSET, AGENT_RUNS_PAGE_SIZE } from "./runs-page";
 import {
   DEFAULT_AGENT_SETTINGS,
   isAgentTool,
@@ -47,11 +49,24 @@ export type AgentOverview = {
   settings: AgentSettings;
   grants: AgentTool[];
   runs: AgentRun[];
+  /** Cursor da próxima página de execuções (S16); null = não há mais. */
+  nextCursor: string | null;
   runsLast24h: number;
 };
 
-/** Estado de agentes do workspace (sob RLS: qualquer membro lê). */
-export async function loadAgents(supabase: SupabaseClient, organizationId: string): Promise<AgentOverview> {
+
+export type LoadAgentsOptions = { cursor?: string | null; pageSize?: number };
+
+/**
+ * Estado de agentes do workspace (sob RLS: qualquer membro lê).
+ * Cursor inválido → InvalidCursorError (a página volta ao início com aviso).
+ */
+export async function loadAgents(
+  supabase: SupabaseClient,
+  organizationId: string,
+  { cursor = null, pageSize = AGENT_RUNS_PAGE_SIZE }: LoadAgentsOptions = {},
+): Promise<AgentOverview> {
+  const after = decodeCursor(AGENT_RUNS_KEYSET, cursor);
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const [settings, grants, runs, recent] = await Promise.all([
     supabase
@@ -60,12 +75,15 @@ export async function loadAgents(supabase: SupabaseClient, organizationId: strin
       .eq("organization_id", organizationId)
       .maybeSingle(),
     supabase.from("agent_tool_grants").select("tool").eq("organization_id", organizationId),
-    supabase
-      .from("agent_runs")
-      .select("id,agent,goal,status,max_steps,step_count,created_at,finished_at,error_code,cancel_reason")
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: false })
-      .limit(20),
+    applyKeyset(
+      supabase
+        .from("agent_runs")
+        .select("id,agent,goal,status,max_steps,step_count,created_at,finished_at,error_code,cancel_reason")
+        .eq("organization_id", organizationId),
+      AGENT_RUNS_KEYSET,
+      after,
+      pageSize,
+    ),
     supabase
       .from("agent_runs")
       .select("id", { count: "exact", head: true })
@@ -77,7 +95,8 @@ export async function loadAgents(supabase: SupabaseClient, organizationId: strin
   if (runs.error) throw runs.error;
   if (recent.error) throw recent.error;
 
-  const runRows = runs.data ?? [];
+  const page = toPage(AGENT_RUNS_KEYSET, runs.data ?? [], pageSize);
+  const runRows = page.items;
   const steps = new Map<string, AgentStep[]>();
   if (runRows.length) {
     const stepRows = await supabase
@@ -109,6 +128,7 @@ export async function loadAgents(supabase: SupabaseClient, organizationId: strin
       status: isRunStatus(row.status) ? row.status : "failed",
       steps: steps.get(row.id) ?? [],
     })),
+    nextCursor: page.nextCursor,
     runsLast24h: recent.count ?? 0,
   };
 }
