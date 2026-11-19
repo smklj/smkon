@@ -10,7 +10,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 1 | Plano (este arquivo) + conferência dos tipos gerados do staging | ✅ feito | #54 |
 | 2 | Validação centralizada `src/lib/validation/fields.ts` + testes | ✅ feito | #54 |
 | 2a | Produtos | ✅ feito | #54 |
-| 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #PR2B |
+| 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
 | 2c | Mídia e licenças | ⏳ | — |
 | 2d | Financeiro (comissões) | ⏳ | — |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
