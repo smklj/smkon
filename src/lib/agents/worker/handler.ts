@@ -11,7 +11,8 @@
  */
 import { log } from "../../observability/log.ts";
 import { jsonError } from "../../http/errors.ts";
-import { modelConfigStatus, resolveAgentModel } from "../executor/model.ts";
+import { modelConfigStatus, resolveAgentModel, type ModelResolveOptions } from "../executor/model.ts";
+import { modelPrice, monthStartUtc, parseBudget } from "../executor/model-pricing.ts";
 import type { AgentRpcClient } from "../executor/rpc.ts";
 import { rpcAgentStore } from "../executor/store.ts";
 import { postgrestToolDb, type PostgrestLike } from "../executor/tools/db.ts";
@@ -20,6 +21,7 @@ import { createReadTools } from "../executor/tools/read.ts";
 import type { AgentModel, ToolRegistry } from "../executor/types.ts";
 import type { ExecutorLogger } from "../executor/run.ts";
 import { bearerMatches, cronSecret, executorEnabled, type WorkerEnv } from "./auth.ts";
+import { rpcBudget, rpcUsageRecorder } from "./budget.ts";
 import { rpcWorkerQueue } from "./queue.ts";
 import { runWorkerTick, type WorkerTickDeps } from "./tick.ts";
 
@@ -29,7 +31,8 @@ export interface WorkerHandlerDeps {
   env: WorkerEnv;
   /** Cria o cliente service_role; null se a chave não estiver configurada. */
   createClient: () => WorkerDbClient | null;
-  resolveModel?: (env: WorkerEnv) => AgentModel | null;
+  resolveModel?: (env: WorkerEnv, options?: ModelResolveOptions) => AgentModel | null;
+  now?: () => Date;
   logger?: ExecutorLogger;
   tick?: Pick<WorkerTickDeps, "maxRuns" | "budgetMs" | "leaseSeconds" | "now" | "execute">;
 }
@@ -61,12 +64,22 @@ export async function handleWorkerRequest(request: Request, deps: WorkerHandlerD
     logger("warn", SCOPE, { event: "unauthorized" });
     return withNoStore(jsonError(401, "not_authenticated", "Não autenticado."));
   }
-  const model = (deps.resolveModel ?? resolveAgentModel)(deps.env);
-  if (!model) {
-    const status = modelConfigStatus(deps.env);
+  // Na Vercel o token OIDC da invocação chega neste header (só usado com AGENT_MODEL_AUTH=oidc).
+  const oidcToken = request.headers.get("x-vercel-oidc-token");
+  const resolveModel = deps.resolveModel ?? resolveAgentModel;
+  const probe = resolveModel(deps.env, { oidcToken });
+  if (!probe) {
+    const status = modelConfigStatus(deps.env, oidcToken);
     // Só o motivo (provider_missing, key_missing…), nunca valores das variáveis.
     logger("warn", SCOPE, { event: "model_not_configured", reason: status.ok ? "resolver_returned_null" : status.reason });
     return withNoStore(jsonError(503, "model_not_configured", "Nenhum modelo de IA configurado."));
+  }
+  // Teto mensal obrigatório, com preço conhecido do modelo (sem preço não há como respeitar o teto).
+  const monthlyBudgetUsd = parseBudget(deps.env.AGENT_MONTHLY_BUDGET_USD);
+  const model = deps.env.AGENT_MODEL?.trim() ?? "";
+  if (monthlyBudgetUsd === null || !modelPrice(model)) {
+    logger("warn", SCOPE, { event: "budget_not_configured", reason: monthlyBudgetUsd === null ? "budget_missing" : "model_unpriced" });
+    return withNoStore(jsonError(503, "budget_not_configured", "Teto de gasto com IA não configurado."));
   }
   const client = deps.createClient();
   if (!client) {
@@ -79,7 +92,14 @@ export async function handleWorkerRequest(request: Request, deps: WorkerHandlerD
       ...deps.tick,
       queue: rpcWorkerQueue(client),
       store: rpcAgentStore(client),
-      model,
+      // Um adaptador por execução: o consumo é gravado com o runId antes de cada resposta do modelo ser usada.
+      model: (ctx) => {
+        const model = resolveModel(deps.env, { oidcToken, onUsage: rpcUsageRecorder(client, ctx.runId) });
+        // Nunca cai para um adaptador sem registro de consumo.
+        if (!model) throw new Error("model_resolve_failed");
+        return model;
+      },
+      budget: rpcBudget(client, monthlyBudgetUsd, () => monthStartUtc((deps.now ?? (() => new Date()))())),
       tools: workerTools(client),
       logger,
     });

@@ -123,32 +123,35 @@ Códigos de falha (formato exigido pelo banco `^[a-z][a-z0-9_]{2,63}$`): `model_
 | 8 | UI: detalhe da execução em `/agentes` (passos resumidos, motivo de falha), sem publicar | ⬜ | — | — |
 | 9 | Handoff `docs/S14_HANDOFF.md` + estado no `docs/ROADMAP_SPLITS.md` | ⬜ | — | — |
 
-## Autorizações do Owner que o S14 vai precisar (🔐)
+## Autorizações do Owner (🔐) — estado em 19/11/2026
 
-Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que depender dele.
+Autorizado pelo Owner em conversa em 19/11/2026 ("seguir com as configurações na Vercel, aplicar migrations e escolher
+o provedor de IA"). Escolhas: Vercel AI Gateway, `anthropic/claude-haiku-5.5` (sem preferência do Owner; escolhido pelo
+custo, ~US$ 0,002 por execução), teto US$ 5/mês por ambiente, Preview e Production, cron diário.
 
-- Aplicar no staging e depois na produção as migrations das etapas 4 e 5.
-- Configurar na Vercel (só servidor, nunca `NEXT_PUBLIC_`): `CRON_SECRET` (≥ 32 caracteres), `AGENT_EXECUTOR_ENABLED=true`
-  (só quando quiser ligar) e `SUPABASE_SECRET_KEY` (chave secreta/service_role do Supabase; hoje não existe no projeto),
-  e o cron do worker (ver "Configuração do worker" abaixo).
-- Escolher modelo do Vercel AI Gateway e orçamento; criar a chave e configurar `AGENT_MODEL_PROVIDER=vercel-ai-gateway`,
-  `AGENT_MODEL=<provedor>/<modelo>` e `AI_GATEWAY_API_KEY` (só servidor) — ver etapa 7 no registro.
+- ✅ Migrations das etapas 4 e 5 aplicadas no staging (`xoyasrizivadxnpmzzno`) e na produção (`hpplboyysmfcjsnjrdmw`),
+  conferidas: funções só executáveis por `service_role`, nenhum alerta novo do advisor de segurança.
+- ✅ Vercel (projeto `smkon`, Production e Preview): `CRON_SECRET` (sensitive, valores diferentes por ambiente),
+  `AGENT_EXECUTOR_ENABLED=true`, `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL=anthropic/claude-haiku-5.5`,
+  `AGENT_MODEL_AUTH=oidc` (token OIDC do deployment, sem chave guardada) e `AGENT_MONTHLY_BUDGET_USD=5`.
+- ⏳ Migration `20261119060000_agent_model_usage.sql` (consumo e teto): aplicar após o CI do PR (staging → produção).
+- 🔐 **Falta (só o Owner)**: criar a chave secreta do Supabase (Dashboard → Project Settings → API Keys → *secret key*)
+  em cada projeto e cadastrá-la na Vercel como `SUPABASE_SECRET_KEY` (tipo *sensitive*): a de staging em Preview, a de
+  produção em Production. Não colar a chave no chat. Sem ela o worker responde `503 service_not_configured`.
+- 🔐 **Recomendado (só o Owner)**: orçamento de projeto no AI Gateway (Vercel → AI Gateway → Budgets → projeto `smkon`,
+  US$ 5 mensal) como segunda barreira independente do código, e conferir se o time tem crédito no AI Gateway (sem
+  crédito o Gateway responde 402 e a execução falha com `model_error`).
+- 🔐 **Para rodar em produção**: o cron (`vercel.json`, diário às 11:17 UTC) e o worker só passam a existir em produção
+  depois do merge da branch de integração na `main`, que continua exigindo autorização explícita. Crons da Vercel não
+  rodam em Preview. No plano Hobby o cron é no máximo diário; no Pro dá para usar `*/5 * * * *`.
 
-## Configuração do worker (etapa 6 — 🔐 a fazer pelo Owner, nada disso foi aplicado)
+## Configuração do worker
 
-1. Migrations das etapas 4 e 5 aplicadas no ambiente (staging primeiro).
-2. Variáveis no projeto `smkon` da Vercel (Production/Preview conforme o ambiente): `SUPABASE_SECRET_KEY`, `CRON_SECRET`
-   (gerar com 32+ caracteres aleatórios), `AGENT_EXECUTOR_ENABLED=true`, `AGENT_MODEL_PROVIDER=vercel-ai-gateway`,
-   `AGENT_MODEL` (ex.: um modelo `anthropic/…` listado no AI Gateway) e `AI_GATEWAY_API_KEY`.
-3. Cron (exemplo, **não** está no repositório):
-   ```json
-   { "crons": [{ "path": "/api/agents/worker", "schedule": "*/5 * * * *" }] }
-   ```
-   A Vercel envia `Authorization: Bearer $CRON_SECRET` automaticamente. No plano Hobby a Vercel só permite cron diário;
-   intervalo de minutos exige plano Pro.
-4. Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo), `401 not_authenticated`,
-   `503 model_not_configured` (falta provedor/modelo/chave; o log traz só o motivo, ex. `key_missing`), `503 service_not_configured` (chave), `200
-   { reaped, stoppedBy, runs: [{ runId, status, code? }] }`.
+Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo), `401 not_authenticated`,
+`503 model_not_configured` (falta provedor/modelo/credencial; o log traz só o motivo, ex. `oidc_token_missing`),
+`503 budget_not_configured` (teto ausente/inválido ou modelo sem preço em `model-pricing.ts`),
+`503 service_not_configured` (chave do Supabase), `200 { reaped, stoppedBy, runs: [{ runId, status, code? }] }` —
+`stoppedBy = budget_exhausted` quando o teto do mês foi atingido.
 
 ## Registro
 
@@ -305,3 +308,19 @@ Nada disso é feito pela tarefa agendada; fica listado no PR de cada etapa que d
     (3) Rascunho genérico que não cita produto lido segue permitido (continua só `draft`, com aprovação humana).
     (4) Não houve teste contra o AI Gateway real (exigiria chave e gasto) — formato conferido com a API compatível
     com OpenAI documentada pela Vercel; o primeiro uso real deve ser no staging com orçamento baixo.
+- **19/11/2026 — teto de gasto, consumo e OIDC (complemento da etapa 7, autorizado pelo Owner).**
+  - **Consumo**: migration `20261119060000_agent_model_usage.sql` — `agent_model_usage` (só inclusão: nem
+    `service_role` altera/apaga; membros leem só o do próprio workspace), `agent_record_model_usage` e
+    `agent_model_spend_since` (só `service_role`); teste `016` (21 asserções). O adaptador (`model-gateway.ts`, opção
+    `onUsage`) grava tokens e custo de toda resposta 2xx **antes** de validar o conteúdo; sem `usage` ou com resposta
+    ilegível cobra o pior caso; se a gravação falhar, a chamada falha.
+  - **Preço e teto**: `model-pricing.ts` (Haiku 5.5, GPT-5 mini e Opus 5.5 com preços do catálogo do Gateway em
+    19/11/2026 + 10%). O worker exige `AGENT_MONTHLY_BUDGET_USD` e modelo com preço (senão `503 budget_not_configured`,
+    sem criar cliente) e relê o gasto do mês (UTC) antes de **cada** reserva; atingido, para com `budget_exhausted`.
+    Teto suave: a execução em andamento termina.
+  - **OIDC**: `AGENT_MODEL_AUTH=oidc` usa o token OIDC do deployment (header `x-vercel-oidc-token` da invocação, ou
+    `VERCEL_OIDC_TOKEN`) como credencial do Gateway. Opt-in explícito: token presente sem a variável continua
+    `key_missing` (regra da etapa 7 preservada). `AI_GATEWAY_API_KEY` segue funcionando sem a variável.
+  - **Cron**: `vercel.json` com `/api/agents/worker` diário às 11:17 UTC.
+  - **Não verificado ainda**: chamada real ao Gateway e presença do header OIDC no runtime (exige `SUPABASE_SECRET_KEY`
+    e crédito no Gateway); no primeiro disparo, `reason: "oidc_token_missing"` no log indicaria problema no token.

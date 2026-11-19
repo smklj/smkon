@@ -379,7 +379,7 @@ test("tick: cada execução recebe prazo limitado pelo teto do disparo", async (
   const result = await runWorkerTick({
     queue: { reap: async () => 0, claim: async () => (remaining-- > 0 ? claimedRun : null) } as never,
     store: memoryStore().store,
-    model: { plan: async () => ({}), summarize: async () => ({}) },
+    model: () => ({ plan: async () => ({}), summarize: async () => ({}) }),
     tools: {},
     logger: quiet,
     now: () => clock,
