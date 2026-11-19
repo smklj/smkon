@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
+import { parsePageSize } from "@/lib/pagination/keyset";
 import { canEditProducts, createProduct, listProducts } from "@/lib/products/server";
 import { parseProductInput } from "@/lib/products/validation";
 import { findWorkspace } from "@/lib/tenancy/workspace";
@@ -14,14 +15,21 @@ async function context() {
   return { supabase, workspace } as const;
 }
 
-/** Catálogo do workspace. O score vem do banco e só existe com evidência verificada. */
+/**
+ * Catálogo do workspace, paginado por cursor (?cursor=&limit=, até 100 por página).
+ * O score vem do banco e só existe com evidência verificada.
+ */
 export async function GET(request: Request) {
   try {
     const ctx = await context();
     if ("response" in ctx) return ctx.response;
-    const includeArchived = new URL(request.url).searchParams.get("archived") === "1";
-    const items = await listProducts(ctx.supabase, ctx.workspace.organizationId, includeArchived);
-    return NextResponse.json({ items });
+    const params = new URL(request.url).searchParams;
+    const page = await listProducts(ctx.supabase, ctx.workspace.organizationId, {
+      includeArchived: params.get("archived") === "1",
+      cursor: params.get("cursor"),
+      pageSize: parsePageSize(params.get("limit")),
+    });
+    return NextResponse.json({ items: page.items, nextCursor: page.nextCursor });
   } catch (error) {
     return toErrorResponse("api.products.get", error, "Não foi possível consultar produtos.");
   }
