@@ -1,4 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
+import { isMissingSchemaObject } from "@/lib/tenancy/members";
+import type { UsageRow } from "./detail";
 import {
   DEFAULT_AGENT_SETTINGS,
   isAgentTool,
@@ -108,6 +110,79 @@ export async function loadAgents(supabase: SupabaseClient, organizationId: strin
       steps: steps.get(row.id) ?? [],
     })),
     runsLast24h: recent.count ?? 0,
+  };
+}
+
+export type AgentStepDetail = AgentStep & { input: unknown; output: unknown };
+
+export type AgentRunDetail = Omit<AgentRun, "steps"> & {
+  started_at: string | null;
+  outcome: unknown;
+  steps: AgentStepDetail[];
+  /** unavailable = migration 20261119060000 (agent_model_usage) ainda não aplicada neste banco. */
+  usage: { state: "ok"; rows: UsageRow[] } | { state: "unavailable" };
+};
+
+/**
+ * Detalhe de uma execução (sob RLS: qualquer membro lê). Filtra pelo workspace do usuário além da RLS,
+ * para que um id de outro workspace nunca apareça mesmo com a política mudando. null = não encontrada.
+ */
+export async function loadRunDetail(supabase: SupabaseClient, organizationId: string, runId: string): Promise<AgentRunDetail | null> {
+  const run = await supabase
+    .from("agent_runs")
+    .select("id,agent,goal,status,max_steps,step_count,created_at,started_at,finished_at,outcome,error_code,cancel_reason")
+    .eq("organization_id", organizationId)
+    .eq("id", runId)
+    .maybeSingle();
+  if (run.error) throw run.error;
+  if (!run.data) return null;
+
+  const [steps, usage] = await Promise.all([
+    supabase
+      .from("agent_steps")
+      .select("seq,phase,tool,status,detail,created_at,input,output")
+      .eq("organization_id", organizationId)
+      .eq("run_id", runId)
+      .order("seq", { ascending: true })
+      .limit(100),
+    supabase
+      .from("agent_model_usage")
+      .select("phase,model,input_tokens,output_tokens,cost_usd,created_at")
+      .eq("organization_id", organizationId)
+      .eq("run_id", runId)
+      .order("created_at", { ascending: true })
+      .limit(200),
+  ]);
+  if (steps.error) throw steps.error;
+  if (usage.error && !isMissingSchemaObject(usage.error)) throw usage.error;
+
+  const { status, ...rest } = run.data;
+  return {
+    ...rest,
+    status: isRunStatus(status) ? status : "failed",
+    steps: (steps.data ?? []).map((row) => ({
+      seq: row.seq,
+      phase: row.phase as AgentStep["phase"],
+      tool: row.tool,
+      status: row.status as AgentStep["status"],
+      detail: row.detail,
+      created_at: row.created_at,
+      input: row.input,
+      output: row.output,
+    })),
+    usage: usage.error
+      ? { state: "unavailable" }
+      : {
+          state: "ok",
+          rows: (usage.data ?? []).map((row) => ({
+            phase: row.phase === "verify" ? "verify" : "plan",
+            model: row.model,
+            input_tokens: row.input_tokens,
+            output_tokens: row.output_tokens,
+            cost_usd: row.cost_usd,
+            created_at: row.created_at,
+          })),
+        },
   };
 }
 

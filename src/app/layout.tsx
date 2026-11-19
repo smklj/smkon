@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
@@ -16,7 +17,9 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // CSP com nonce (S6.1): toda página precisa ser renderizada por requisição para receber o nonce.
+  await connection();
   return (
     <html lang="pt-BR" className={`${display.variable} ${sans.variable}`}>
       <body>{children}</body>

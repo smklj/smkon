@@ -1,22 +1,25 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { contentSecurityPolicy, securityHeaders } from "../../src/lib/http/security-headers.ts";
-import { errorFields, log, redact } from "../../src/lib/observability/log.ts";
+import { errorFields, log, redact, setLogSinks } from "../../src/lib/observability/log.ts";
 import { clientIp, rateLimitSubject } from "../../src/lib/http/rate-limit.ts";
 
+const NONCE = "AAAAAAAAAAAAAAAAAAAAAA==";
+
 test("CSP bloqueia iframe, plugins, base e formulários externos", () => {
-  const csp = contentSecurityPolicy({ supabaseUrl: "https://abc.supabase.co" });
+  const csp = contentSecurityPolicy({ nonce: NONCE, supabaseUrl: "https://abc.supabase.co" });
   for (const directive of ["frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'", "form-action 'self'", "default-src 'self'"]) {
     assert.ok(csp.includes(directive), directive);
   }
   assert.ok(csp.includes("connect-src 'self' https://abc.supabase.co wss://abc.supabase.co"));
   assert.equal(csp.includes("'unsafe-eval'"), false);
-  assert.ok(contentSecurityPolicy({ isDev: true }).includes("'unsafe-eval'"));
+  assert.ok(contentSecurityPolicy({ nonce: NONCE, isDev: true }).includes("'unsafe-eval'"));
 });
 
-test("headers essenciais presentes", () => {
+test("headers essenciais presentes (CSP sai do next.config e vai para o Proxy)", () => {
   const keys = securityHeaders().map((h) => h.key);
-  for (const key of ["Content-Security-Policy", "X-Frame-Options", "X-Content-Type-Options", "Referrer-Policy", "Permissions-Policy", "Strict-Transport-Security"]) {
+  assert.equal(keys.includes("Content-Security-Policy"), false);
+  for (const key of ["X-Frame-Options", "X-Content-Type-Options", "Referrer-Policy", "Permissions-Policy", "Strict-Transport-Security"]) {
     assert.ok(keys.includes(key), key);
   }
 });
@@ -30,6 +33,7 @@ test("redact esconde campos sensíveis em qualquer nível", () => {
 });
 
 test("log escreve uma linha JSON com nível e escopo", (t) => {
+  setLogSinks(null);
   const lines: string[] = [];
   t.mock.method(console, "warn", (line: string) => lines.push(line));
   log("warn", "teste", { cookie: "segredo", count: 2 });
