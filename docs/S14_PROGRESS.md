@@ -365,3 +365,12 @@ Esta seção registra a auditoria desta rodada e supersede estados anteriores co
 - Sem `SUPABASE_SECRET_KEY` no Preview, sem grants de ferramentas no staging e sem budget externo, o smoke test real deve permanecer bloqueado.
 - O ledger é gravado após a resposta do provedor. O patch contabiliza o pior caso se o body 2xx falhar ao ser lido e preserva o erro de AbortSignal, mas ainda não existe reservation/outbox durável para reconciliar uma cobrança se a RPC de consumo falhar depois da resposta.
 - Nenhuma chamada real ao modelo, alteração de secret, concessão de grants, migration remota, alteração de configuração Production ou merge foi realizada.
+
+
+## Atualização da PR #67 — 21/11/2026, 09:00 BRT
+
+- A PR #67 substitui a #64. A #64 foi fechada sem merge após confirmar divergência de 16 commits à frente e 5 atrás; o patch permanece preservado na branch limpa.
+- Branch `fix/s14-timeout-ledger-rebase-20261121-0857`, head de código `765e4ac78ef481f256acbd0078f90f23c773c2d7`, baseada na integração `b08654bbc47e537fe3e7ddf848d8ca1e891644ac`: 1 commit à frente, 0 atrás, comparação `ahead` e PR mergeable.
+- CI #44901689125 concluiu `success` nos dois jobs: dependency audit, typecheck, lint, testes unitários, build, migrations e SQL. O job de banco e o job de aplicação passaram no mesmo SHA `765e4ac`.
+- Check Vercel do mesmo SHA falhou por quota do plano: `api-deployments-free-per-day` / retry em 24 horas. Não há deployment Preview para esta branch e, portanto, nenhum E2E do head atual; o Preview antigo não é substituto válido.
+- PR #67 permanece Draft. Nenhum merge foi feito.
