@@ -21,7 +21,7 @@ import {
   type ReviewStatus,
 } from "@/lib/products/types";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { findWorkspace, type Workspace } from "@/lib/tenancy/service";
 import { isUuid, workspaceDate } from "@/lib/validation/fields";
 
 export const metadata: Metadata = { title: "Produto" };

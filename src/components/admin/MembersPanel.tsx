@@ -3,9 +3,8 @@ import { Badge } from "@/components/ui/PageHeader";
 import { errorFields, log } from "@/lib/observability/log";
 import { WORKSPACE_TIMEZONE } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
-import { listMembers } from "@/lib/tenancy/admin";
 import { ROLE_LABEL, canManageMembers, memberControls, type MemberRole, type MemberRow } from "@/lib/tenancy/members";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace, listMembers } from "@/lib/tenancy/service";
 
 type State =
   | { state: "ok"; members: MemberRow[]; viewerId: string; viewerRole: MemberRole }

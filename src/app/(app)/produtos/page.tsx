@@ -10,7 +10,7 @@ import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { listProducts } from "@/lib/products/repository";
 import { canEditProducts } from "@/lib/products/service";
 import { REVENUE_DOMAIN_LABEL, SOURCE_LABEL, STATUS_LABEL, type ProductRow } from "@/lib/products/types";
-import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { findWorkspace, type Workspace } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Produtos" };
 

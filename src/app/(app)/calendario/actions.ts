@@ -8,7 +8,7 @@ import { parseCancelRequest, parseJobId, parseScheduleRequest } from "@/lib/publ
 import { canOperateCalendar, cancelJob, runJobDryRun, scheduleDryRun } from "@/lib/publication/service";
 import { PUBLICATION_STATUS_LABEL } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 import { formDataToRaw } from "@/lib/validation/fields";
 
 export type CalendarState = { error?: string; ok?: string; at?: number } | null;
