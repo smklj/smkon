@@ -1,7 +1,7 @@
 # S14 — Handoff: executor real dos agentes (Planner → Executor → Verifier)
 
 **Estado do código (21/11/2026):** as 9 etapas do S14 estão integradas na branch
-`feature/smkon-production-readiness` pelos PRs #35–#46, incluindo o PR #46 (detalhe da execução e handoff).
+`feature/smkon-production-readiness` pelos PRs #35–#42 e #46, incluindo o PR #46 (detalhe da execução e handoff).
 O código está no Preview dessa branch; **não está em `main` nem em produção**. A branch `main` continua no commit
 `01677bad` (release S7.2 C). Plano vivo, decisões e registro por etapa: `docs/S14_PROGRESS.md`.
 
