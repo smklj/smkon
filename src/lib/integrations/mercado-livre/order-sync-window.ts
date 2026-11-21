@@ -29,22 +29,26 @@ function oneYearBefore(value: Date): Date {
 }
 
 function parseDate(value: unknown): Date | null {
-  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return null;
+  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(value)) return null;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? floorToHour(parsed) : null;
 }
 
 /**
- * Validates a manual, resumable page request. The date window is fixed by the
- * client after page 1, so later pages query the same 12-month snapshot window.
+ * Validates a manual page request. The date window is fixed by the client
+ * after page 1, so later pages query the same 12-month snapshot window.
  */
 export function parseMercadoLivreOrderSyncPageRequest(
   input: unknown,
   now = new Date(),
 ): MercadoLivreOrderSyncPageRequestResult {
-  const body = input && typeof input === "object" && !Array.isArray(input)
-    ? input as Record<string, unknown>
-    : {};
+  const body = input === undefined
+    ? {}
+    : input !== null && typeof input === "object" && !Array.isArray(input)
+      ? input as Record<string, unknown>
+      : null;
+
+  if (body === null) return { ok: false, error: "Invalid sync request." };
 
   const offset = body.offset === undefined ? 0 : body.offset;
   if (
