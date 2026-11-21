@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · ✅ executor integrado (`docs/S14_HANDOFF.md`); migrations `20261119040000`/`050000` no staging e na produção, `060000` só no staging; falta `SUPABASE_SECRET_KEY`, crédito no AI Gateway e merge na `main` 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 implementação integrada na branch de preparação; correção timeout/ledger em revisão isolada. PR #71 Draft está divergida (24 ahead/8 behind; mergeable=false), CI #44917422154 success e Preview READY no SHA a834292; E2E atual não comprovado. Staging: 108 runs killed, 0 steps/usage/grants/rascunhos vinculados; produção: 0 dados S14. As três migrations estão nos dois bancos. OIDC/modelo configurados; sem SUPABASE_SECRET_KEY, sem budget externo, CRON_SECRET sensitive sem validação de tamanho; nenhuma chamada real comprovada. Cron e worker ausentes em main. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -80,3 +80,13 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - Supabase de staging `xoyasrizivadxnpmzzno` para todos os Previews e Development; Production segue em `hpplboyysmfcjsnjrdmw`.
 - Testes de navegador (Playwright) rodam no Preview de cada commit (`docs/E2E_STAGING.md`).
 - Toda migration nova é aplicada também no staging, antes do Preview que depende dela.
+
+
+## Reconciliação S14 — 21/11/2026 13:10 BRT
+
+- PR #71 está divergida (24 commits à frente/8 atrás da integração), apesar do body antigo indicar 24/0; não mergear.
+- Integração está 128 ahead/6 behind de main; release isolada S14 está 34 ahead/0 behind de main, sem merge.
+- CI #44917422154 success e Preview READY no SHA a834292; E2E de navegador desse deployment não comprovado.
+- Staging: 108 runs killed, 0 steps/usage/grants/conteúdo vinculado. Produção: zero dados S14. Migrations S14 presentes nos dois bancos; RLS ativo nas tabelas auditadas.
+- OIDC/provider/modelo e teto interno US$ 5 configurados; sem SUPABASE_SECRET_KEY, sem budget externo; CRON_SECRET sensitive presente mas não validado em comprimento. Gateway e ledger sem consumo; nenhuma chamada real comprovada.
+- main não contém vercel.json nem a rota do worker; Cron S14 não ativo em Production.

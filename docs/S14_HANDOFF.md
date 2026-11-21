@@ -60,7 +60,7 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 |---|---|---|
 | `20261119040000_agent_draft_content` | ✅ | ✅ |
 | `20261119050000_agent_claim_queue` | ✅ | ✅ |
-| `20261119060000_agent_model_usage` | ✅ | ⏳ pendente (precisa de autorização) |
+| `20261119060000_agent_model_usage` | ✅ | ✅ (confirmado em 21/11/2026) |
 
 ## Pendências e autorizações do Owner
 
@@ -87,3 +87,46 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 Com as autorizações 1–3, rodar uma execução real de `operations_review` no staging, conferir o detalhe e o consumo,
 e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com evidência obrigatória sobre o
 `draft_content` e, quando autorizado, publicação via APIs oficiais só com hash aprovado.
+
+
+## Reconciliação operacional — 21/11/2026 13:10 BRT
+
+Esta seção supersede contagens e estados operacionais anteriores quando divergirem. Fontes consultadas nesta rodada: GitHub (PRs, commits, comparação de refs e Actions), Vercel (deployments, env inventory, AI Gateway e runtime logs) e Supabase (migrations e SQL read-only). Nenhum secret foi exibido.
+
+### GitHub e branches
+- PR #71 continua aberta em Draft, mas NÃO está mergeable: head a834292a5d7b7fa7f368a03269e477e911ff8c88, base atual feature/smkon-production-readiness em 99a9ac8616e07f85417f51772c175cc11a023712; comparação real: diverged, 24 commits à frente e 8 atrás. O texto anterior da PR que dizia 24/0 está desatualizado. Não fazer merge.
+- A branch de integração está 128 commits à frente e 6 atrás de main; não promover a branch inteira.
+- Existe release/s14-mainline-integration-20261121, 34 commits à frente e 0 atrás de main, contendo o conjunto isolado de arquivos S14; é apenas uma candidata de release, não foi aberta/mergeada nesta rodada.
+- release/s14-timeout-fix-mainline-20261121 está idêntica a main.
+- PR #71 altera somente seis arquivos: os três arquivos de correção (timeout, gateway e testes) e os três documentos S14/roadmap.
+
+### CI, Preview e E2E
+- CI #44917422154: success nos dois jobs para o head a834292; status Vercel do mesmo commit: success.
+- Preview READY no deployment dpl_8woNXWYQ7knTYtKibpxdeEEBZ7Z2, SHA a834292: https://smkon-mks1v2rxx-smkon.vercel.app
+- Não há evidência de Playwright/E2E bem-sucedido para esse deployment. Não confundir o CI de qualidade/SQL com E2E de navegador.
+- Runtime logs do deployment da PR #71 não retornaram chamadas para /api/agents/worker nos últimos 15 minutos. Outros Previews tiveram requests não autenticadas rejeitadas com unauthorized; isso não é execução do worker.
+
+### Supabase — consultas somente de leitura
+- Migrations: staging 29; produção 20. As três migrations S14 (agent_draft_content, agent_claim_queue, agent_model_usage) estão registradas nos dois ambientes.
+- Staging: 108 agent_runs, todas com status killed; 0 agent_steps, 0 agent_model_usage, 0 agent_tool_grants e 0 content_items com agent_run_id.
+- Produção: 0 runs, steps, usage, grants e conteúdo vinculado a agentes.
+- RLS ativo: agent_runs, agent_steps, agent_model_usage, agent_tool_grants, agent_settings (1 policy cada); content_items com RLS e 4 policies.
+- Settings de staging: kill_switch=false, 500 runs/dia e 12 steps/run. O workspace auditado continua sem grants de ferramentas.
+
+### Vercel, AI Gateway e Cron
+- Variáveis não secretas: provider vercel-ai-gateway, auth oidc, modelo anthropic/claude-haiku-5.5, teto interno US$ 5 e AGENT_EXECUTOR_ENABLED=true em Preview e Production.
+- SUPABASE_SECRET_KEY não aparece no inventário de variáveis do projeto.
+- CRON_SECRET existe como sensitive em Preview e Production. A leitura individual via API não retornou o valor; comprimento mínimo de 32 e ausência de whitespace externo não foram validados.
+- AI Gateway: nenhum budget de team/project/user/api-key e nenhum default; uso agregado do projeto vazio em 24h e 7d; catálogo confirma o modelo. agent_model_usage permanece vazio. Nenhuma chamada real ao Gateway comprovada.
+- vercel.json declara 17 11 * * * para /api/agents/worker na integração. Em main, vercel.json e a rota do worker retornam 404; portanto o Cron S14 não está ativo em Production.
+
+### Bloqueios para teste real
+1. Provisionar a secret key exclusiva do Supabase staging e cadastrá-la como sensitive no Preview.
+2. Configurar budget externo de Gateway com escopo que não altere Production; nenhum budget foi criado porque o escopo de projeto/equipe pode afetar Production.
+3. Validar CRON_SECRET por mecanismo que não exponha o valor.
+4. Conceder somente os grants mínimos necessários para operations_review em staging.
+5. Obter E2E no Preview atual e só então executar uma operação controlada, conferindo resposta do Gateway, steps, Verifier e ledger.
+6. Depois da primeira chamada, reconciliar request/token/custo agregado do Gateway com agent_model_usage.
+
+### Segurança
+Nenhum merge, alteração em main/Production, migration remota, alteração de secrets, concessão de grants ou chamada paga foi executada nesta rodada.

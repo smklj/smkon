@@ -339,3 +339,15 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
     restrito a owner/admin em execução ativa. Ações revalidam `/agentes` como layout (inclui o detalhe).
 - **19/11/2026 — etapa 9.** `docs/S14_HANDOFF.md` e linha do S14 no `docs/ROADMAP_SPLITS.md`. Frente concluída no código;
   pendências do Owner no handoff.
+
+
+## 21/11/2026 13:10 BRT — reconciliação de estado real
+
+- PR #71 (head a834292) não está mergeable: comparação atual com a integração é diverged, 24 ahead / 8 behind. O body da PR está desatualizado ao declarar 24/0. O CI #44917422154 e o Preview READY correspondem ao SHA a834292; o E2E de navegador desse deployment não foi comprovado.
+- A integração está 128 ahead / 6 behind de main. A branch isolada release/s14-mainline-integration-20261121 está 34 ahead / 0 behind de main, mas não foi mergeada; main ainda não contém vercel.json nem a rota /api/agents/worker.
+- Supabase staging: 29 migrations; 108 runs (todas killed), 0 steps, 0 usage, 0 tool grants e 0 conteúdo ligado a runs. Produção: 20 migrations e zero dados S14. As três migrations S14 estão nos dois bancos.
+- RLS: 1 policy em cada tabela S14 (agent_runs, agent_steps, agent_model_usage, agent_tool_grants, agent_settings); content_items tem 4. Staging kill_switch=false, 500 runs/dia, 12 steps/run.
+- Vercel: OIDC/modelo/provider configurados; orçamento interno US$ 5; AGENT_EXECUTOR_ENABLED=true nos dois ambientes; SUPABASE_SECRET_KEY ausente. CRON_SECRET sensitive presente, mas seu valor não foi retornado para validar comprimento/whitespace.
+- AI Gateway sem budgets (incluindo defaults) e sem requests/tokens/custo em 24h/7d. agent_model_usage vazio; nenhuma chamada real comprovada. O deployment da PR #71 não registrou requests ao worker nos últimos 15 minutos.
+- Próximo gate: chave de serviço exclusiva de staging, budget externo sem efeito em Production, validação segura do Cron secret, grants mínimos, E2E atual e uma única execução controlada.
+- Sem alterações remotas, secrets, grants, Production ou merge.
