@@ -46,7 +46,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 |---|---|
 | **S9** · ✅ em produção (`docs/S9_HANDOFF.md`); falta coleta automática | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
 | **S10** · calendário, fila em dry-run, mídia no Storage e licenças implementados e testados (`docs/S10_HANDOFF.md`) | Assets (Storage), registro de licenças e direitos, calendário editorial e fila de publicação em dry-run |
-| **S11** · 🟡 backend OAuth + snapshots PII-free idempotentes mergeados; CI #412/E2E #193 e FK #422 verdes; paginação manual e cursor durável server-side no PR #60 (Draft), CI #456 verde, migration aplicada e quatro testes SQL revalidados em Staging; Preview do head atual não validado por quota Vercel; pendente: OAuth real, divisão automática de janelas, sync incremental e conciliação financeira; não operacional | Primeiro conector financeiro real (Mercado Livre ou Amazon), com ingestão e conciliação comprovadas 🔐 (contas/escopos) |
+| **S11** · 🟡 backend OAuth + snapshots PII-free idempotentes mergeados; paginação manual, cursor durável com lease e guarda de snapshot fora de ordem no PR #60 (Draft); CI #475 verde, cinco testes SQL revalidados e migrations S11 em Staging (28/28); Preview do head atual bloqueado por quota Vercel; pendente: OAuth real, divisão automática de janelas, sync incremental e conciliação financeira; não operacional | Primeiro conector financeiro real (Mercado Livre ou Amazon), com ingestão e conciliação comprovadas 🔐 (contas/escopos) |
 | **S12** · ✅ em produção (`docs/S12_HANDOFF.md`); migration `20261119010000` aplicada no staging e na produção | Dashboard com dados reais substituindo constantes |
 
 ## P3 — IA e automações
