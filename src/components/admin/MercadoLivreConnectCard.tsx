@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MercadoLivreOrderSyncWindow } from "@/lib/integrations/mercado-livre/order-sync-window";
 
 type ConnectResponse = {
   error?: string;
@@ -13,6 +12,7 @@ type ConnectResponse = {
 
 type SyncResponse = {
   error?: string;
+  syncStatus?: "ready" | "completed" | "blocked";
   pageOffset?: number;
   pageSize?: number;
   persistedCount?: number;
@@ -30,8 +30,6 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
   const [message, setMessage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
-  const [syncWindow, setSyncWindow] = useState<MercadoLivreOrderSyncWindow | null>(null);
-  const [nextOffset, setNextOffset] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,8 +48,13 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
       const response = await fetch("/api/integrations/mercado-livre/sync/preview", { method: "POST", cache: "no-store" });
       const result = await response.json() as { error?: string; pageSize?: number; providerTotal?: number | null; currencies?: Array<{ currency: string; orders: number; gross: number; fees: number }> };
       if (!response.ok) throw new Error(result.error ?? "Não foi possível validar a leitura.");
-      const currencySummary = (result.currencies ?? []).map((item) => `${item.currency}: ${item.orders} pedidos · bruto ${item.gross.toFixed(2)} · tarifas estimadas ${item.fees.toFixed(2)}`).join(" | ");
-      setPreview(`Dry-run: ${result.pageSize ?? 0} pedidos nesta página; total informado pelo provedor: ${result.providerTotal ?? "indisponível"}. ${currencySummary}. Nenhum dado foi gravado.`);
+      const currencySummary = (result.currencies ?? []).map((item) =>
+        item.currency + ": " + item.orders + " pedidos · bruto " + item.gross.toFixed(2) + " · tarifas estimadas " + item.fees.toFixed(2)
+      ).join(" | ");
+      setPreview(
+        "Dry-run: " + (result.pageSize ?? 0) + " pedidos nesta página; total informado pelo provedor: " +
+        (result.providerTotal ?? "indisponível") + ". " + currencySummary + ". Nenhum dado foi gravado."
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha na validação.");
     } finally {
@@ -59,40 +62,42 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
     }
   }
 
-  async function runSync(offset = 0, window: MercadoLivreOrderSyncWindow | null = null) {
+  async function runSync(action: "next" | "restart" = "next") {
+    if (action === "restart" && !window.confirm("Reiniciar o histórico do Mercado Livre desde o início dos últimos 12 meses? Os snapshots existentes serão atualizados idempotentemente.")) {
+      return;
+    }
+
     setBusy(true);
     setMessage(null);
     setPreview(null);
     setSyncResult(null);
-    if (offset === 0) {
-      setSyncWindow(null);
-      setNextOffset(null);
-    }
     try {
       const response = await fetch("/api/integrations/mercado-livre/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offset, ...(window ?? {}) }),
+        body: JSON.stringify({ action }),
         cache: "no-store",
       });
       const result = await response.json() as SyncResponse;
-      if (!response.ok || result.persistedCount === undefined || !result.createdFrom || !result.createdTo) {
+      if (!response.ok || typeof result.persistedCount !== "number" || !result.syncStatus) {
         throw new Error(result.error ?? "Não foi possível importar os pedidos.");
       }
 
-      const next = typeof result.nextOffset === "number" ? result.nextOffset : null;
-      const pageNumber = Math.floor((result.pageOffset ?? offset) / 50) + 1;
-      setSyncWindow({ createdFrom: result.createdFrom, createdTo: result.createdTo });
-      setNextOffset(next);
-      const paginationMessage = next !== null
-        ? `Próxima página disponível (offset ${next}).`
-        : result.paginationLimitReached
-          ? "Limite de offset (10.000) atingido; a divisão em janelas menores ainda não está disponível nesta interface."
-          : result.hasMore
-            ? "Há mais pedidos, mas o provedor não retornou uma página utilizável."
-            : "Fim da janela.";
+      if (result.syncStatus === "completed" && result.pageSize === 0) {
+        setSyncResult(result.message ?? "O histórico já está concluído.");
+        return;
+      }
+
+      const pageNumber = Math.floor((result.pageOffset ?? 0) / 50) + 1;
+      const stateMessage = result.syncStatus === "ready"
+        ? "Cursor salvo. A próxima chamada retoma no offset " + (result.nextOffset ?? "indisponível") + "."
+        : result.syncStatus === "blocked" || result.paginationLimitReached
+          ? "Limite de paginação atingido; é necessário dividir a janela em intervalos menores."
+          : "Fim da janela histórica.";
       setSyncResult(
-        `Página ${pageNumber}: ${result.persistedCount} snapshot(s) processado(s) de ${result.pageSize ?? 0} pedido(s). Total na janela: ${result.providerTotal ?? "indisponível"}. ${paginationMessage} ${result.message ?? "Sem lançamentos de liquidação."}`,
+        "Página " + pageNumber + ": " + result.persistedCount + " snapshot(s) processado(s) de " +
+        (result.pageSize ?? 0) + " pedido(s). Total informado: " + (result.providerTotal ?? "indisponível") +
+        ". " + stateMessage + " " + (result.message ?? "Nenhum lançamento de liquidação foi criado.")
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha na importação.");
@@ -112,7 +117,9 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
       });
       const setup = await prepared.json() as ConnectResponse;
       if (!prepared.ok || !setup.organizationId || !setup.connectionId) {
-        const missing = setup.missing?.length ? ` Configuração pendente: ${setup.missing.join(", ")}.` : "";
+        const missing = setup.missing?.length
+          ? " Configuração pendente: " + setup.missing.join(", ") + "."
+          : "";
         throw new Error((setup.error ?? "Não foi possível preparar a conexão.") + missing);
       }
 
@@ -156,21 +163,19 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
           <button className="button" type="button" onClick={runPreview} disabled={busy || !canManage}>
             Testar leitura
           </button>
-          <button className="button button-primary" type="button" onClick={() => runSync(0)} disabled={busy || !canManage}>
-            {busy ? "Importando…" : "Importar histórico (50 por página)"}
+          <button className="button button-primary" type="button" onClick={() => runSync("next")} disabled={busy || !canManage}>
+            {busy ? "Importando…" : "Importar / retomar histórico"}
           </button>
-          {nextOffset !== null && syncWindow ? (
-            <button className="button" type="button" onClick={() => runSync(nextOffset, syncWindow)} disabled={busy || !canManage}>
-              Importar próxima página
-            </button>
-          ) : null}
+          <button className="button" type="button" onClick={() => runSync("restart")} disabled={busy || !canManage}>
+            Reiniciar histórico
+          </button>
         </div>
       ) : null}
       {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}
       {preview ? <p className="feedback" role="status">{preview}</p> : null}
       {syncResult ? <p className="feedback" role="status">{syncResult}</p> : null}
       <p className="row-meta">
-        A importação percorre os últimos 12 meses disponíveis em páginas de até 50 pedidos. A busca de vendedor pode filtrar pedidos cancelados; repetir uma página é idempotente. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : "Nenhum lançamento financeiro ou valor liquidado é criado nesta etapa."}
+        A importação percorre os últimos 12 meses disponíveis em páginas de até 50 pedidos. O cursor fica no servidor e é retomado após recarregar a tela; repetir páginas é idempotente. A busca de vendedor pode filtrar pedidos cancelados. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : "Nenhum lançamento financeiro ou valor liquidado é criado nesta etapa."}
       </p>
     </div>
   );
