@@ -459,3 +459,16 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
 - PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
 - Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
+
+
+## Cursor durável e retomada server-side — 21/11/2026
+
+- O PR #60 recebeu um incremento para substituir o offset mantido apenas na tela por public.mercado_livre_order_sync_state, uma linha por organização/conexão.
+- A janela fixa de até 12 meses, next_offset, total informado, estado e lease ficam no banco. Recarregar a tela não reinicia a importação.
+- mercado_livre_claim_order_sync serializa workers com lease de 5 minutos e permite next (retomar) ou restart (reiniciar explicitamente).
+- mercado_livre_persist_order_sync_page chama a persistência existente e avança o checkpoint na mesma transação; lease/offset divergentes são rejeitados. mercado_livre_release_order_sync libera a lease em falha sem registrar detalhes sensíveis.
+- A tabela tem RLS habilitado, nenhum acesso direto para anon/authenticated, grants de tabela e RPCs limitados a service_role; SECURITY DEFINER com search_path vazio.
+- A UI agora oferece “Importar / retomar histórico” e “Reiniciar histórico”, com confirmação para reinício. A janela e o offset não são aceitos do browser.
+- Novo teste SQL mercado_livre_order_sync_state.test.sql cobre claim concorrente, avanço atômico, retomada, replay com lease consumida, conclusão, reinício, liberação e isolamento por organização. Testes unitários cobrem as ações aceitas e rejeição de cursor enviado pelo cliente.
+- Validação pendente: executar CI no head atualizado do PR #60; não aplicar esta migration em Supabase hospedado até CI verde e revisão do histórico de migrations. Preview final ainda precisa corresponder ao head do PR; o deployment READY conhecido é de commit anterior.
+- Limite conhecido: offset máximo 10.000 continua bloqueando janelas muito densas; divisão automática em sub-janelas e sync incremental por date_last_updated ainda não foram implementados. OAuth real e conciliação financeira continuam pendentes.
