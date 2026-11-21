@@ -2,9 +2,17 @@
 
 ## Escopo desta fase
 
-A primeira ingestão é manual, limitada a uma página de até 50 pedidos recentes de `GET /orders/search`. O endpoint exige sessão autenticada, workspace ativo e papel Owner/Admin. A identidade da conta é conferida com `GET /users/me` antes da persistência.
+A ingestão é manual e paginada, com até 50 pedidos por chamada de `GET /orders/search`. A primeira página fixa uma janela de criação dos últimos 12 meses; as páginas seguintes reutilizam exatamente o mesmo `createdFrom`/`createdTo` e avançam por `offset`, até o limite defensivo de 10.000. O endpoint exige sessão autenticada, workspace ativo e papel Owner/Admin. A identidade da conta é conferida com `GET /users/me` antes da persistência.
 
 O servidor transforma cada pedido em uma allowlist de campos normalizados e calcula SHA-256 sobre essa representação. Não persiste payload bruto, comprador, vendedor, endereço, destinatário, identificadores de pagamento ou outros dados pessoais.
+
+## Paginação manual do histórico
+
+- O servidor usa os filtros oficiais `order.date_created.from` e `order.date_created.to`, arredondados para a hora UTC porque a API ignora minutos/segundos nesses filtros.
+- O cartão mantém a janela fixa e oferece `Importar próxima página`; cada página contém até 50 pedidos e é persistida atomicamente.
+- Repetir uma página é seguro por causa das chaves idempotentes de evento/pedido. Se a tela for recarregada, o usuário pode reiniciar do offset zero; o cursor não é persistido no banco.
+- A navegação é limitada a offset 10.000. Acima disso, a divisão automática em janelas menores ainda não está disponível na interface.
+- A documentação do Mercado Livre informa que a busca por vendedor pode filtrar pedidos cancelados e que os pedidos ficam disponíveis por até 12 meses; portanto, este backfill não equivale a um extrato financeiro completo.
 
 ## Persistência e idempotência
 
@@ -23,8 +31,8 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 
 ## Limitações e próximos critérios de aceite
 
-1. A importação busca somente os 50 pedidos da primeira página; ainda não há paginação histórica, janela incremental com checkpoint de cobertura nem backfill.
-2. O timestamp `source_connections.last_synced_at` registra a última execução bem-sucedida, mas não é usado como cursor de cobertura.
+1. A paginação manual cobre a janela de criação de até 12 meses, 50 pedidos por página e offset até 10.000; ainda não há cursor persistido, divisão automática em janelas menores nem checkpoint de cobertura.
+2. O timestamp `source_connections.last_synced_at` registra a última página persistida, mas não é usado como cursor de cobertura nem como watermark incremental de `date_last_updated`.
 3. Pagamentos, parcelas, estornos, marketplace fees, frete do vendedor e provisões exigem reconciliação separada antes de produzir ajustes ou lançamentos financeiros.
 4. OAuth real e leitura com uma conta de teste Mercado Livre ainda precisam ser validados em Preview.
 5. Produção permanece bloqueada até CI verde no head final, Preview READY, staging validado, backup verificável e ausência de drift de migrations.
@@ -32,6 +40,7 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 ## Testes
 
 - `tests/unit/mercado-livre-order-snapshot.test.ts`: normalização, status, hash estável, PII e entradas inválidas.
+- `tests/unit/mercado-livre-order-sync-window.test.ts`: janela fixa de 12 meses, alinhamento por hora, offset de página, timezone explícito e rejeição de janelas inválidas.
 - `supabase/tests/mercado_livre_order_sync.test.sql`: privilégio/RLS, replay idempotente, atualização de status, isolamento por conexão/tenant, rejeição de valores inválidos/PII e ausência de liquidação/ledger.
 - `scripts/test-db.sh shim`: executa migrations e todos os testes SQL em PostgreSQL 17 descartável.
 
@@ -59,3 +68,105 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 - A RPC é `SECURITY DEFINER`, `search_path=''`, sem execução para anon/authenticated e com execução apenas para service_role.
 - O teste `supabase/tests/mercado_livre_oauth_completion.test.sql` valida atomicidade, incremento de versão, bloqueio por lease, rollback de metadados, rejeição de papel não administrador e de conta externa diferente.
 - Migration aplicada no staging e teste rollback-only executado sem exceções em 21/11/2026 UTC.
+
+
+## Paginação manual — follow-up S11 (21/11/2026)
+
+- `POST /api/integrations/mercado-livre/sync` agora recebe `offset` e, nas páginas seguintes, a mesma janela `createdFrom`/`createdTo`.
+- A UI mantém a janela na sessão e apresenta `Importar próxima página` quando o provedor informa mais resultados.
+- Cada página é limitada a 50 e usa a RPC transacional já existente. O replay de uma página não duplica pedidos/eventos.
+- A janela padrão é de 12 meses; o offset máximo é 10.000. A tela informa quando esse teto é atingido; seleção de sub-janelas e cursor durável continuam pendentes.
+- Fonte oficial: [Pedidos e opiniões](https://developers.mercadolivre.com.br/pt_br/pedidos-e-opinioes) e [Gerenciamento de vendas](https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas) — filtros de data, paginação e retenção de pedidos.
+
+
+### Validação da paginação — 21/11/2026 04:16 BRT
+
+- PR #60 aberto como Draft contra `feature/smkon-production-readiness`.
+- CI #428 passou nos dois jobs: Quality (audit, typecheck, lint, unit tests e build) e Database migrations/SQL tests.
+- O check Vercel está failure por `api-deployments-free-per-day`; não há Preview para o código de paginação. O Preview anterior `af27230` continua READY, mas não contém esta alteração.
+- O PR permanece Draft até haver Preview verificável; não houve merge desta alteração nem deploy de produção.
+
+
+### Correção de inventário e ACL S11 — 21/11/2026 04:17 BRT
+
+- Inventário atualizado após PR #59: Staging registra **26 migrations** (21 base, incluindo keyset, + cinco S11: credentials, OAuth attempts, order sync, OAuth atomic completion e FK indexes). Produção registra **20**; faltam keyset e as cinco migrations S11.
+- Query read-only em Produção confirmou ausência das tabelas `mercado_livre_credentials`, `mercado_livre_oauth_attempts` e das funções `mercado_livre_*` (zero funções). Nenhuma parte do S11 foi aplicada em produção.
+- Query read-only em Staging confirmou seis RPCs S11: todas `SECURITY DEFINER`, `search_path=''`, sem EXECUTE para `anon`/`authenticated`, com EXECUTE somente para `service_role`.
+- A migration de índices FK foi aplicada em Staging; Advisor não aponta mais as quatro FKs S11 sem cobertura. Nenhuma alteração de produção foi feita.
+
+
+- Segurança adicional de paginação: offsets maiores que zero exigem que o cliente reenvie a mesma janela explícita; o servidor rejeita offset sem `createdFrom`/`createdTo`, evitando que a janela móvel mude entre páginas.
+
+
+### Confirmação final de CI da paginação — 21/11/2026 04:21 BRT
+
+- CI #435 passou no head final `1780c02cee1d1b595e4e0412e592c370055d64b6`: Quality (audit, typecheck, lint, unit tests e build) e Database/SQL tests.
+- O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
+- PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
+- Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
+
+
+## Cursor durável (incremento em revisão)
+
+O fluxo manual agora usa cursor server-side em mercado_livre_order_sync_state, único por organização/conexão. O browser envia somente action: "next" ou action: "restart"; não pode escolher offset, createdFrom ou createdTo.
+
+1. mercado_livre_claim_order_sync cria a janela de 12 meses se ainda não houver estado e adquire uma lease exclusiva.
+2. O endpoint valida a identidade Mercado Livre e lê a página de até 50 pedidos usando a janela/offset do banco.
+3. mercado_livre_persist_order_sync_page persiste snapshots via RPC existente e avança o offset na mesma transação; o replay com lease/offset antigo falha.
+4. Em erro externo, o endpoint libera a lease com um código genérico; se a liberação falhar, a lease expira em até cinco minutos.
+5. Após reload, next retoma a partir do último checkpoint confirmado. restart reinicia a janela explicitamente e a UI pede confirmação.
+
+Estados: ready, running, completed e blocked. blocked é usado quando o offset máximo do provedor é atingido. A tabela é server-side only: RLS ligado, sem grants para anon/authenticated, e RPCs SECURITY DEFINER com search_path vazio concedidas somente a service_role.
+
+A migration e o teste SQL estão em revisão no PR #60. Não aplicar no Staging/Production antes do CI verde e de reconciliar o histórico remoto de migrations. O cursor não é ainda um sync incremental: a próxima etapa é dividir automaticamente janelas quando o offset atingir o teto e acompanhar date_last_updated.
+
+
+## Validação do checkpoint durável — 21/11/2026
+
+CI #456 passou nos dois jobs no head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e. A migration mercado_livre_order_sync_state foi aplicada no smkon-staging e registrada pelo Supabase como 20261121090433. Os quatro testes SQL S11 (credentials, OAuth completion, order sync e order sync state) foram executados em rollback-only e terminaram sem exceções.
+
+A verificação do ambiente confirmou RLS ligado, nenhum SELECT direto por anon/authenticated, leitura por service_role e as três RPCs novas com SECURITY DEFINER/search_path vazio e EXECUTE somente para service_role. Não há checkpoint real, pois nenhuma conta Mercado Livre está conectada.
+
+Production continua com 20 migrations e sem tabelas/RPCs S11. Não houve alteração de produção. O Preview READY disponível ainda corresponde ao commit intermediário 98ca20c, não ao head validado; a quota Vercel bloqueia novo deployment. A configuração OAuth e SUPABASE_SECRET_KEY ainda estão ausentes.
+
+
+## Inventário Vercel — correção do Preview intermediário (21/11/2026)
+
+A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
+
+A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
+
+
+## Proteção contra snapshot fora de ordem — 21/11/2026
+
+- A migration 20261121200000_mercado_livre_order_versioning adiciona external_events.source_updated_at e substitui a RPC mercado_livre_persist_order_snapshots.
+- O normalizer agora usa Mercado Livre date_last_updated como watermark (normalization_version 2). Se o provedor omitir o campo, usa date_created como fallback.
+- A RPC só atualiza o evento/pedido quando o watermark recebido é igual ou mais recente que o já persistido; snapshots antigos são ignorados e não podem regredir order_status/valores. A persistência da página e o checkpoint continuam atômicos.
+- CI #475 passou nos dois jobs no head 2014df15e749be97adb29a5809edf2dff815a7c0: typecheck, lint, unit tests, build, migration e SQL tests.
+- Migration aplicada somente no Staging, registrada pelo Supabase como versão 20261121091235. Staging agora tem 28 migrations. Cinco testes SQL S11 executados em rollback-only sem exceções, incluindo regressão de snapshot antigo.
+- O Security Advisor não apontou novo WARN para S11; permanecem quatro INFO de RLS enabled/no policy em tabelas server-side, 31 WARNs de SECURITY DEFINER authenticated preexistentes, um WARN de rate_limit_consume para anon e um WARN de proteção de senha vazada. Performance Advisor: quatro FKs de S10/S15 e índices não utilizados INFO; sem FK S11 pendente.
+- Staging continua sem conexão, credenciais, OAuth attempts, pedidos, eventos ou checkpoints reais.
+- Produção continua com 20 migrations e sem objetos S11. Nenhuma migration/deploy de produção foi executado.
+- Preview do head continua bloqueado por HTTP 402 api-deployments-free-per-day; o Preview READY mais recente é do commit intermediário 5809300, anterior à rota/UI do checkpoint. Credenciais Mercado Livre e SUPABASE_SECRET_KEY continuam ausentes.
+- Pendências: dividir automaticamente janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, conciliação financeira e backup/restauração comprováveis.
+
+
+## Consistência da paginação do provedor — 21/11/2026
+
+- A rota `POST /api/integrations/mercado-livre/sync` valida a resposta de `GET /orders/search` por meio de `parseMercadoLivreOrderSearchPage` antes de normalizar ou persistir qualquer snapshot.
+- `results` é obrigatório e precisa ser um array com no máximo 50 objetos de pedido válidos. Resposta ausente, tipo incorreto, item malformado ou página maior que o limite é rejeitada.
+- Quando `paging.total` existe, ele precisa ser um inteiro seguro não negativo. O intervalo `offset + results.length` não pode ultrapassar o total. Página vazia/curta enquanto o total ainda indica pedidos pendentes é tratada como inconsistente; não é interpretada como fim do histórico.
+- A rejeição acontece antes da RPC `mercado_livre_persist_order_sync_page`. O fluxo de erro existente chama `mercado_livre_release_order_sync` com a lease ativa; o checkpoint não avança e permanece retomável.
+- Testes unitários cobrem results ausente/não-array, itens malformados, mais de 50 resultados, total inválido, página vazia antes do total, página parcial com itens restantes, página final curta consistente e continuação sem total.
+- O teste SQL de estado agora verifica explicitamente que liberar a lease limpa o lease e mantém `next_offset` inalterado.
+- Implementação no PR #60: helper, rota e testes nos commits `e4dc8e9`, `c947900`, `b3ae136`, `b3a27ee`, `c8ddc0f`, `01d04d8` e `8671491`. CI #499 passou nos dois jobs no head `86714917f814df7ada36d5c21a5aa04526d2c19c`.
+- O Preview do head exato ainda não existe; a listagem da Vercel retorna zero deployments para esse SHA. E2E Playwright não foi disparado, pois o workflow depende de um Preview concluído ou de dispatch manual, e não há autorização de deploy nem ação de dispatch disponível nesta conexão.
+- Nenhuma migration, merge do PR #60, deploy ou alteração em produção foi executada. PR #57 não foi reaberto nem mergeado novamente.
+
+## Fail-closed em páginas sem total verificável
+
+A resposta de `GET /orders/search` é validada antes de normalizar ou persistir pedidos. Quando `paging.total` está presente, ele precisa ser um inteiro seguro não negativo e a página não pode ultrapassar esse total. Uma página curta só é terminal quando `offset + results.length` alcança exatamente o total informado. Se o provedor omitir o total, páginas completas de 50 itens podem continuar; páginas vazias ou parciais são rejeitadas porque não comprovam o fim do histórico. A rota libera a lease pelo fluxo de erro e não chama a RPC que persiste snapshots/avança o checkpoint. O parser também impõe o teto absoluto de 50 itens por página.
+
+## Limite do total do provedor
+
+`paging.total` também é limitado a `2.147.483.647`, o máximo de PostgreSQL `integer`, porque o valor é persistido em coluna e argumento RPC `integer`. Valores maiores são rejeitados antes da RPC de persistência, liberando a lease pelo fluxo de erro e mantendo o checkpoint sem avanço. O teste unitário cobre o limite máximo aceito e o primeiro valor fora da faixa.

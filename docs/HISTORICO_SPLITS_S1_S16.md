@@ -144,3 +144,78 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 - Advisor de segurança mantém 3 INFO de RLS sem policy (credenciais, tentativas OAuth e rate-limit buckets), 1 WARN de SECURITY DEFINER acessível a anon (`rate_limit_consume`, intencional para rate limit pré-login conforme migration/teste S6) e 31 WARN para funções SECURITY DEFINER acessíveis a authenticated, além de leaked-password protection desativada. Não foi feita revogação em lote; cada função precisa de revisão de autorização/uso.
 - ACLs S11 verificadas novamente: RLS ativo; browser roles sem SELECT nas tabelas secretas; RPCs sensíveis apenas para `service_role`.
 - Produção permanece sem alterações: 20 migrations, sem keyset e sem S11; backup/restauração não verificáveis pelo conector; OAuth real sem secrets. A integração segue divergente de `main` e não deve ser promovida inteira.
+
+
+### S11 — paginação manual do histórico (21/11/2026)
+
+- A importação agora percorre a janela fixa de criação dos últimos 12 meses, 50 pedidos por página, com `order.date_created.from/to` e offset validado/alinhado à página.
+- A UI oferece `Importar próxima página`; o mesmo intervalo é reutilizado em cada chamada. Cada página usa a RPC transacional existente e é replay-safe.
+- O offset tem teto defensivo de 10.000. A janela/cursor fica apenas no estado da tela; recarregar permite reiniciar do offset zero e reprocessar idempotentemente. Não existe checkpoint durável nem sync incremental por `date_last_updated` ainda.
+- A documentação oficial do Mercado Livre indica retenção de pedidos de até 12 meses, filtros por data e que a busca por vendedor pode filtrar pedidos cancelados. O backfill, portanto, não é um extrato financeiro completo.
+- Teste unitário novo: `tests/unit/mercado-livre-order-sync-window.test.ts` cobre janela de 12 meses, hora UTC, timezone explícito, offset e rejeição de janelas inválidas.
+- Não houve chamada real ao Mercado Livre, OAuth ou gravação de pedidos reais; CI/Preview desta alteração ainda pendentes.
+
+
+### Correção de inventário e ACL S11 — 21/11/2026 04:17 BRT
+
+- Inventário atualizado após PR #59: Staging registra **26 migrations** (21 base, incluindo keyset, + cinco S11: credentials, OAuth attempts, order sync, OAuth atomic completion e FK indexes). Produção registra **20**; faltam keyset e as cinco migrations S11.
+- Query read-only em Produção confirmou ausência das tabelas `mercado_livre_credentials`, `mercado_livre_oauth_attempts` e das funções `mercado_livre_*` (zero funções). Nenhuma parte do S11 foi aplicada em produção.
+- Query read-only em Staging confirmou seis RPCs S11: todas `SECURITY DEFINER`, `search_path=''`, sem EXECUTE para `anon`/`authenticated`, com EXECUTE somente para `service_role`.
+- A migration de índices FK foi aplicada em Staging; Advisor não aponta mais as quatro FKs S11 sem cobertura. Nenhuma alteração de produção foi feita.
+
+
+### Confirmação final de CI da paginação — 21/11/2026 04:21 BRT
+
+- CI #435 passou no head final `1780c02cee1d1b595e4e0412e592c370055d64b6`: Quality (audit, typecheck, lint, unit tests e build) e Database/SQL tests.
+- O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
+- PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
+- Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
+
+
+## S11 — checkpoint durável da importação manual (21/11/2026)
+
+- PR #60, branch feat/s11-manual-history-pagination, recebeu migration 20261121180000_mercado_livre_order_sync_state.sql, teste SQL de claim/lease/replay e atualização do endpoint/UI.
+- A janela de 12 meses, next_offset, status e lease agora são mantidos no servidor. A persistência de cada página e o avanço do checkpoint ocorrem na mesma transação.
+- O browser só pode pedir next ou restart; offsets e datas não são aceitos do cliente. Restart exige confirmação na UI.
+- Commits principais: 420c1d5 migration; 18cd3f9 teste SQL; 5809300 parser server-owned; 0b4a69a testes unitários; be8629d endpoint; 561addd UI; 9969a3b liberação tolerante de lease; a7a79fd validação de parâmetros.
+- Documentação atualizada em S11_HANDOFF, S11_ORDER_SYNC e ROADMAP_SPLITS.
+- Estado no momento do handoff: PR #60 Draft; CI do novo head ainda precisa ser consultado; migration não aplicada em Supabase hospedado; Preview final não validado. OAuth real, divisão automática de janelas acima do offset 10.000 e conciliação financeira permanecem pendentes.
+
+
+### Validação do cursor durável em Staging — 21/11/2026
+
+- CI #456 passou no head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e: quality (audit, typecheck, lint, unit tests, build) e database migrations/SQL tests.
+- Migration 20261121180000_mercado_livre_order_sync_state aplicada em smkon-staging e registrada como versão 20261121090433.
+- Quatro testes SQL S11 executados em rollback-only no Staging: credentials, OAuth atomic completion, order sync e durable order sync state; todos sem exceções.
+- ACL verificada: RLS ativo, anon/authenticated sem SELECT e service_role com SELECT na tabela de checkpoint; três RPCs novas SECURITY DEFINER/search_path vazio, EXECUTE somente service_role; zero linhas reais no checkpoint.
+- Security Advisor adiciona apenas INFO de RLS enabled/no policy para o checkpoint (server-side only). Alertas SECURITY DEFINER/leaked password são preexistentes; quatro FKs sem índice remanescentes são de S15/S10, não S11.
+- Produção segue com 20 migrations, sem tabelas ou funções S11. Não houve migration, merge em main ou deploy de produção.
+- Preview final ainda não existe: o READY conhecido corresponde ao commit intermediário 98ca20c; Vercel bloqueia novo deployment pela quota diária. PR #60 permanece Draft.
+- Sem credenciais Mercado Livre/SUPABASE_SECRET_KEY no Vercel, sem OAuth real, sem pedidos reais. Ainda faltam divisão automática de janelas, sync incremental e conciliação financeira.
+
+
+## Inventário Vercel — correção do Preview intermediário (21/11/2026)
+
+A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
+
+A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
+
+
+### S11 — versionamento de snapshots e fechamento de CI (21/11/2026)
+
+- Migration 20261121200000_mercado_livre_order_versioning adiciona external_events.source_updated_at e atualiza a persistência para ignorar snapshots com date_last_updated anterior ao watermark já armazenado.
+- Normalizer passou para normalization_version 2 e inclui somente o timestamp de atualização do provedor, sem PII.
+- Teste SQL de regressão comprova insert inicial, replay antigo ignorado e snapshot mais novo aplicado.
+- Migration aplicada em smkon-staging como versão 20261121091235; Staging totaliza 28 migrations. Cinco testes SQL S11 executados em rollback-only sem exceções.
+- CI #475 passou no código; CI #477 passou também no head documental 4476c432f09bb1621a1a1648b221647822651aff.
+- PR #60 continua Draft. Preview READY mais recente é do commit intermediário 5809300, não do head. Deploy do head bloqueado por quota Vercel.
+- Produção permanece intacta: 20 migrations, sem objetos S11; backup/restauração não comprovados e OAuth real bloqueado por ausência de credenciais.
+
+
+### S11 — validação de consistência do GET /orders/search — 21/11/2026
+
+- Corrigido o risco de truncamento: `results` ausente/não-array, mais de 50 itens, registros malformados, `paging.total` inválido ou página curta/vazia antes do total são rejeitados antes da persistência.
+- A rota libera a lease pelo fluxo de falha e não chama a RPC que grava snapshots/avança o checkpoint quando a resposta do provedor é inconsistente.
+- Testes unitários adicionados para respostas ausentes/malformadas, total inválido, página vazia antecipada, página parcial com mais pedidos, página final curta consistente e continuação sem total. Teste SQL reforça que liberar lease mantém `next_offset`.
+- Código no PR #60, head `86714917f814df7ada36d5c21a5aa04526d2c19c`; CI #499 aprovado nos dois jobs. O Preview exato não existe e o E2E aguarda um deployment Preview autorizado.
+- PR #57 permanece mergeado em `feature/smkon-production-readiness`; PR #60 continua Draft e não foi mergeado. Produção permanece sem migrations/deploy S11.

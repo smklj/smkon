@@ -6,6 +6,7 @@ export type MercadoLivreOrderInput = {
   currency_id: string;
   total_amount: number;
   date_created: string;
+  date_last_updated?: string | null;
   order_items?: Array<{
     sale_fee?: number | null;
     quantity?: number | null;
@@ -22,13 +23,14 @@ export type MercadoLivreOrderSnapshot = {
   shipping_amount: number;
   refund_amount: number;
   occurred_at: string;
+  source_updated_at: string;
   payload_hash: string;
-  normalization_version: 1;
+  normalization_version: 2;
 };
 
 function amount(value: number, field: string): number {
   if (!Number.isFinite(value) || value < 0 || value > 99_999_999_999_999.9999) {
-    throw new Error(`Invalid Mercado Livre ${field}.`);
+    throw new Error("Invalid Mercado Livre " + field + ".");
   }
   return Math.round((value + Number.EPSILON) * 10_000) / 10_000;
 }
@@ -56,6 +58,7 @@ function mapOrderStatus(status: string): MercadoLivreOrderSnapshot["order_status
 /**
  * Creates a PII-free, stable snapshot. It intentionally excludes buyer, seller,
  * address, shipping recipient, payment identifiers and the raw provider payload.
+ * date_last_updated is retained only as a version watermark for stale-write protection.
  */
 export function normalizeMercadoLivreOrder(order: MercadoLivreOrderInput): MercadoLivreOrderSnapshot {
   if (!order || (typeof order.id !== "string" && !Number.isSafeInteger(order.id))) {
@@ -69,6 +72,14 @@ export function normalizeMercadoLivreOrder(order: MercadoLivreOrderInput): Merca
 
   const occurred = new Date(order.date_created);
   if (!Number.isFinite(occurred.getTime())) throw new Error("Invalid Mercado Livre order date.");
+
+  const providerUpdated = order.date_last_updated == null
+    ? occurred
+    : new Date(order.date_last_updated);
+  if (!Number.isFinite(providerUpdated.getTime())) {
+    throw new Error("Invalid Mercado Livre order update date.");
+  }
+  const sourceUpdated = new Date(Math.max(occurred.getTime(), providerUpdated.getTime()));
 
   let fee = 0;
   for (const item of order.order_items ?? []) {
@@ -92,7 +103,8 @@ export function normalizeMercadoLivreOrder(order: MercadoLivreOrderInput): Merca
     shipping_amount: 0,
     refund_amount: 0,
     occurred_at: occurred.toISOString(),
-    normalization_version: 1 as const,
+    source_updated_at: sourceUpdated.toISOString(),
+    normalization_version: 2 as const,
   };
   const payloadHash = createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
   return { ...normalized, payload_hash: payloadHash };

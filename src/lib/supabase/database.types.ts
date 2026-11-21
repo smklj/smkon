@@ -921,6 +921,7 @@ export type Database = {
           id: string
           normalization_version: number
           occurred_at: string | null
+          source_updated_at: string | null
           organization_id: string
           payload_hash: string
           provider: string
@@ -935,6 +936,7 @@ export type Database = {
           id?: string
           normalization_version?: number
           occurred_at?: string | null
+          source_updated_at?: string | null
           organization_id: string
           payload_hash: string
           provider: string
@@ -949,6 +951,7 @@ export type Database = {
           id?: string
           normalization_version?: number
           occurred_at?: string | null
+          source_updated_at?: string | null
           organization_id?: string
           payload_hash?: string
           provider?: string
