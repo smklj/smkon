@@ -214,7 +214,7 @@ Esta seção supersede snapshots anteriores sobre o estado de merge, Cron e prod
 ### Supabase, permissões e ledger
 - Staging `xoyasrizivadxnpmzzno`: 31 migrations; 119 `agent_runs`, todas `killed`; 0 `agent_steps`; 0 `agent_model_usage`; 0 grants; 0 conteúdos ligados a runs. `agent_settings`: `kill_switch=false`, 500 runs/dia, 12 steps/run.
 - Produção `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, steps, usage, grants, settings e conteúdos ligados a runs.
-- RLS habilitado nas cinco tabelas S14; uma policy SELECT em cada. `content_items` tem quatro policies. Em staging, `authenticated` e `service_role` têm SELECT nas tabelas S14; não há DML direto nesses objetos. `content_items` mantém DML sob RLS; a ferramenta de rascunho usa a RPC dedicada.
+- RLS habilitado nas cinco tabelas S14 em staging e produção; uma policy SELECT em cada. `content_items` tem quatro policies em ambos. Nos dois ambientes, `authenticated` e `service_role` têm SELECT nas tabelas S14; não há DML direto nesses objetos. `content_items` mantém DML sob RLS; a ferramenta de rascunho usa a RPC dedicada.
 - Distinção de EXECUTE: as RPCs de worker/consumo (`agent_claim_next_run`, `agent_draft_content`, `agent_fail_run`, `agent_finish_run`, `agent_model_spend_since`, `agent_record_model_usage`, `agent_record_step`, `agent_reap_stale_runs`) estão restritas a `service_role` (além de postgres). Algumas RPCs administrativas têm EXECUTE para `authenticated`, mas são SECURITY DEFINER e validam papel: `agent_start_run`/`agent_cancel_run`/`agent_set_tool` exigem owner/admin; `agent_set_kill_switch`/`agent_update_limits` exigem owner; `agent_tool_catalog` é catálogo read-only. Isso corrige a afirmação anterior de que todas as RPCs eram exclusivas de service_role.
 - Os nomes das três migrations S14 existem nos dois bancos, mas os version IDs divergem: staging `20261119101353`, `20261119101414`, `20261119114718`; produção `20261119040000`, `20261119050000`, `20261119060000`. Não executar repair/db push sem comparar definições e backup.
 
@@ -226,3 +226,5 @@ Esta seção supersede snapshots anteriores sobre o estado de merge, Cron e prod
 
 ### Segurança desta rodada
 - Nenhum merge, deploy, alteração em Production, migration remota, alteração de secret, grant, budget ou chamada paga foi executado por esta automação. O branch atual é apenas documentação e parte do commit `efbfb56`; não foi aberto PR nem promovido.
+
+- Handoff documental desta reconciliação está na Draft PR #88 (docs-only), branch `docs/s14-handoff-reconciliation-20261121-1703`; sem merge.
