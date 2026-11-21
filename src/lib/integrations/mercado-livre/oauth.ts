@@ -37,7 +37,7 @@ function toTokenSet(token: MercadoLivreTokenResponse, now = Date.now()): Mercado
     tokenType: "bearer",
     expiresAt: new Date(now + token.expires_in * 1000).toISOString(),
     userId: String(token.user_id),
-    scopes: typeof token.scope === "string" ? token.scope.split(/\\s+/).filter(Boolean) : [],
+    scopes: typeof token.scope === "string" ? token.scope.trim().split(" ").filter(Boolean) : [],
   };
 }
 
