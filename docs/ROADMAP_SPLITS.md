@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · ✅ executor integrado (`docs/S14_HANDOFF.md`); migrations `20261119040000`/`050000` no staging e na produção, `060000` só no staging; falta `SUPABASE_SECRET_KEY`, crédito no AI Gateway e merge na `main` 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas implementadas na integração, ainda não operacional. PR #67 divergida (2 à frente/8 atrás); PR #71 é reaplicação limpa (3 à frente/0 atrás, Draft/mergeable), CI #44906510584 em execução. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. As três migrations S14 estão nos dois ambientes. OIDC configurado; sem budget externo e sem requests nos últimos 7 dias; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive presente, comprimento não validado. `vercel.json` e rota existem na integração, não em `main`; Cron não ativo em produção. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -80,3 +80,14 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - Supabase de staging `xoyasrizivadxnpmzzno` para todos os Previews e Development; Production segue em `hpplboyysmfcjsnjrdmw`.
 - Testes de navegador (Playwright) rodam no Preview de cada commit (`docs/E2E_STAGING.md`).
 - Toda migration nova é aplicada também no staging, antes do Preview que depende dela.
+
+
+## Reconciliação operacional S14 — 21/11/2026, 09:55 BRT
+
+- A PR #67 ficou divergida após avanços na integração (2 commits à frente, 8 atrás, mergeable=false). A PR #71 reaplica apenas o patch de timeout/ledger sobre a head atual da integração: 3 commits à frente, 0 atrás, Draft e mergeable; CI #44906510584 em execução.
+- Staging: 29 migrations, 100 runs encerradas por `kill_switch`, 0 steps, usage, grants e drafts. Production: 20 migrations e nenhuma execução/etapa/usage/grant/draft. As três migrations S14 constam nos dois ambientes.
+- RLS habilitado nas quatro tabelas de agentes verificadas em staging; RPCs de claim/draft/usage restritas a `service_role`.
+- Vercel: provider/model/OIDC e teto interno US$ 5 presentes; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive presente sem validação do comprimento; `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- AI Gateway sem budget do projeto/default e sem uso nos últimos 7 dias. Nenhuma chamada real comprovada; `agent_model_usage` segue vazio.
+- Cron `crons` declarado na integração, mas a rota e `vercel.json` não existem em `main`; não ativo em produção.
+- Sem merge, alteração de secrets/grants, migration remota ou mudança de Production. Primeiro teste real permanece bloqueado pelas autorizações/configurações de staging listadas no handoff.
