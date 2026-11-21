@@ -16,7 +16,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2e | Tenancy (workspace, membros, convites) | ✅ feito | #68 |
 | 2f | Audiência / CRM | ✅ feito | #72 |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ✅ feito | #75 |
-| 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ⏳ | — |
+| 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ✅ feito | #75 |
 
 ## 1. Padrão por módulo
 
@@ -131,3 +131,8 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - Nenhum agente publica: a camada só enfileira, cancela e configura; `draft_content` continua só propondo rascunho para aprovação humana da versão exata.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **284/284** (275 da integração sem edição + 9 novos em `agents-domain.test.ts`: reexport, `ValidationError`, teto de passos, cancelamento, kill switch, allowlist/limites, tabela de papéis, argumentos das RPCs com cliente falso, propagação de erro), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
 - Após o merge da 2f (#72): integração mesclada na branch da 2g (conflito só neste arquivo) e comentário da fachada `tenancy/workspace.ts` atualizado (só a integração Mercado Livre ainda a usa). Validação local: typecheck ✅, lint ✅, `test:unit` **294/294** (285 da integração sem edição + 9 da 2g), build ✅, `test:db` **23/23 arquivos**.
+- 21/11 (17h UTC): integração mesclada de novo na branch da 2g (só `docs/INTEGRATION_STATUS.md` mudou). Validação local: typecheck ✅, lint ✅, `test:unit` **294/294**, build ✅, `test:db` **23/23 arquivos**.
+
+### Etapa 3 — handoff (21/11/2026)
+
+- `docs/S4_HANDOFF.md` escrito e linha do S4 atualizada em `docs/ROADMAP_SPLITS.md`, no mesmo PR #75 da 2g.
