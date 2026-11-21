@@ -1,15 +1,11 @@
 import "server-only";
 
 import type { MercadoLivreOAuthConfig, MercadoLivreTokenResponse, MercadoLivreTokenSet } from "./types";
-import type { OAuthAttempt } from "./oauth-state";
-import { createCodeChallenge, createOAuthAttempt, isOAuthAttemptValid, safeEqualState } from "./oauth-state";
 
 const TOKEN_ENDPOINT = "https://api.mercadolibre.com/oauth/token";
 const DEFAULT_AUTHORIZATION_URL = "https://auth.mercadolivre.com.br/authorization";
 const MAX_RESPONSE_BYTES = 64 * 1024;
 
-export { createCodeChallenge, createOAuthAttempt, isOAuthAttemptValid, safeEqualState };
-export type { OAuthAttempt };
 
 export function buildAuthorizationUrl(config: Pick<MercadoLivreOAuthConfig, "clientId" | "redirectUri" | "authorizationBaseUrl">, state: string, challenge: string): string {
   const url = new URL(config.authorizationBaseUrl ?? DEFAULT_AUTHORIZATION_URL);
