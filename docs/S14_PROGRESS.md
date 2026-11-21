@@ -356,7 +356,7 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
 
 ## Auditoria complementar — 21/11/2026, 03:00 BRT
 
-- **PR #58:** aberto e Draft; branch de correção 12 commits à frente e 0 atrás da base de integração. CI `44868819971` e Playwright E2E `44868983047` terminaram **success**. Preview `d4055dae` READY.
+- **PR #58:** aberto e Draft; branch de correção 15 commits à frente e 0 atrás da base de integração. CI `44868819971` e Playwright E2E `44868983047` terminaram **success**. Preview `d4055dae` READY.
 - **Vercel:** provider `vercel-ai-gateway`, modelo `anthropic/claude-haiku-5.5`, auth `oidc`, flag `AGENT_EXECUTOR_ENABLED=true` e teto interno de US$ 5 presentes em Preview e Production. `CRON_SECRET` está como sensitive em ambos; valor não lido e comprimento não validado. `SUPABASE_SECRET_KEY` ausente. `AI_GATEWAY_API_KEY` ausente, esperado no modo OIDC.
 - **AI Gateway:** lista de budgets específicos vazia; defaults vazios; uso do projeto nos últimos 7 dias sem linhas. Nenhuma chamada real ou custo está comprovado.
 - **Supabase, leitura somente:** staging 25 migrations, 81 agent_runs, 0 agent_steps, 0 agent_model_usage e 0 rascunhos de agente; produção 20 migrations e 0 linhas nas quatro contagens.
