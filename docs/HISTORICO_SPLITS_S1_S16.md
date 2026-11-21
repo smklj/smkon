@@ -170,3 +170,13 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 - O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
 - PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
 - Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
+
+
+## S11 — checkpoint durável da importação manual (21/11/2026)
+
+- PR #60, branch feat/s11-manual-history-pagination, recebeu migration 20261121180000_mercado_livre_order_sync_state.sql, teste SQL de claim/lease/replay e atualização do endpoint/UI.
+- A janela de 12 meses, next_offset, status e lease agora são mantidos no servidor. A persistência de cada página e o avanço do checkpoint ocorrem na mesma transação.
+- O browser só pode pedir next ou restart; offsets e datas não são aceitos do cliente. Restart exige confirmação na UI.
+- Commits principais: 420c1d5 migration; 18cd3f9 teste SQL; 5809300 parser server-owned; 0b4a69a testes unitários; be8629d endpoint; 561addd UI; 9969a3b liberação tolerante de lease; a7a79fd validação de parâmetros.
+- Documentação atualizada em S11_HANDOFF, S11_ORDER_SYNC e ROADMAP_SPLITS.
+- Estado no momento do handoff: PR #60 Draft; CI do novo head ainda precisa ser consultado; migration não aplicada em Supabase hospedado; Preview final não validado. OAuth real, divisão automática de janelas acima do offset 10.000 e conciliação financeira permanecem pendentes.
