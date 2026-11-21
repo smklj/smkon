@@ -128,3 +128,10 @@ CI #456 passou nos dois jobs no head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e. A
 A verificação do ambiente confirmou RLS ligado, nenhum SELECT direto por anon/authenticated, leitura por service_role e as três RPCs novas com SECURITY DEFINER/search_path vazio e EXECUTE somente para service_role. Não há checkpoint real, pois nenhuma conta Mercado Livre está conectada.
 
 Production continua com 20 migrations e sem tabelas/RPCs S11. Não houve alteração de produção. O Preview READY disponível ainda corresponde ao commit intermediário 98ca20c, não ao head validado; a quota Vercel bloqueia novo deployment. A configuração OAuth e SUPABASE_SECRET_KEY ainda estão ausentes.
+
+
+## Inventário Vercel — correção do Preview intermediário (21/11/2026)
+
+A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
+
+A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
