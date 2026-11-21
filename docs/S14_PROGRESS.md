@@ -343,7 +343,7 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
 
 ## Auditoria operacional — 21/11/2026
 
-- **Código:** etapas 1–9 integradas em `feature/smkon-production-readiness` pelos PRs #35–#46. Preview da head `011accdb` está READY. S14 não está na `main`; Production permanece no commit S7.2 C.
+- **Código:** etapas 1–9 integradas em `feature/smkon-production-readiness` pelos PRs #35–#42 e #46. Preview da head `011accdb` está READY. S14 não está na `main`; Production permanece no commit S7.2 C.
 - **Banco:** migrations lógicas `agent_draft_content`, `agent_claim_queue` e `agent_model_usage` presentes em staging e produção. `agent_model_usage` tem 0 linhas nos dois ambientes.
 - **Uso real:** staging tem 78 execuções encerradas com `kill_switch`, sem `agent_steps`; produção tem 0 execuções. Nenhuma chamada real ao AI Gateway foi comprovada.
 - **Vercel:** provider, modelo Haiku 5.5, modo OIDC, flag do executor e teto interno de US$ 5 estão presentes em Preview e Production. `CRON_SECRET` está cadastrado como sensitive, mas seu comprimento não foi validado. `SUPABASE_SECRET_KEY` está ausente. Não foi encontrado budget externo do AI Gateway para o projeto.
