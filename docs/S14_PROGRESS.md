@@ -415,6 +415,13 @@ A integração recebeu mais cinco commits depois de `79ff06be`, avançando para 
 ## Handoff da PR substituta — 21/11/2026 14:16 BRT
 
 - PR #78 aberta em Draft: https://github.com/smklj/smkon/pull/78
-- Branch `fix/s14-timeout-ledger-rebased-20261121-1415`, head documental `a5de790d`, base declarada `feature/smkon-production-readiness` no SHA `2455806c`; comparação pré-abertura 7 ahead/0 behind.
+- Branch `fix/s14-timeout-ledger-rebased-20261121-1415`, head documental `ba99b2c7`, base declarada `feature/smkon-production-readiness` no SHA `2455806c`; comparação pré-abertura 7 ahead/0 behind.
 - PR #76 encerrada sem merge e com comentário apontando para #78. Não houve merge de código.
 - A nova PR precisa de CI no próprio head, Preview e E2E específicos; evidências dos SHAs anteriores não substituem esses gates.
+
+
+## Estado final da PR #78 — 21/11/2026 14:17 BRT
+
+- PR #78 aberta em Draft, mergeable=true, head `ba99b2c7`, 10 commits à frente/0 atrás da base `feature/smkon-production-readiness` em `2455806c`.
+- PR #76 encerrada sem merge e substituída pela #78.
+- Nenhuma execução GitHub Actions identificada para o head `ba99b2c7`; status combinado contém apenas Vercel failure `build-rate-limit`. Nenhum Preview foi criado para a branch; E2E específico pendente.
