@@ -1,0 +1,453 @@
+/* Content Studio: player 9:16, legendas karaokê, marca d'água e HUD. Ordem de cascata: ver src/app/globals.css. */
+/* ==========================================================================
+   Content Studio — player vertical 9:16
+   Vídeo 9:16 vertical, legendas dinâmicas em karaokê, marca d'água SMKON & inspetor
+   ========================================================================== */
+.studio-creative-section {
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.studio-creative-suite {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .studio-creative-suite {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Smartphone Frame 9:16 */
+.reels-mockup-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.reels-smartphone-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 580px;
+  background: #09090b;
+  border-radius: 40px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 8px #27272a, 0 0 0 9px #3f3f46;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.reels-notch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 22px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.notch-speaker {
+  width: 36px;
+  height: 4px;
+  background: #27272a;
+  border-radius: 2px;
+}
+
+.notch-camera {
+  width: 10px;
+  height: 10px;
+  background: #18181b;
+  border: 1.5px solid #27272a;
+  border-radius: 50%;
+}
+
+.reels-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.reels-video-element {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Fundo ambiente animado quando sem vídeo raw */
+.reels-ambient-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, #1a102f 0%, #050508 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  opacity: 0.45;
+  animation: orb-float 8s ease-in-out infinite alternate;
+}
+
+.ambient-orb.orb-1 {
+  width: 220px;
+  height: 220px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  top: 20%;
+  left: 10%;
+}
+
+.ambient-orb.orb-2 {
+  width: 260px;
+  height: 260px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  bottom: 25%;
+  right: 5%;
+  animation-duration: 10s;
+}
+
+@keyframes orb-float {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(30px) scale(1.1); }
+}
+
+.ambient-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.ambient-placeholder-text {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.ambient-placeholder-text span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #f59e0b;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.ambient-placeholder-text p {
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+/* Marca d'água SMKON Oficial */
+.reels-watermark-overlay {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  padding: 12px;
+}
+
+.reels-watermark-overlay.top-right { top: 40px; right: 8px; }
+.reels-watermark-overlay.top-left { top: 40px; left: 8px; }
+.reels-watermark-overlay.bottom-right { bottom: 60px; right: 8px; }
+.reels-watermark-overlay.bottom-left { bottom: 60px; left: 8px; }
+.reels-watermark-overlay.bottom-center { bottom: 60px; left: 50%; transform: translateX(-50%); }
+
+.watermark-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.watermark-icon {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.watermark-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.watermark-sub {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.7);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  padding-left: 6px;
+}
+
+/* Gancho Viral (0-3s) */
+.reels-hook-card {
+  position: absolute;
+  top: 85px;
+  left: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 12px 14px;
+  z-index: 25;
+  animation: hook-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);
+}
+
+@keyframes hook-pop {
+  from { opacity: 0; transform: translateY(-12px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hook-badge {
+  display: inline-block;
+  background: #f59e0b;
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.hook-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+  margin: 0;
+}
+
+/* Legendas em karaokê */
+.reels-captions-wrapper {
+  position: absolute;
+  bottom: 80px;
+  left: 16px;
+  right: 64px;
+  z-index: 22;
+  text-align: center;
+  pointer-events: none;
+}
+
+.reels-captions-box {
+  display: inline-block;
+  padding: 8px 12px;
+  line-height: 1.25;
+}
+
+.caption-word {
+  display: inline-block;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.12s ease;
+  margin: 0 3px;
+  paint-order: stroke fill;
+}
+
+.caption-word.active {
+  transform: scale(1.18);
+  z-index: 2;
+}
+
+.caption-emoji {
+  margin-left: 2px;
+  display: inline-block;
+  transform: translateY(-2px);
+}
+
+/* Outro CTA Card (Últimos 3s) */
+.reels-outro-card {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 8, 0.92);
+  backdrop-filter: blur(16px);
+  z-index: 28;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  animation: fade-in 0.3s ease forwards;
+}
+
+.outro-pulse-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  animation: pulse-bounce 1s infinite alternate;
+}
+
+@keyframes pulse-bounce {
+  from { transform: scale(0.92); }
+  to { transform: scale(1.08); }
+}
+
+.outro-title {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #f59e0b;
+  margin-bottom: 8px;
+}
+
+.outro-text {
+  font-size: 13px;
+  color: #f4f4f5;
+  margin-bottom: 16px;
+  line-height: 1.4;
+  max-width: 240px;
+}
+
+.outro-coupon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #18181b;
+  border: 1px dashed #f59e0b;
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.outro-coupon span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.outro-coupon strong {
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 0.1em;
+}
+
+/* Social HUD */
+.reels-social-hud {
+  position: absolute;
+  right: 10px;
+  bottom: 85px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  z-index: 24;
+}
+
+.hud-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #fff;
+  font-size: 18px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.hud-action small {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Play button overlay */
+.reels-play-overlay-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 26;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.reels-play-overlay-button:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: rgba(245, 158, 11, 0.85);
+  border-color: #f59e0b;
+  color: #000;
+}
+
+/* Progress bar inside frame */
+.reels-progress-bar {
+  height: 3px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  position: relative;
+  z-index: 31;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #f59e0b;
+  transition: width 0.05s linear;
+}
+
+/* External controls */
+.reels-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+}
+
+.reels-scrub-slider {
+  flex: 1;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.reels-time-display {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}

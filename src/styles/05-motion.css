@@ -1,0 +1,113 @@
+/* Movimento e feedback (S7.2): transições, toasts, esqueletos, movimento reduzido. Ordem de cascata: ver src/app/globals.css. */
+/* ==========================================================================
+   S7.2 — movimento e feedback
+   ========================================================================== */
+
+/* Transições de estado: hover, foco e ativo respondem em vez de piscar. */
+.button, .icon-button, .app-nav-item, .link, .chip, .badge, .toast-close,
+.field input, .field select, .field textarea, .inline-form input, .inline-form select,
+.studio-field input, .studio-field select, .studio-field textarea {
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-1) var(--ease-out),
+    text-decoration-color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out),
+    opacity var(--dur-1) var(--ease-out);
+}
+.row { transition: background-color var(--dur-2) var(--ease-out); }
+.rows .row:hover { background-color: rgba(255, 255, 255, 0.02); }
+.button:not(:disabled):active, .icon-button:active { transform: scale(0.98); }
+.app-nav-item .app-nav-icon { transition: transform var(--dur-2) var(--ease-out), color var(--dur-1) var(--ease-out); }
+.app-nav-item:hover .app-nav-icon { transform: translateX(1px); }
+.app-nav-item.active::before { animation: nav-indicator var(--dur-2) var(--ease-out); transform-origin: center; }
+.app-nav-tag-building { color: var(--text-2); border-color: var(--line-strong); }
+
+/* Entrada de conteúdo: cada bloco da página e as primeiras linhas das listas, em sequência curta.
+   fill-mode backwards: depois da animação não sobra transform (não cria contexto para position: fixed). */
+.page > * { animation: rise-in var(--dur-3) var(--ease-out) backwards; }
+.page > *:nth-child(2) { animation-delay: 40ms; }
+.page > *:nth-child(3) { animation-delay: 80ms; }
+.page > *:nth-child(4) { animation-delay: 120ms; }
+.page > *:nth-child(5) { animation-delay: 160ms; }
+.page > *:nth-child(n + 6) { animation-delay: 200ms; }
+.rows > li { animation: fade-in var(--dur-3) var(--ease-out) backwards; }
+.rows > li:nth-child(2) { animation-delay: 30ms; }
+.rows > li:nth-child(3) { animation-delay: 60ms; }
+.rows > li:nth-child(4) { animation-delay: 90ms; }
+.rows > li:nth-child(5) { animation-delay: 120ms; }
+.rows > li:nth-child(6) { animation-delay: 150ms; }
+.rows > li:nth-child(7) { animation-delay: 180ms; }
+.rows > li:nth-child(n + 8) { animation-delay: 210ms; }
+
+/* Mensagens de resultado entram em vez de aparecer de uma vez. */
+.feedback, .form-grid [role="status"], .inline-form [role="status"] { animation: rise-in var(--dur-2) var(--ease-out) backwards; }
+
+/* Botão em envio: indicador monocromático antes do texto. */
+.button[aria-busy="true"] { cursor: progress; }
+.button[aria-busy="true"]::before {
+  content: ""; width: 12px; height: 12px; flex: none; border-radius: 50%;
+  border: 1.5px solid currentColor; border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Esqueletos de carregamento no formato das páginas. */
+.skeleton { display: block; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--surface-2), var(--elevated), var(--surface-2)); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+.skeleton-header { display: grid; gap: 12px; padding-bottom: 8px; }
+.skeleton-eyebrow { width: 120px; height: 10px; }
+.skeleton-title { width: min(360px, 70%); height: 34px; }
+.skeleton-text { width: min(520px, 90%); height: 14px; }
+.skeleton-label { width: 90px; height: 10px; }
+.skeleton-number { width: 56px; height: 26px; }
+.skeleton-heading { width: 160px; height: 14px; margin-bottom: 16px; }
+.skeleton-row { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-top: 1px solid var(--line); }
+.skeleton-row:first-of-type { border-top: 0; }
+.skeleton-icon { width: 30px; height: 30px; flex: none; }
+.skeleton-lines { flex: 1; display: grid; gap: 6px; }
+.skeleton-line { height: 12px; width: 70%; }
+.skeleton-line.short { width: 40%; height: 10px; }
+
+/* Estados de erro e não encontrado. */
+.state-panel { display: grid; gap: 10px; padding: 32px; max-width: 640px; }
+.state-title { font: 600 26px/1.15 var(--font-display-stack); letter-spacing: -0.02em; }
+.state-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.standalone { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+
+/* Toasts: resultado de ações de linha, empilhados no canto. */
+.toaster { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.toast {
+  pointer-events: auto; display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 12px 12px 14px; border-radius: var(--radius); border: 1px solid var(--line-strong);
+  background: rgba(26, 26, 26, 0.96); backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); font-size: 13px; color: var(--text);
+  animation: toast-in var(--dur-3) var(--ease-out);
+}
+.toast p { flex: 1; padding-top: 1px; }
+.toast-icon { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.08); }
+.toast-ok .toast-icon { color: var(--ok); }
+.toast-error { border-color: rgba(255, 107, 107, 0.4); }
+.toast-error .toast-icon { color: var(--danger); }
+.toast-info .toast-icon { color: var(--info); }
+.toast-close { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border: 0; border-radius: var(--radius-sm); background: none; color: var(--muted); }
+.toast-close:hover { background: var(--surface-2); color: var(--text); }
+@media (max-width: 960px) { .toaster { left: 16px; right: 16px; bottom: 16px; width: auto; } }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes nav-indicator { from { transform: scaleY(0.3); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Movimento reduzido: sem deslocamento nem loop; só a troca de estado. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton { animation: none; }
+  .button[aria-busy="true"]::before { animation: none; border-right-color: currentColor; opacity: 0.6; }
+}

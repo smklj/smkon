@@ -1,0 +1,55 @@
+/* Tokens de cor, raio, movimento e tipografia; reset e utilitários de texto. Ordem de cascata: ver src/app/globals.css. */
+/* SMKON — design tokens (identidade monocromática oficial) */
+:root {
+  color-scheme: dark;
+
+  /* Marca */
+  --bg: #0b0b0b;
+  --surface: #121212;
+  --surface-2: #1a1a1a;
+  --elevated: #2a2a2a;
+  --text: #ffffff;
+  --text-2: #c9c9c9;
+  --muted: #8f8f8f;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+
+  /* Cor só com função: estado e identificação de módulo */
+  --ok: #3ddc97;
+  --warn: #f5b547;
+  --danger: #ff6b6b;
+  --info: #6ea8fe;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --sidebar: 248px;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px rgba(255, 255, 255, 0.55);
+
+  /* Movimento (S7.2): uma curva, três durações. Só transform e opacity nas animações. */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+
+  --font-display-stack: var(--font-display), "Space Grotesk", system-ui, sans-serif;
+  --font-sans-stack: var(--font-sans), "Inter", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+body { font: 400 14px/1.55 var(--font-sans-stack); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, p { margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
+::selection { background: rgba(255, 255, 255, 0.85); color: #000; }
+
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); font-size: 12px; }
+.link { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; font-size: 13px; }
+.link:hover { text-decoration-color: var(--text); }
+.skip-link { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--text); color: #000; padding: 8px 12px; border-radius: var(--radius-sm); }
+.skip-link:focus { left: 8px; }
