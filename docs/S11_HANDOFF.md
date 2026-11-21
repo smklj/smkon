@@ -214,3 +214,12 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Revisão do adapter também encontrou e corrigiu a normalização da lista de scopes OAuth (separação por espaços) e passou a exigir `token_type=bearer` na resposta.
 - Commit de correção mais recente: `63eee98244f57772bd1e08f8a0e46fdf39495d52`.
 - **Revalidação:** aguardando workflow para o head atualizado; não declarar CI verde até consultar a nova execução.
+
+### Revalidação concluída — 21/11/2026 UTC
+
+- CI do PR #57, head `520671b10cc7ac7cab18fb7dbc3e0a2051ea60a0`: **Typecheck, lint, unit tests, build e migrations/SQL tests passaram**.
+- Execução CI push do mesmo head também passou nos dois jobs.
+- A execução E2E separada acionada por `deployment_status` foi cancelada e não faz parte do CI principal.
+- Vercel Preview foi consultado sem descriptografar valores. Não há variáveis de configuração Mercado Livre visíveis no projeto; portanto, nenhum app OAuth está configurado e nenhuma conta pode ser conectada nesta etapa.
+- O projeto não possui ainda módulo de cifragem/persistência de tokens para esse adapter. Próxima implementação deve adicionar envelope AES-256-GCM com chave de 32 bytes gerida como secret server-side, tabela isolada por organization, RLS sem acesso direto de cliente e operações de refresh serializadas. Não criar chave real, não gravar tokens e não aplicar migration sem validação.
+- PR #57 permanece Draft; merge e deploy não autorizados.
