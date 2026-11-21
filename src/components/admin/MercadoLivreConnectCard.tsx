@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ConnectResponse = {
   error?: string;
@@ -12,7 +12,7 @@ type ConnectResponse = {
 
 export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);\n\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search);\n    if (params.get("mercadoLivre") === "connected") {\n      setMessage("Conta Mercado Livre conectada com sucesso.");\n      window.history.replaceState({}, "", window.location.pathname);\n    }\n  }, []);
 
   async function connect() {
     setBusy(true);
@@ -50,7 +50,7 @@ export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
   }
 
   return (
-    <div className="stack-sm">
+    <div>
       <div className="row">
         <div className="row-main">
           <p className="row-title">Mercado Livre</p>
@@ -65,7 +65,7 @@ export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
         </button>
       </div>
       {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}
-      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha.</p>
+      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. A leitura de vendas será liberada após a validação da conexão.</p>
     </div>
   );
 }
