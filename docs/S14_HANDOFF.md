@@ -127,3 +127,13 @@ Esta seção supersede contagens e estados anteriores quando houver divergência
 7. Primeiro smoke test continua bloqueado. Só executar uma única `operations_review` em staging após secret de staging, budget externo baixo, CRON_SECRET validado e grants mínimos estarem prontos.
 
 Nenhum merge em `main`, alteração de secrets, alteração de configuração Production, migration remota, concessão de grants ou chamada paga ao modelo foi feita nesta rodada.
+
+
+## Atualização após rebase e CI — 21/11/2026, 08:08 BRT
+
+- PR #64 está aberta em Draft na branch `fix/s14-timeout-ledger-rebased-20261121-0800`; head `2f1b5598`, 12 commits à frente e 0 atrás da integração, `mergeable=true`.
+- PR #61 foi fechada sem merge como superseded. O patch foi reaplicado numa branch baseada na head atual da integração, sem carregar os cinco commits não relacionados que causavam a divergência.
+- CI #44897305593 passou nos dois jobs no head de código `d7c8678`: dependency audit, typecheck, lint, testes unitários, build, migrations e SQL. Os três commits seguintes (`f498bfb`, `dcdd9a2`, `2f1b559`) alteraram apenas documentação; código e testes permaneceram idênticos.
+- E2E da branch #64 continua pendente. O Preview desta branch está bloqueado pela Vercel por `api-deployments-free-per-day` (>100 deployments/dia); o Preview READY da PR #61 corresponde ao SHA antigo `6e26aee` e não deve ser apresentado como deployment do head atual.
+- O restante estado operacional permanece: staging com 94 runs `killed/kill_switch`, zero steps/usage/tool grants; Production sem runs/usage; nenhum budget externo/default nem request do AI Gateway em sete dias; falta `SUPABASE_SECRET_KEY` no Preview. Nenhuma chamada real ao modelo foi comprovada.
+- Não houve merge, migration remota, alteração de secret, concessão de grant ou alteração de Production.
