@@ -14,6 +14,12 @@ export type MercadoLivreOrderSyncPageRequestResult =
   | { ok: true; value: MercadoLivreOrderSyncPageRequest }
   | { ok: false; error: string };
 
+export type MercadoLivreOrderSyncAction = "next" | "restart";
+
+export type MercadoLivreOrderSyncActionResult =
+  | { ok: true; value: MercadoLivreOrderSyncAction }
+  | { ok: false; error: string };
+
 function floorToHour(value: Date): Date {
   const result = new Date(value);
   result.setUTCMinutes(0, 0, 0);
@@ -34,9 +40,27 @@ function parseDate(value: unknown): Date | null {
   return Number.isFinite(parsed.getTime()) ? floorToHour(parsed) : null;
 }
 
+/** The browser can choose only resume or an explicit restart; offsets/windows live server-side. */
+export function parseMercadoLivreOrderSyncAction(input: unknown): MercadoLivreOrderSyncActionResult {
+  if (input === undefined) return { ok: true, value: "next" };
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    return { ok: false, error: "Invalid sync request." };
+  }
+
+  const body = input as Record<string, unknown>;
+  if (Object.keys(body).some((key) => key !== "action")) {
+    return { ok: false, error: "Sync cursor fields are managed by the server." };
+  }
+  const action = body.action === undefined ? "next" : body.action;
+  if (action !== "next" && action !== "restart") {
+    return { ok: false, error: "Invalid sync action." };
+  }
+  return { ok: true, value: action };
+}
+
 /**
- * Validates a manual page request. The date window is fixed by the client
- * after page 1, so later pages query the same 12-month snapshot window.
+ * Validates the legacy/manual date window shape. Kept for deterministic unit
+ * coverage and migration compatibility; the active endpoint now owns the cursor.
  */
 export function parseMercadoLivreOrderSyncPageRequest(
   input: unknown,
