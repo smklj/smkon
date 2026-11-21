@@ -281,3 +281,7 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - O teste é executado somente por `npm run test:db` no banco descartável criado pelo pipeline. Não foi executado contra qualquer banco hospedado.
 - CI das correções anteriores: run #356, **sucesso** nos dois jobs (typecheck/lint/unit/build e migrations/SQL tests). O run #354 foi cancelado por novo push e não é evidência de falha de código.
 - CI para o novo teste comportamental: aguardar run do commit atual antes de declarar aprovado.
+
+
+- Correção de sintaxe do bloco PL/pgSQL de fixture: delimitador nomeado `$s11_lease_test$` (commit `04681e354ea7131c511b00e9fcb67f47cf752372`). O arquivo foi relido após a correção e o bloco abre/fecha com o mesmo delimitador.
+- A consulta de workflows ainda não retornou execução associada ao commit do teste corrigido. Portanto, o teste está commitado, mas sua execução automatizada permanece **não comprovada** até o pipeline mais recente terminar.
