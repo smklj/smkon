@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AreaCard } from "@/components/admin/AreaCard";
 import { ConnectionsPanel } from "@/components/admin/ConnectionsPanel";
 import { ContentList } from "@/components/admin/ContentList";
@@ -22,6 +23,11 @@ export default function AdminPage() {
         eyebrow="08 · Segurança e admin"
         title="Administração"
         description="Membros, modelo operacional, domínios financeiros e conexões reais do workspace."
+        actions={
+          <Link className="link" href="/admin/studio">
+            🗄️ Abrir Data Studio (Prisma REA)
+          </Link>
+        }
       />
 
       <section className="panel" aria-labelledby="membros-titulo">
