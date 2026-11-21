@@ -47,6 +47,16 @@ export async function storeMercadoLivreCredentials(input: {
   encryptedTokens: MercadoLivreTokenEnvelope;
 }): Promise<void> {
   await assertMercadoLivreManager(input.organizationId);
+  const userClient = await createUserClient();
+  const { data: connection, error: connectionError } = await userClient
+    .from("source_connections")
+    .select("id")
+    .eq("id", input.connectionId)
+    .eq("organization_id", input.organizationId)
+    .eq("provider", "mercado_livre")
+    .eq("domain", "owned_sales")
+    .maybeSingle();
+  if (connectionError || !connection) throw new Error("Mercado Livre connection not found.");
   const client = getAdminClient();
   const { error } = await client.from("mercado_livre_credentials").upsert({
     connection_id: input.connectionId,
