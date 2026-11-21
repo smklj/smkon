@@ -121,7 +121,7 @@ export const OFFICIAL_POST_PRESETS: Record<string, SmartPostPackage> = {
         badge: "🎁 RESGATE SEU CUPOM",
         headline: "COMO GARANTIR O SEU?",
         highlightText: "COMENTE 'QUERO'",
-        bodyText: "Enviei os links oficiais verificados e os cupons de frete grátis diretamente no seu direct!",
+        bodyText: "[Diga onde está o link e quais condições estão valendo.]",
         bulletPoints: [
           "Link seguro direto do vendedor oficial",
           "Cupons com até 40% OFF ativos hoje",
@@ -278,7 +278,7 @@ export function generateAutonomousPost(
           bodyText: `Selecionamos o modelo que entrega máxima performance sem pesar no bolso. Testado por mais de 30 dias.`,
           bulletPoints: [
             "Excelente custo-benefício em 2026",
-            "Avaliação 4.8+ com milhares de compras",
+            "[Avaliação e número de vendas conferidos na loja]",
             "Garantia e envio rápido com rastreio",
           ],
           mascotExpression: "feliz",
@@ -307,7 +307,7 @@ export function generateAutonomousPost(
           badge: "🎁 OFERTA EXCLUSIVA",
           headline: "GARANTA O SEU",
           highlightText: `CUPOM: ${code}`,
-          bodyText: `Link oficial verificado liberado com frete grátis e cupom de desconto ativo por tempo limitado.`,
+          bodyText: `[Condições vigentes de frete e cupom, conferidas na loja.]`,
           bulletPoints: [
             "Comente QUERO para receber no direct",
             "Ou clique no link da nossa bio",

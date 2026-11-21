@@ -12,8 +12,8 @@ test("autonomous-generator: gera peça completa de Achadinho Shopee com gancho e
   assert.ok(draft.title.includes("Mini Processador Elétrico"));
   assert.equal(draft.product, "Mini Processador Elétrico");
   assert.equal(draft.promoCode, "SHOPEE20");
-  assert.ok(draft.assetUrl?.includes("s.shopee.com.br"));
-  assert.ok(draft.assetUrl?.includes("sub_id=reels_auto"));
+  // Sem link de afiliado inventado: usa exatamente o link informado pelo usuário.
+  assert.equal(draft.assetUrl, "https://shopee.com.br/item-top");
 
   // Estrutura do Roteiro 9:16
   assert.ok(draft.script.includes("[HOOK 0-3s]"));
@@ -35,8 +35,7 @@ test("autonomous-generator: gera peça completa de Moda Shein com cupom e deep-l
 
   assert.ok(draft.title.includes("Shein"));
   assert.equal(draft.promoCode, "SHEIN15");
-  assert.ok(draft.assetUrl?.includes("shein.top"));
-  assert.ok(draft.assetUrl?.includes("coupon=SHEIN15"));
+  assert.equal(draft.assetUrl, undefined);
   assert.ok(draft.caption.includes("SHEIN15"));
   assert.ok(draft.hashtags.includes("#shein"));
 });
@@ -47,6 +46,15 @@ test("autonomous-generator: gera peça de Infoproduto Digital com preço e check
   assert.ok(draft.title.includes("Manual dos Achadinhos"));
   assert.ok(draft.script.includes("R$ 29.90") || draft.script.includes("R$ 29,90"));
   assert.ok(draft.cta.length > 0);
-  assert.ok(draft.hashtags.includes("#kiwify"));
+  assert.ok(draft.hashtags.includes("#infoprodutos"));
   assert.equal(draft.hook.category, "infoproduto");
+});
+
+test("autonomous-generator: nenhum preset promete renda nem inventa avaliação, frete ou cupom", () => {
+  const forbidden = [/R\$ ?5\.000/i, /faturar/i, /#rendaextra/i, /frete grátis/i, /cupom secreto/i, /garantia total/i, /SHEIN15|SMKON10/];
+  for (const preset of ["shopee-viral", "shein-fashion", "digital-infoproduct", "hotmart-course"] as const) {
+    const draft = generateAutonomousDraft(preset, "Produto Teste");
+    const text = [draft.title, draft.script, draft.caption, draft.cta, draft.hashtags].join("\n");
+    for (const pattern of forbidden) assert.doesNotMatch(text, pattern, `${preset}: ${pattern}`);
+  }
 });

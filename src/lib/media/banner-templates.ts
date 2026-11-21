@@ -64,7 +64,7 @@ export function createDefaultBannerConfig(
     id: `banner_${Date.now()}`,
     format,
     headline: headline || "Achadinho Exclusivo",
-    subheadline: "O item viral mais procurado da semana com desconto garantido",
+    subheadline: "[Destaque verificado do produto]",
     badge: "best-seller",
     badgeCustomText: "🔥 ACHADINHO VIRAL",
     salePrice: salePrice || "R$ 49,90",

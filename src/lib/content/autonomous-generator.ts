@@ -4,8 +4,6 @@
  */
 
 import { VIRAL_HOOKS, type ViralHook } from "../media/video-composition.ts";
-import { generateShopeeTrackedLink } from "../integrations/shopee/index.ts";
-import { generateSheinTrackedLink } from "../integrations/shein/index.ts";
 import { getBlueprintByNiche } from "../infoproducts/index.ts";
 import type { ContentChannel } from "./types.ts";
 
@@ -33,16 +31,14 @@ export function generateAutonomousDraft(
     productUrl?: string;
   }
 ): AutonomousDraftResult {
-  const code = options?.customPromoCode || (preset === "shein-fashion" ? "SHEIN15" : "SMKON10");
+  const code = options?.customPromoCode || "[CUPOM]";
 
   switch (preset) {
     case "shopee-viral": {
       const hook = VIRAL_HOOKS.find((h) => h.category === "shopee") || VIRAL_HOOKS[1];
-      const targetUrl = options?.productUrl || "https://shopee.com.br/item-exemplo";
-      const trackedLink = generateShopeeTrackedLink({
-        originalProductUrl: targetUrl,
-        subIds: { subId1: "reels_auto", subId2: "instagram" },
-      });
+      // Sem link de afiliado gerado aqui: a Shopee só atribui comissão a links da Affiliate Open API
+      // oficial, ainda não integrada. O usuário informa o próprio link de afiliado.
+      const trackedLink = options?.productUrl;
 
       return {
         title: `Achadinho Shopee: ${productName}`,
@@ -50,7 +46,7 @@ export function generateAutonomousDraft(
         assetUrl: trackedLink,
         hook,
         promoCode: code,
-        script: `[HOOK 0-3s]: ${hook.text}\n\n[DEMONSTRAÇÃO 3-10s]\nOlha a qualidade e praticidade desse ${productName}. Ele resolve exatamente aquele problema diário sem custar caro.\n\n[FECHAMENTO 10-15s]\nO link com frete grátis e cupom de desconto exclusivo está salvo nos comentários e no link da bio!`,
+        script: `[HOOK 0-3s]: ${hook.text}\n\n[DEMONSTRAÇÃO 3-10s]\n[Mostre ${productName} em uso e o problema real que ele resolve.]\n\n[FECHAMENTO 10-15s]\n[Informe as condições vigentes de frete e cupom, se houver.] Link na bio.`,
         caption: `Você teria coragem de pagar o preço normal depois de ver isso? 😱\n\nGaranta o seu ${productName} com o cupom ${code} no link da bio!`,
         cta: `Comente "EU QUERO" para receber o link com desconto no direct ⚡`,
         hashtags: "#achadinhos #shopee #viral #review #utilidades #desconto #smkon",
@@ -60,12 +56,8 @@ export function generateAutonomousDraft(
 
     case "shein-fashion": {
       const hook = VIRAL_HOOKS.find((h) => h.category === "shein") || VIRAL_HOOKS[0];
-      const targetUrl = options?.productUrl || "https://br.shein.com/item-exemplo";
-      const trackedLink = generateSheinTrackedLink({
-        goodsUrl: targetUrl,
-        couponCode: code,
-        campaignTag: "reels_moda",
-      });
+      // Sem link de afiliado gerado aqui (programa da Shein ainda não integrado por API oficial).
+      const trackedLink = options?.productUrl;
 
       return {
         title: `Look Inteligente Shein: ${productName}`,
@@ -73,7 +65,7 @@ export function generateAutonomousDraft(
         assetUrl: trackedLink,
         hook,
         promoCode: code,
-        script: `[HOOK 0-3s]: ${hook.text}\n\n[DETALHES DO LOOK 3-10s]\nEssa peça em ${productName} veste perfeitamente e tem acabamento de grife importada. O caimento é surreal de lindo.\n\n[PROVA & CUPOM 10-15s]\nUsei o cupom secreto ${code} para sair por menos de R$ 35 com frete grátis! Link direto na bio.`,
+        script: `[HOOK 0-3s]: ${hook.text}\n\n[DETALHES DO LOOK 3-10s]\n[Descreva tecido, caimento e medidas de ${productName} que você conferiu.]\n\n[PROVA & CUPOM 10-15s]\n[Informe o preço e o cupom vigentes, conferidos na loja na data do post.] Link na bio.`,
         caption: `Achadinho de ouro da Shein que parece de marca cara! ✨\n\nCupom ativo: ${code}. Link nos comentários e na bio.`,
         cta: "Link direto com cupom aplicado na bio 🛍️",
         hashtags: "#shein #lookshein #achadinhoshein #modafeminina #cupomshein #smkon",
@@ -91,10 +83,10 @@ export function generateAutonomousDraft(
         assetUrl: "https://pay.kiwify.com.br/checkout-exemplo",
         hook,
         promoCode: "PIX10",
-        script: `[HOOK 0-3s]: ${hook.text}\n\n[METODOLOGIA 3-10s]\nO método exato que utilizamos para faturar com produtos virais sem investir em anúncios caros e sem precisar aparecer.\n\n[CALL TO ACTION 10-15s]\nO material completo com checklists práticos e prompts de IA está disponível por apenas R$ ${blueprint.recommendedPriceBrl.toFixed(2)}! Clique no link da bio.`,
+        script: `[HOOK 0-3s]: ${hook.text}\n\n[METODOLOGIA 3-10s]\n[Explique o que o material ensina, sem prometer resultado financeiro.]\n\n[CALL TO ACTION 10-15s]\nO material completo com checklists práticos e prompts de IA está disponível por apenas R$ ${blueprint.recommendedPriceBrl.toFixed(2)}! Clique no link da bio.`,
         caption: `${blueprint.subtitle}\n\n${blueprint.salesCopySummary}\n\nGaranta seu acesso imediato no link da bio!`,
         cta: blueprint.checkoutCta,
-        hashtags: "#rendaextra #afiliados #marketingdigital #kiwify #infoprodutos #smkon",
+        hashtags: "#afiliados #marketingdigital #infoprodutos #smkon",
         channels: ["Instagram", "TikTok", "YouTube"],
       };
     }
@@ -108,7 +100,7 @@ export function generateAutonomousDraft(
         assetUrl: options?.productUrl || "https://hotmart.com/item-exemplo",
         hook,
         promoCode: code,
-        script: `[HOOK 0-3s]: ${hook.text}\n\n[ANÁLISE SINCERA 3-10s]\nTestei na prática e avaliei todos os pontos positivos e negativos para você não perder dinheiro.\n\n[CONCLUSÃO 10-15s]\nVale cada centavo se você aplicar o método correto. Link oficial com garantia total na bio!`,
+        script: `[HOOK 0-3s]: ${hook.text}\n\n[ANÁLISE SINCERA 3-10s]\n[Descreva pontos positivos e negativos que você verificou no produto.]\n\n[CONCLUSÃO 10-15s]\n[Conclusão honesta, com as condições reais de garantia do produtor.] Link na bio.`,
         caption: `Minha avaliação honesta sobre o ${productName}. Confira todos os detalhes no link da bio!`,
         cta: "Acesse a condição oficial com garantia no link da bio ⚡",
         hashtags: "#review #curso #hotmart #educacao #afiliados #smkon",
