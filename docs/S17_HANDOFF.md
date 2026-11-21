@@ -30,7 +30,8 @@ O repositório já tinha a base de conectores de receita do S11: `source_connect
 - SQL `supabase/tests/040_integration_hub.test.sql`: **39 asserções** (permissões, novos provedores, regras das contas, isolamento, papéis, hash, imutabilidade inclusive para o dono do banco, execução, auditoria). Suíte completa: **24 arquivos, 658 asserções**, todas passando (PostgreSQL 16 local; a CI usa 17).
 - Unitários `tests/unit/integrations-registry.test.ts`: 7 testes; suíte **267/267**.
 - `typecheck`, `lint`, `build`: sem erros.
-- E2E e validação visual: não executados nesta sessão (ficam para o Preview).
+- E2E no Preview do primeiro commit (antes da migration no staging): 35 de 36 passaram. Falhou "Convites" por regressão deste PR — o aviso estático do hub usava `role="status"` e duplicava o papel na página. Corrigido em `87d4211`.
+- O Preview de `87d4211` não foi gerado: a Vercel recusou o deploy por limite diário do plano ("Deployment rate limited — retry in 24 hours"). O E2E da correção fica pendente até o limite liberar.
 
 ## Staging
 Migration aplicada em `xoyasrizivadxnpmzzno` em 21/11 (autorização do Owner). MD5 das 9 funções e das 35 constraints idêntico ao banco local migrado pelo repositório. RLS ligada nas duas tabelas; `anon` sem acesso; `claim`/`finish` fora do alcance de `authenticated`. Advisors de segurança: só o aviso esperado de RPC `security definer` executável por `authenticated` nas 3 funções de pedido/decisão/cancelamento (mesmo padrão dos demais módulos).
