@@ -449,3 +449,5 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 - AI Gateway 7d: 0 requests/tokens/custo; `agent_model_usage` vazio nos dois bancos. Nenhuma chamada real comprovada.
 - Cron está declarado em source (`17 11 * * *`), mas não está comprovado em deployment Production. Não testar IA real até chave exclusiva de staging, grants mínimos, budget externo, validação do Cron secret e OIDC runtime.
 - Esta atualização foi commitada somente em branch docs derivada do commit #87; nenhum merge/produção foi realizado.
+
+- Handoff documental desta reconciliação está na Draft PR #88 (docs-only), branch `docs/s14-handoff-reconciliation-20261121-1703`; sem merge.
