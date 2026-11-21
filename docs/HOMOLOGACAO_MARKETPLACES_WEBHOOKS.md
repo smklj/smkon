@@ -1,5 +1,10 @@
 # Guia de Homologação: Marketplaces, Webhooks & Afiliados (SMKON)
 
+> **Status real (Auditoria v2, 21/11/2026):**
+> - **Kiwify:** receptor desligado por padrão (`KIWIFY_WEBHOOK_ENABLED`). Ainda não grava em `external_events` nem no ledger; o esquema de assinatura oficial precisa ser confirmado. A afirmação abaixo de que os valores "são integrados ao painel financeiro" não vale até isso ser feito.
+> - **Shopee e Shein:** sem integração. O código que montava links "rastreados" foi removido porque não usava as APIs oficiais e não atribuiria comissão. As seções abaixo descrevem o caminho oficial a implementar.
+
+
 Este documento orienta o operador na configuração de contas reais e chaves de produção para os conectores de marketplaces integrados ao SMKON.
 
 ---
@@ -61,5 +66,5 @@ Este documento orienta o operador na configuração de contas reais e chaves de 
 ## 5. Metricool (Distribuição Social Autônoma)
 
 1. Acesse **Conexões > API** no painel da Metricool.
-2. Copie seu `userToken` e adicione em `METRICOOL_USER_TOKEN`.
+2. Copie seu `userToken`. Ele é gravado por workspace, cifrado com `INTEGRATION_TOKEN_ENCRYPTION_KEY` (não existe token global).
 3. As peças aprovadas com 1 clique no Content Studio são despachadas automaticamente para o agendamento de Reels, TikTok e Shorts.

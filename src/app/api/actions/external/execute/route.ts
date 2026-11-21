@@ -20,22 +20,22 @@ export async function POST(request: Request) {
       return jsonError(403, "forbidden", "Apenas Owner ou Admin podem executar ações externas.");
     }
 
-    let body: { requestId?: string };
+    let body: { requestId?: unknown };
     try {
       body = await request.json();
     } catch {
       return jsonError(400, "invalid_json", "JSON inválido.");
     }
 
-    if (!body.requestId) {
+    if (typeof body.requestId !== "string" || body.requestId.length === 0) {
       return jsonError(400, "invalid_input", "requestId é obrigatório.");
     }
 
-    const result = await executeExternalActionRequest(body.requestId);
+    const result = await executeExternalActionRequest(body.requestId, workspace.organizationId);
     if (!result.ok) {
       return NextResponse.json(
         { ok: false, error: result.message, code: result.errorCode },
-        { status: 400 },
+        { status: result.errorCode === "action_request_not_found" ? 404 : 400 },
       );
     }
 

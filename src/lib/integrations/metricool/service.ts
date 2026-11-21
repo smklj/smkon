@@ -3,8 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "../../supabase/service.ts";
 import { resolveCapabilities, type SocialAccountType, type SocialNetwork } from "../registry.ts";
-import { createMetricoolClient, type MetricoolClient } from "./client.ts";
+import type { MetricoolClient } from "./client.ts";
 import type { MetricoolSyncAccountItem } from "./types.ts";
+import { executeApprovedAction, loadOrgCredentials } from "./executor.ts";
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UntypedServiceClient = SupabaseClient<any, any, any>;
@@ -63,20 +65,9 @@ export async function syncMetricoolAccountsForOrg(
   let client = options?.client;
 
   if (!client) {
-    const { data: creds, error: credError } = await db
-      .from("metricool_credentials")
-      .select("blog_id, encrypted_token")
-      .eq("organization_id", organizationId)
-      .maybeSingle();
-
-    if (credError || !creds) {
-      throw new Error("Metricool credentials not configured for this organization.");
-    }
-
-    blogId = creds.blog_id;
-    const token = (creds.encrypted_token as Record<string, string>)?.token || process.env.METRICOOL_USER_TOKEN;
-    if (!token) throw new Error("Metricool token is missing.");
-    client = createMetricoolClient({ userToken: token });
+    const loaded = await loadOrgCredentials(db, organizationId);
+    blogId = loaded.blogId;
+    client = loaded.client;
   }
 
   if (!blogId) throw new Error("Metricool blogId is missing.");
@@ -122,100 +113,13 @@ export async function syncMetricoolAccountsForOrg(
   return { syncedCount: Number(syncedCount ?? 0) };
 }
 
-export type ActionExecutionResult =
-  | { ok: true; externalRef: string }
-  | { ok: false; errorCode: string; message: string };
+export type { ActionExecutionResult } from "./executor.ts";
 
-/**
- * Reivindica e executa um pedido de ação externa aprovado (service_role).
- */
+/** Executa um pedido aprovado do workspace de quem chamou, com a chave de serviço. */
 export async function executeExternalActionRequest(
   requestId: string,
+  organizationId: string,
   options?: { client?: MetricoolClient; blogId?: string },
-): Promise<ActionExecutionResult> {
-  const db = getAdminClient();
-
-  // 1. Reivindica o pedido aprovado via RPC atômica (re-confere hash aprovado)
-  const { data: request, error: claimError } = await db.rpc("claim_external_action", {
-    p_request_id: requestId,
-  });
-
-  if (claimError || !request) {
-    return { ok: false, errorCode: "action_request_not_claimable", message: claimError?.message || "Não pôde reivindicar pedido" };
-  }
-
-  try {
-    // 2. Busca a conta social de destino
-    const { data: account, error: accError } = await db
-      .from("social_accounts")
-      .select("network, account_type, via, external_account_id")
-      .eq("id", request.social_account_id)
-      .single();
-
-    if (accError || !account) {
-      await db.rpc("finish_external_action", {
-        p_request_id: requestId,
-        p_ok: false,
-        p_error_code: "account_not_found",
-      });
-      return { ok: false, errorCode: "account_not_found", message: "Conta social associada não encontrada" };
-    }
-
-    if (account.via !== "metricool") {
-      await db.rpc("finish_external_action", {
-        p_request_id: requestId,
-        p_ok: false,
-        p_error_code: "native_api_not_implemented",
-      });
-      return { ok: false, errorCode: "native_api_not_implemented", message: "API nativa ainda não configurada" };
-    }
-
-    // 3. Execução via Metricool
-    let client = options?.client;
-    let blogId = options?.blogId;
-
-    if (!client) {
-      const { data: creds } = await db
-        .from("metricool_credentials")
-        .select("blog_id, encrypted_token")
-        .eq("organization_id", request.organization_id)
-        .maybeSingle();
-
-      blogId = creds?.blog_id;
-      const token = (creds?.encrypted_token as Record<string, string>)?.token || process.env.METRICOOL_USER_TOKEN;
-      if (!token || !blogId) {
-        throw new Error("Credenciais do Metricool não configuradas para o workspace.");
-      }
-      client = createMetricoolClient({ userToken: token });
-    }
-
-    if (!blogId) throw new Error("Metricool blogId ausente.");
-
-    const payload = request.payload as Record<string, unknown>;
-    const text = typeof payload.caption === "string" ? payload.caption : "";
-    const mediaUrls = Array.isArray(payload.mediaUrls) ? (payload.mediaUrls as string[]) : [];
-
-    const result = await client.publishPost(blogId, {
-      network: account.network as SocialNetwork,
-      text,
-      mediaUrls,
-    });
-
-    // 4. Conclui com sucesso via RPC
-    await db.rpc("finish_external_action", {
-      p_request_id: requestId,
-      p_ok: true,
-      p_external_ref: result.id,
-    });
-
-    return { ok: true, externalRef: result.id };
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : "execution_failed";
-    await db.rpc("finish_external_action", {
-      p_request_id: requestId,
-      p_ok: false,
-      p_error_code: "execution_error",
-    });
-    return { ok: false, errorCode: "execution_error", message: errorMsg };
-  }
+) {
+  return executeApprovedAction(getAdminClient(), requestId, organizationId, options);
 }

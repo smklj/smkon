@@ -23,21 +23,12 @@ test("Kiwify: hash de token seguro", () => {
   assert.throws(() => hashKiwifyToken(""), /Token Kiwify inválido/);
 });
 
-test("Kiwify: extração de token de headers, query params ou body", () => {
-  // Headers
-  const headers = new Headers({ "x-kiwify-signature": "sig_header_123" });
-  assert.equal(extractKiwifyToken(headers), "sig_header_123");
-
-  // Bearer Authorization header
-  const authHeaders = new Headers({ authorization: "Bearer bearer_token_xyz" });
-  assert.equal(extractKiwifyToken(authHeaders), "bearer_token_xyz");
-
-  // Query Params
-  const params = new URLSearchParams({ token: "query_token_456" });
-  assert.equal(extractKiwifyToken(new Headers(), params), "query_token_456");
-
-  // Body
-  assert.equal(extractKiwifyToken(new Headers(), null, { signature: "body_sig_789" }), "body_sig_789");
+test("Kiwify: token só é aceito em cabeçalho", () => {
+  assert.equal(extractKiwifyToken(new Headers({ "x-kiwify-token": "sig_header_123" })), "sig_header_123");
+  assert.equal(extractKiwifyToken(new Headers({ authorization: "Bearer bearer_token_xyz" })), "bearer_token_xyz");
+  assert.equal(extractKiwifyToken(new Headers({ authorization: "Basic abc" })), null);
+  assert.equal(extractKiwifyToken({ "X-Kiwify-Signature": "rec_sig" }), "rec_sig");
+  assert.equal(extractKiwifyToken(new Headers()), null);
 });
 
 test("Kiwify: normalização de webhook PII-free e cálculo financeiro", () => {

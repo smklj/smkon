@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { log } from "@/lib/observability/log";
-import { extractHotmartToken, hashHotmartToken, verifyHotmartToken } from "@/lib/integrations/hotmart/validator";
+import { extractHotmartToken, hashHotmartToken } from "@/lib/integrations/hotmart/validator";
 import { normalizeHotmartWebhook } from "@/lib/integrations/hotmart/normalizer";
 import {
-  findHotmartConnectionById,
-  findHotmartConnectionByOrgAndDomain,
   findHotmartConnectionByTokenHash,
   persistHotmartWebhookEvent,
   type HotmartConnectionRecord,
@@ -47,58 +45,20 @@ export async function POST(request: Request) {
     );
   }
 
-  // 3. Resolução da conexão e verificação de autenticidade
+  // 3. Autenticação por conexão: o hash do Hottok identifica a conexão (e o workspace).
+  // Não há segredo global: em multi-tenant ele permitiria escolher o workspace de destino pela URL.
   let connection: HotmartConnectionRecord | null = null;
-  const globalSecret = process.env.HOTMART_WEBHOOK_SECRET;
 
   try {
-    if (connectionIdParam) {
-      connection = await findHotmartConnectionById(connectionIdParam, orgIdParam ?? undefined);
-      if (connection) {
-        // Valida se o hash bate ou se confere com o segredo global
-        const tokenHash = hashHotmartToken(presentedToken);
-        const connectionByHash = await findHotmartConnectionByTokenHash(tokenHash);
-        const hashMatches = connectionByHash?.connectionId === connection.connectionId;
-        const globalMatches = verifyHotmartToken(presentedToken, globalSecret);
+    connection = await findHotmartConnectionByTokenHash(hashHotmartToken(presentedToken));
 
-        if (!hashMatches && !globalMatches) {
-          log("warn", "hotmart_webhook", { code: "invalid_token_for_connection", connection_id: connection.connectionId });
-          return NextResponse.json(
-            { error: "Token não autorizado para esta conexão.", code: "unauthorized" },
-            { status: 401 },
-          );
-        }
-      }
-    } else if (orgIdParam && domainParam) {
-      connection = await findHotmartConnectionByOrgAndDomain(orgIdParam, domainParam);
-      if (connection) {
-        const tokenHash = hashHotmartToken(presentedToken);
-        const connectionByHash = await findHotmartConnectionByTokenHash(tokenHash);
-        const hashMatches = connectionByHash?.connectionId === connection.connectionId;
-        const globalMatches = verifyHotmartToken(presentedToken, globalSecret);
+    const mismatch =
+      !connection ||
+      (connectionIdParam !== null && connectionIdParam !== connection.connectionId) ||
+      (orgIdParam !== null && orgIdParam !== connection.organizationId) ||
+      (domainParam !== null && domainParam !== connection.domain);
 
-        if (!hashMatches && !globalMatches) {
-          log("warn", "hotmart_webhook", { code: "invalid_token_for_org_domain" });
-          return NextResponse.json(
-            { error: "Token não autorizado para esta organização.", code: "unauthorized" },
-            { status: 401 },
-          );
-        }
-      }
-    } else {
-      // Lookup automático pelo hash do token
-      const tokenHash = hashHotmartToken(presentedToken);
-      connection = await findHotmartConnectionByTokenHash(tokenHash);
-    }
-
-    // Se nenhuma conexão foi resolvida por hash, testa fallback para segredo global com primeira conexão ativa
-    if (!connection && verifyHotmartToken(presentedToken, globalSecret)) {
-      if (orgIdParam) {
-        connection = await findHotmartConnectionByOrgAndDomain(orgIdParam, domainParam ?? "owned_sales");
-      }
-    }
-
-    if (!connection) {
+    if (mismatch || !connection) {
       log("warn", "hotmart_webhook", { code: "connection_not_found_or_unauthorized" });
       return NextResponse.json(
         { error: "Conexão Hotmart não encontrada ou não autorizada.", code: "unauthorized" },

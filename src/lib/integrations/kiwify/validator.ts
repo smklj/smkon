@@ -29,46 +29,25 @@ export function hashKiwifyToken(token: string): string {
   return createHash("sha256").update(token.trim(), "utf8").digest("hex");
 }
 
+/**
+ * Lê o token apenas de cabeçalhos. Query string e corpo ficam de fora: vão parar em logs
+ * de proxy/CDN e no próprio payload armazenado.
+ */
 export function extractKiwifyToken(
   headers: Headers | Record<string, string | string[] | undefined>,
-  searchParams?: URLSearchParams | null,
-  body?: Record<string, unknown> | null
 ): string | null {
-  // 1. Headers: 'x-kiwify-signature', 'x-kiwify-token' ou 'authorization'
-  if (headers instanceof Headers) {
-    const s1 = headers.get("x-kiwify-signature");
-    if (s1 && s1.trim().length > 0) return s1.trim();
-    const s2 = headers.get("x-kiwify-token");
-    if (s2 && s2.trim().length > 0) return s2.trim();
-    const auth = headers.get("authorization");
-    if (auth && auth.trim().length > 0) {
-      return auth.replace(/^Bearer\s+/i, "").trim();
+  const read = (name: string): string | null => {
+    if (headers instanceof Headers) return headers.get(name);
+    for (const [key, val] of Object.entries(headers ?? {})) {
+      if (key.toLowerCase() === name) return Array.isArray(val) ? val[0] ?? null : val ?? null;
     }
-  } else if (headers && typeof headers === "object") {
-    for (const [key, val] of Object.entries(headers)) {
-      const lower = key.toLowerCase();
-      if (lower === "x-kiwify-signature" || lower === "x-kiwify-token" || lower === "authorization") {
-        const v = Array.isArray(val) ? val[0] : val;
-        if (typeof v === "string" && v.trim().length > 0) {
-          return v.replace(/^Bearer\s+/i, "").trim();
-        }
-      }
-    }
+    return null;
+  };
+  for (const name of ["x-kiwify-token", "x-kiwify-signature"]) {
+    const value = read(name)?.trim();
+    if (value) return value;
   }
-
-  // 2. Query param ?token=...
-  if (searchParams) {
-    const q = searchParams.get("token") || searchParams.get("signature");
-    if (q && q.trim().length > 0) return q.trim();
-  }
-
-  // 3. Body: signature
-  if (body && typeof body === "object") {
-    const bSig = body.signature;
-    if (typeof bSig === "string" && bSig.trim().length > 0) {
-      return bSig.trim();
-    }
-  }
-
+  const auth = read("authorization")?.trim();
+  if (auth && /^Bearer\s+\S+$/i.test(auth)) return auth.replace(/^Bearer\s+/i, "");
   return null;
 }

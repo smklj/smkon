@@ -10,8 +10,21 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Receptor Kiwify — DESLIGADO por padrão.
+ * Ainda não grava em external_events nem no ledger e o esquema de assinatura oficial
+ * precisa ser confirmado na documentação da Kiwify. Liga só com KIWIFY_WEBHOOK_ENABLED=true
+ * e KIWIFY_WEBHOOK_SECRET próprio (nunca reaproveitado de outro provedor).
+ */
 export async function POST(request: Request) {
-  const url = new URL(request.url);
+  if (process.env.KIWIFY_WEBHOOK_ENABLED !== "true") {
+    return NextResponse.json({ error: "Não encontrado.", code: "not_found" }, { status: 404 });
+  }
+  const expectedSecret = process.env.KIWIFY_WEBHOOK_SECRET;
+  if (!expectedSecret || expectedSecret.trim().length < 16) {
+    log("error", "kiwify_webhook", { code: "secret_not_configured" });
+    return NextResponse.json({ error: "Webhook indisponível.", code: "not_configured" }, { status: 503 });
+  }
 
   // 1. Parsing do corpo da requisição
   let raw: KiwifyRawPayload;
@@ -31,13 +44,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Extração e validação do token do webhook
-  const presentedToken = extractKiwifyToken(
-    request.headers,
-    url.searchParams,
-    raw as Record<string, unknown>
-  );
-
-  const expectedSecret = process.env.KIWIFY_WEBHOOK_SECRET || process.env.HOTMART_WEBHOOK_SECRET || "smkon_kiwify_dev_secret";
+  const presentedToken = extractKiwifyToken(request.headers);
 
   if (!presentedToken || !verifyKiwifyToken(presentedToken, expectedSecret)) {
     log("warn", "kiwify_webhook", { code: "invalid_or_missing_token" });
@@ -52,11 +59,8 @@ export async function POST(request: Request) {
     const normalized = normalizeKiwifyWebhook(raw);
 
     log("info", "kiwify_webhook_received", {
-      externalId: normalized.externalId,
       eventType: normalized.eventType,
       status: normalized.status,
-      grossAmountBrl: normalized.grossAmountBrl,
-      netCommissionBrl: normalized.netCommissionBrl,
     });
 
     return NextResponse.json({
@@ -68,10 +72,9 @@ export async function POST(request: Request) {
       occurredAt: normalized.occurredAt,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao processar webhook Kiwify.";
-    log("error", "kiwify_webhook_error", { message });
+    log("error", "kiwify_webhook_error", { message: err instanceof Error ? err.message : "unknown" });
     return NextResponse.json(
-      { error: message, code: "normalization_failed" },
+      { error: "Payload não reconhecido.", code: "normalization_failed" },
       { status: 422 }
     );
   }
