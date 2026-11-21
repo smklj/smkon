@@ -96,3 +96,11 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 
 
 - Segurança adicional de paginação: offsets maiores que zero exigem que o cliente reenvie a mesma janela explícita; o servidor rejeita offset sem `createdFrom`/`createdTo`, evitando que a janela móvel mude entre páginas.
+
+
+### Confirmação final de CI da paginação — 21/11/2026 04:21 BRT
+
+- CI #435 passou no head final `1780c02cee1d1b595e4e0412e592c370055d64b6`: Quality (audit, typecheck, lint, unit tests e build) e Database/SQL tests.
+- O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
+- PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
+- Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
