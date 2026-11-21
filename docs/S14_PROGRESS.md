@@ -421,3 +421,17 @@ Esta seção supersede os estados anteriores de configuração e banco que diver
 - Staging tem 0 grants de ferramenta; por isso não há teste real de `operations_review` nem de leitura/rascunho.
 - `vercel.json` e rota do worker não existem em `main`; Cron S14 não ativo em Production.
 - Nenhuma alteração de Production, migration remota, secret, grant ou chamada paga foi executada.
+
+
+## Atualização operacional — 21/11/2026, 11:03 BRT
+
+- PR #71 permanece Draft e aberta; branch `fix/s14-timeout-ledger-rebase-20261121-0955` está 16 commits à frente e 0 atrás da integração. Head atual `3f3825612237d42c9693078f1072bb4e007e76eb`; o código validado permanece em `4524a723f359cfc1b1e2c053eb8f7da208100fa6`, e os seis commits entre eles alteram somente documentação.
+- CI #44907103115 passou nos dois jobs no head atual: dependency audit, typecheck, lint, unit tests, build, migrations e testes SQL. CI #44906765030/#44906795669 também passou no code SHA. Vercel não criou Preview para a branch por `api-deployments-free-per-day`; E2E do head atual pendente.
+- PR #67 e #73 fechadas sem merge. #71 é a PR ativa; nenhuma alteração na `main`.
+- Migrations: 29 staging / 20 produção; as três migrations S14 estão nos dois ambientes.
+- Staging: 101 runs, todas `killed/kill_switch`; 0 steps, usage, tool grants e drafts. Produção: 0 runs, steps, usage, grants e drafts. `agent_settings` staging: kill switch false, 500 runs/dia, 12 steps/run.
+- RLS ativo com uma policy em cada uma das cinco tabelas S14 auditadas nos dois ambientes. `anon` sem SELECT; `authenticated` com SELECT sob RLS; `service_role` sem DML direto. As cinco RPCs de claim/draft/usage/reap só permitem EXECUTE a `service_role`.
+- Vercel: provider/model/OIDC, teto interno US$ 5 e `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; `CRON_SECRET` sensitive nos dois ambientes, tamanho não verificado; `SUPABASE_SECRET_KEY` ausente.
+- AI Gateway: modelo presente no catálogo, sem budget de projeto/default e sem uso nos últimos 7 dias. `agent_model_usage` vazio; nenhuma chamada real comprovada.
+- Cron e rota do worker estão na integração, mas ambos ausentes em `main`; Cron não ativo em produção. Staging sem tool grants; teste real bloqueado.
+- Sem leitura de secrets, alteração de grants, migration remota, mudança de Production, merge ou chamada paga.
