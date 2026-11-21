@@ -23,6 +23,15 @@ SUPPORT_DIR="$TESTS_DIR/_support"
 
 command -v psql >/dev/null || { echo "psql não encontrado no PATH." >&2; exit 2; }
 
+# O Supabase CLI usa o prefixo numérico do arquivo como chave primária em
+# supabase_migrations.schema_migrations: duas migrations com a mesma versão quebram
+# `supabase db push`/`db reset`, mesmo que o SQL aplique aqui. Falha cedo.
+DUPLICATE_VERSIONS="$(ls "$MIGRATIONS_DIR"/*.sql | xargs -n1 basename | sed -E 's/^([0-9]+)_.*/\1/' | sort | uniq -d)"
+if [ -n "$DUPLICATE_VERSIONS" ]; then
+  echo "Versões de migration duplicadas em supabase/migrations: $DUPLICATE_VERSIONS" >&2
+  exit 1
+fi
+
 run_sql() {
   local url="$1" file="$2"
   echo "→ $(basename "$file")"
