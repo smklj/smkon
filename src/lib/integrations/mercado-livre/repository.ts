@@ -61,7 +61,7 @@ export async function storeMercadoLivreCredentials(input: {
   if (
     connectionError ||
     !connection ||
-    String(connection.external_account_id) !== input.tokenSet.userId
+    (connection.external_account_id !== null && String(connection.external_account_id) !== input.tokenSet.userId)
   ) {
     throw new Error("Mercado Livre connection does not match the authorized account.");
   }
