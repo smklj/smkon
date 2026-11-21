@@ -27,14 +27,10 @@ import {
   type ViralHook,
   type WatermarkConfig,
 } from "@/lib/media/video-composition";
-import {
-  generateAutonomousDraft,
-  type ContentPresetType,
-} from "@/lib/content/autonomous-generator";
-import {
-  generateAutonomousPost,
-  type PostKind,
-} from "@/lib/content/smart-post-generator";
+import { generateAutonomousDraft } from "@/lib/content/autonomous-generator";
+import { generateAutonomousPost } from "@/lib/content/smart-post-generator";
+import { draftHasWriting, findTemplate, templateSubject } from "@/lib/content/templates";
+import { TemplatePicker } from "@/components/studio/TemplatePicker";
 
 type Filter = "Todos" | ContentStatusLabel;
 
@@ -57,7 +53,7 @@ function formatCount(value: number | undefined, loading: boolean): string {
   return loading || value === undefined ? "…" : value.toString().padStart(2, "0");
 }
 
-export default function StudioClient() {
+export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [draft, setDraft] = useState<ContentItem>(emptyItem);
   const [activeId, setActiveId] = useState("");
@@ -88,58 +84,48 @@ export default function StudioClient() {
     setNotice("Gancho viral injetado no roteiro!");
   }, []);
 
-  const handleGenerateAutonomous = useCallback((preset: ContentPresetType) => {
-    const defaultNames: Record<ContentPresetType, string> = {
-      "shopee-viral": "Mini Aspirador Portátil Sem Fio",
-      "shein-fashion": "Conjunto Alfaiataria Elegance",
-      "digital-infoproduct": "Manual dos Achadinhos Virais",
-      "hotmart-course": "Método Viral 10x",
-    };
-    const generated = generateAutonomousDraft(preset, defaultNames[preset]);
-    setDraft((prev) => ({
-      ...prev,
-      title: generated.title,
-      product: generated.product,
-      assetUrl: generated.assetUrl || prev.assetUrl,
-      script: generated.script,
-      caption: generated.caption,
-      cta: generated.cta,
-      hashtags: generated.hashtags,
-      channels: generated.channels,
-    }));
-    setViralHook(generated.hook);
-    if (generated.promoCode) setPromoCode(generated.promoCode);
-    setNotice(`Conteúdo autônomo gerado com sucesso! Revise no player 9:16 e clique em "Aprovar esta versão".`);
-  }, []);
-
-  const handleGenerateAutonomousPost = useCallback((kind: PostKind) => {
-    const defaultTopics: Record<PostKind, string> = {
-      "carousel-tips": "5 Achados Secretos da Shopee",
-      "feed-single": "Mini Aspirador Portátil Sem Fio",
-      "battle-poll": "Headset Gamer Sem Fio vs Earbuds",
-      "question-box": "Qual o seu maior arrependimento de compra?",
-      "offer-alert": "Oferta Relâmpago Shopee",
-    };
-    const post = generateAutonomousPost(kind, defaultTopics[kind]);
-    setDraft((prev) => ({
-      ...prev,
-      title: post.title,
-      product: post.topic,
-      script: post.slides
+  function applyTemplate(templateId: string) {
+    const template = findTemplate(templateId);
+    if (!template) return;
+    if (template.group === "video") {
+      const generated = generateAutonomousDraft(template.preset, templateSubject(draft, "video"));
+      setDraft((prev) => ({
+        ...prev,
+        title: prev.title.trim() || generated.title,
+        product: generated.product,
+        assetUrl: prev.assetUrl || generated.assetUrl || "",
+        script: generated.script,
+        caption: generated.caption,
+        cta: generated.cta,
+        hashtags: generated.hashtags,
+        channels: generated.channels,
+      }));
+      setViralHook(generated.hook);
+      if (generated.promoCode) setPromoCode(generated.promoCode);
+    } else {
+      const post = generateAutonomousPost(template.kind, templateSubject(draft, "post"));
+      const script = post.slides
         .map(
-          (s) =>
-            `[SLIDE ${s.slideNumber}/${s.totalSlides}]: ${s.headline} (${s.highlightText || ""})\n${s.bodyText}${
-              s.bulletPoints ? `\n• ` + s.bulletPoints.join("\n• ") : ""
-            }`
+          (slide) =>
+            `[SLIDE ${slide.slideNumber}/${slide.totalSlides}]: ${slide.headline}${slide.highlightText ? ` (${slide.highlightText})` : ""}\n${slide.bodyText}${
+              slide.bulletPoints ? `\n• ${slide.bulletPoints.join("\n• ")}` : ""
+            }`,
         )
-        .join("\n\n"),
-      caption: post.caption,
-      cta: post.cta,
-      hashtags: post.hashtags,
-      channels: post.suggestedChannels,
-    }));
-    setNotice(`Post autônomo (${post.title}) gerado com sucesso! Revise os slides e a legenda na aba "Posts & Carrosséis" abaixo.`);
-  }, []);
+        .join("\n\n");
+      setDraft((prev) => ({
+        ...prev,
+        title: prev.title.trim() || post.title,
+        product: prev.product.trim() || post.topic,
+        script,
+        caption: post.caption,
+        cta: post.cta,
+        hashtags: post.hashtags,
+        channels: post.suggestedChannels,
+      }));
+    }
+    setError("");
+    setNotice(`Modelo "${template.label}" aplicado ao rascunho. Revise e troque o que estiver entre colchetes antes de aprovar.`);
+  }
 
   // O filtro vale para todas as recargas (salvar, aprovar, excluir) sem recriar loadItems.
   const filterRef = useRef<Filter>("Todos");
@@ -446,46 +432,6 @@ export default function StudioClient() {
         actions={
           <>
             <Link className="link" href="/calendario">Calendário</Link>
-            <button
-              className="button button-secondary"
-              onClick={() => handleGenerateAutonomous("shopee-viral")}
-              disabled={saving}
-              title="Gerar rascunho de Achadinho Shopee com gancho e link"
-            >
-              ⚡ Gerar Shopee
-            </button>
-            <button
-              className="button button-secondary"
-              onClick={() => handleGenerateAutonomous("shein-fashion")}
-              disabled={saving}
-              title="Gerar rascunho de Moda Shein com cupom e link"
-            >
-              👗 Gerar Shein
-            </button>
-            <button
-              className="button button-secondary"
-              onClick={() => handleGenerateAutonomous("digital-infoproduct")}
-              disabled={saving}
-              title="Gerar rascunho de Infoproduto Digital Kiwify"
-            >
-              📚 Gerar Infoproduto
-            </button>
-            <button
-              className="button button-secondary"
-              onClick={() => handleGenerateAutonomousPost("carousel-tips")}
-              disabled={saving}
-              title="Gerar carrossel completo de 5 slides para Instagram com gancho e CTA"
-            >
-              🎠 Post Carrossel
-            </button>
-            <button
-              className="button button-secondary"
-              onClick={() => handleGenerateAutonomousPost("battle-poll")}
-              disabled={saving}
-              title="Gerar post de batalha/enquete para pico de engajamento e comentários"
-            >
-              ⚔️ Batalha / Enquete
-            </button>
             <button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>
           </>
         }
@@ -540,6 +486,7 @@ export default function StudioClient() {
               Versão {draft.approvedVersion} aprovada. Qualquer alteração cria uma nova versão e exige nova aprovação.
             </p>
           )}
+          <TemplatePicker hasWriting={draftHasWriting(draft)} disabled={saving} onApply={applyTemplate} />
           <div className="studio-form-grid">
             <label className="studio-field studio-wide"><span>Título interno *</span><input value={draft.title} onChange={(e) => update("title", e.target.value)} placeholder="Ex.: Review honesta — produto X" disabled={saving} /></label>
             <label className="studio-field"><span>Produto / oferta</span><input value={draft.product} onChange={(e) => update("product", e.target.value)} placeholder="Nome do produto" disabled={saving} /></label>
@@ -621,6 +568,7 @@ export default function StudioClient() {
       <BannerMockupInspector
         draftTitle={draft.title}
         draftProduct={draft.product}
+        styleNonce={styleNonce}
       />
 
       <section className="studio-preview">

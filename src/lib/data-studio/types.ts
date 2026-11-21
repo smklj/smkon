@@ -1,193 +1,145 @@
 /**
- * SMKON Data Studio Types & Schemas (Prisma Studio REA)
- * Tipagens completas do motor de dados estilo planilha com buffer de staging e relações.
+ * SMKON Data Studio — explorador de dados reais do workspace, somente leitura.
+ *
+ * Edição continua nas telas de cada módulo, que aplicam as regras do domínio
+ * (score calculado por evidência, aprovação pelo hash, ledger imutável). Uma planilha
+ * que grava direto nas tabelas contornaria essas regras.
  */
 
-export type ColumnDataType =
-  | "string"
-  | "currency"
-  | "number"
-  | "enum"
-  | "boolean"
-  | "url"
-  | "date"
-  | "relation";
+export type ColumnKind = "text" | "money" | "percent" | "score" | "date" | "badge" | "list" | "relation";
 
-export interface ColumnDefinition {
+export type ColumnDefinition = {
   key: string;
   label: string;
-  type: ColumnDataType;
-  readOnly?: boolean;
-  options?: { value: string; label: string; tone?: "ok" | "warn" | "neutral" | "info" }[];
-  relationTargetModel?: string;
-  relationLabelField?: string;
-}
+  kind: ColumnKind;
+  /** Para "money": chave da moeda na mesma linha. */
+  currencyKey?: string;
+  /** Para "badge": tom por valor. */
+  tones?: Record<string, "ok" | "warn" | "danger" | "info" | "neutral">;
+  /** Para "relation": modelo de destino. */
+  relationModel?: DataModelId;
+};
 
-export interface ModelDefinition {
-  id: string;
-  name: string;
+export type DataModelId = "products" | "content" | "ledger";
+
+export type ModelDefinition = {
+  id: DataModelId;
   label: string;
-  icon: string;
-  primaryKey: string;
+  description: string;
+  /** Tela onde o registro é editado. */
+  editHref: string;
+  editLabel: string;
+  /** Coluna usada no filtro rápido. */
+  filterKey: string;
+  filterLabel: string;
   columns: ColumnDefinition[];
-}
+};
 
-export type RecordStatus = "pristine" | "modified" | "created" | "deleted";
+export type DataRow = Record<string, string | number | null | string[]>;
 
-export interface StagingChange {
-  id: string;
-  type: "create" | "update" | "delete";
-  modelId: string;
-  recordId: string;
-  field?: string;
-  oldValue?: unknown;
-  newValue?: unknown;
-  createdAt: number;
-}
+export type Dataset = {
+  rows: DataRow[];
+  /** true quando há mais registros que o limite carregado. */
+  truncated: boolean;
+};
 
-export interface StagingState {
-  changes: StagingChange[];
-  createdRecords: Record<string, Record<string, unknown>[]>;
-}
+export type DataStudioPayload = Record<DataModelId, Dataset>;
 
-export interface FilterCriterion {
-  column: string;
-  operator: "equals" | "contains" | "gt" | "gte" | "lt" | "lte" | "in";
-  value: string | number | boolean;
-}
+export type SortCriterion = { column: string; direction: "asc" | "desc" };
 
-export interface SortCriterion {
-  column: string;
-  direction: "asc" | "desc";
-}
+export const DATA_STUDIO_ROW_LIMIT = 500;
 
-export interface RelationalDrawerContext {
-  isOpen: boolean;
-  sourceModelId: string;
-  sourceRecordId: string;
-  targetModelId: string;
-  title: string;
-  records: Record<string, unknown>[];
-}
-
-/**
- * Modelos padrão do ecossistema SMKON inspecionáveis no Data Studio
- */
-export const SMKON_MODELS: Record<string, ModelDefinition> = {
+export const DATA_MODELS: Record<DataModelId, ModelDefinition> = {
   products: {
     id: "products",
-    name: "products",
-    label: "Produtos & Achados",
-    icon: "🛍️",
-    primaryKey: "id",
+    label: "Produtos",
+    description: "Catálogo do workspace com score calculado só a partir de evidências verificadas.",
+    editHref: "/produtos",
+    editLabel: "Editar em Produtos",
+    filterKey: "status",
+    filterLabel: "Status",
     columns: [
-      { key: "id", label: "ID", type: "string", readOnly: true },
-      { key: "name", label: "Nome do Produto", type: "string" },
-      { key: "price", label: "Preço de Venda", type: "currency" },
-      { key: "commissionRate", label: "Comissão (%)", type: "number" },
-      {
-        key: "category",
-        label: "Categoria",
-        type: "enum",
-        options: [
-          { value: "perifericos", label: "Periféricos & Setup", tone: "info" },
-          { value: "utilidades", label: "Utilidades & Casa", tone: "neutral" },
-          { value: "moda", label: "Moda & Acessórios", tone: "ok" },
-          { value: "infoprodutos", label: "Infoprodutos Digitais", tone: "warn" },
-        ],
-      },
-      {
-        key: "source",
-        label: "Origem / Marketplace",
-        type: "enum",
-        options: [
-          { value: "shopee", label: "Shopee", tone: "warn" },
-          { value: "shein", label: "Shein", tone: "ok" },
-          { value: "kiwify", label: "Kiwify", tone: "info" },
-          { value: "hotmart", label: "Hotmart", tone: "warn" },
-          { value: "mercado-livre", label: "Mercado Livre", tone: "warn" },
-        ],
-      },
+      { key: "name", label: "Produto", kind: "text" },
+      { key: "source", label: "Origem", kind: "text" },
+      { key: "type", label: "Tipo", kind: "text" },
+      { key: "domain", label: "Domínio", kind: "text" },
+      { key: "price", label: "Preço", kind: "money", currencyKey: "currency" },
+      { key: "commission", label: "Comissão", kind: "percent" },
+      { key: "score", label: "Score", kind: "score" },
       {
         key: "status",
         label: "Status",
-        type: "enum",
-        options: [
-          { value: "active", label: "Ativo", tone: "ok" },
-          { value: "review", label: "Em Revisão", tone: "warn" },
-          { value: "archived", label: "Arquivado", tone: "neutral" },
-        ],
+        kind: "badge",
+        tones: { Descoberto: "info", Selecionado: "warn", Ativo: "ok", Arquivado: "neutral" },
       },
-      { key: "score", label: "Score IA", type: "number" },
-      {
-        key: "contentsCount",
-        label: "Conteúdos Vinculados",
-        type: "relation",
-        readOnly: true,
-        relationTargetModel: "content",
-      },
+      { key: "contents", label: "Conteúdos", kind: "relation", relationModel: "content" },
+      { key: "updated_at", label: "Atualizado", kind: "date" },
     ],
   },
-
   content: {
     id: "content",
-    name: "content",
-    label: "Conteúdos do Estúdio",
-    icon: "🎬",
-    primaryKey: "id",
+    label: "Conteúdos",
+    description: "Peças do Content Studio com a versão atual e a versão aprovada.",
+    editHref: "/studio",
+    editLabel: "Editar no Content Studio",
+    filterKey: "status",
+    filterLabel: "Status",
     columns: [
-      { key: "id", label: "ID", type: "string", readOnly: true },
-      { key: "title", label: "Título da Peça", type: "string" },
-      { key: "productName", label: "Produto Associado", type: "string" },
-      { key: "channel", label: "Canal", type: "string" },
+      { key: "title", label: "Título", kind: "text" },
+      { key: "product", label: "Produto", kind: "text" },
+      { key: "channels", label: "Canais", kind: "list" },
       {
         key: "status",
-        label: "Status de Aprovação",
-        type: "enum",
-        options: [
-          { value: "Rascunho", label: "Rascunho", tone: "warn" },
-          { value: "Aprovado", label: "Aprovado", tone: "ok" },
-          { value: "Arquivado", label: "Arquivado", tone: "neutral" },
-        ],
+        label: "Status",
+        kind: "badge",
+        tones: { Rascunho: "warn", Aprovado: "ok", Arquivado: "neutral" },
       },
-      { key: "promoCode", label: "Cupom Ativo", type: "string" },
-      { key: "viewsEstimated", label: "Visualizações Estimadas", type: "number" },
+      { key: "version", label: "Versão", kind: "text" },
+      { key: "approved_version", label: "Aprovada", kind: "text" },
+      { key: "updated_at", label: "Atualizado", kind: "date" },
     ],
   },
+  ledger: {
+    id: "ledger",
+    label: "Lançamentos",
+    description: "Ledger financeiro imutável. Domínios nunca são somados entre si.",
+    editHref: "/financeiro",
+    editLabel: "Ver no Financeiro",
+    filterKey: "domain",
+    filterLabel: "Domínio",
+    columns: [
+      { key: "effective_at", label: "Data", kind: "date" },
+      {
+        key: "domain",
+        label: "Domínio",
+        kind: "badge",
+        tones: { "Venda própria": "ok", Afiliado: "info", "Mídia paga": "warn" },
+      },
+      { key: "entry_type", label: "Lançamento", kind: "text" },
+      { key: "amount", label: "Valor", kind: "money", currencyKey: "currency" },
+      { key: "source", label: "Origem", kind: "text" },
+    ],
+  },
+};
 
-  transactions: {
-    id: "transactions",
-    name: "transactions",
-    label: "Comissões & Vendas",
-    icon: "💰",
-    primaryKey: "id",
-    columns: [
-      { key: "id", label: "ID Transação", type: "string", readOnly: true },
-      { key: "orderId", label: "Pedido Externo", type: "string", readOnly: true },
-      {
-        key: "platform",
-        label: "Marketplace",
-        type: "enum",
-        options: [
-          { value: "shopee", label: "Shopee Afiliados", tone: "warn" },
-          { value: "shein", label: "Shein VIP", tone: "ok" },
-          { value: "kiwify", label: "Kiwify Digital", tone: "info" },
-          { value: "hotmart", label: "Hotmart", tone: "warn" },
-        ],
-      },
-      { key: "grossAmount", label: "Valor Total", type: "currency" },
-      { key: "commissionAmount", label: "Comissão Líquida", type: "currency" },
-      {
-        key: "status",
-        label: "Status Pagamento",
-        type: "enum",
-        options: [
-          { value: "approved", label: "Aprovado", tone: "ok" },
-          { value: "pending", label: "Pendente", tone: "warn" },
-          { value: "refunded", label: "Estornado", tone: "neutral" },
-        ],
-      },
-      { key: "date", label: "Data", type: "date" },
-    ],
-  },
+export const LEDGER_ENTRY_LABEL: Record<string, string> = {
+  ad_spend: "Gasto com mídia",
+  sales_gross: "Venda bruta",
+  sales_discount: "Desconto",
+  sales_fee: "Taxa",
+  sales_shipping: "Frete",
+  sales_refund: "Reembolso",
+  affiliate_commission_pending: "Comissão prevista",
+  affiliate_commission_approved: "Comissão aprovada",
+  affiliate_commission_settled: "Comissão liquidada",
+  affiliate_commission_paid: "Comissão paga",
+  affiliate_commission_cancelled: "Comissão cancelada",
+  affiliate_commission_reversed: "Comissão estornada",
+};
+
+export const LEDGER_SOURCE_LABEL: Record<string, string> = {
+  ad_campaign_daily_metrics: "Campanha",
+  sales_orders: "Pedido",
+  sales_order_adjustments: "Ajuste de pedido",
+  affiliate_conversions: "Conversão de afiliado",
 };

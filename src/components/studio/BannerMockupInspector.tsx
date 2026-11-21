@@ -39,12 +39,15 @@ interface BannerMockupInspectorProps {
   draftTitle?: string;
   draftProduct?: string;
   draftCategory?: string;
+  /** Nonce da CSP desta resposta, para o <style> da prévia em iframe. */
+  styleNonce?: string;
 }
 
 export function BannerMockupInspector({
   draftTitle,
   draftProduct,
   draftCategory,
+  styleNonce,
 }: BannerMockupInspectorProps = {}) {
   const [activeTab, setActiveTab] = useState<StudioViewTab>("smkon-brand");
 
@@ -64,7 +67,7 @@ export function BannerMockupInspector({
     createDefaultBannerConfig("Achadinho Shopee Imperdível", "R$ 39,90", "feed-square")
   );
 
-  // Estado Fábrica de Infoprodutos (S25)
+  // Estado Infoprodutos
   const [selectedBlueprint, setSelectedBlueprint] = useState<InfoproductBlueprint>(
     INFOPRODUCT_BLUEPRINTS[0]
   );
@@ -77,9 +80,12 @@ export function BannerMockupInspector({
     [bannerConfig.badge]
   );
 
-  const compiledHtml = useMemo(() => {
-    return compileInfoproductToHtml(selectedBlueprint);
-  }, [selectedBlueprint]);
+  const compiledHtml = useMemo(() => compileInfoproductToHtml(selectedBlueprint), [selectedBlueprint]);
+  // A prévia em iframe srcdoc herda a CSP da página: o <style> precisa do nonce da resposta.
+  const previewHtml = useMemo(
+    () => compileInfoproductToHtml(selectedBlueprint, { styleNonce }),
+    [selectedBlueprint, styleNonce],
+  );
 
   const handleDownloadHtml = () => {
     const blob = new Blob([compiledHtml], { type: "text/html;charset=utf-8" });
@@ -127,44 +133,49 @@ export function BannerMockupInspector({
     <section className="banner-mockup-section">
       <div className="studio-editor-head">
         <div>
-          <p className="eyebrow">Diretrizes Oficiais SMKON · Mascote SMK &amp; Design System</p>
-          <h2>Criação Padronizada de Banners, Mockups &amp; Capas com IA</h2>
+          <p className="eyebrow">Peças visuais · padrão da marca SMKON</p>
+          <h2>Banners, mockups e capas</h2>
         </div>
-        <div className="tab-pill-group">
+        <div className="tab-pill-group" role="group" aria-label="Tipo de peça visual">
           <button
             type="button"
             className={activeTab === "smkon-brand" ? "active" : ""}
+            aria-pressed={activeTab === "smkon-brand"}
             onClick={() => setActiveTab("smkon-brand")}
           >
-            🎨 Banners SMKON Oficial (IA)
+            Banner da marca
           </button>
           <button
             type="button"
             className={activeTab === "post-carousel" ? "active" : ""}
+            aria-pressed={activeTab === "post-carousel"}
             onClick={() => setActiveTab("post-carousel")}
           >
-            🎠 Posts &amp; Carrosséis (IA)
+            Posts e carrosséis
           </button>
           <button
             type="button"
             className={activeTab === "mockup-3d" ? "active" : ""}
+            aria-pressed={activeTab === "mockup-3d"}
             onClick={() => setActiveTab("mockup-3d")}
           >
-            Mockup 3D (Photoshop)
+            Mockup 3D
           </button>
           <button
             type="button"
             className={activeTab === "banner-promo" ? "active" : ""}
+            aria-pressed={activeTab === "banner-promo"}
             onClick={() => setActiveTab("banner-promo")}
           >
-            Banners &amp; Stories (Canva)
+            Banners e stories
           </button>
           <button
             type="button"
             className={activeTab === "infoproduct-factory" ? "active" : ""}
+            aria-pressed={activeTab === "infoproduct-factory"}
             onClick={() => setActiveTab("infoproduct-factory")}
           >
-            Fábrica de Infoprodutos (S25)
+            Infoprodutos
           </button>
         </div>
       </div>
@@ -178,14 +189,14 @@ export function BannerMockupInspector({
 
           <div className="mockup-controls-card">
             <div className="controls-header-row">
-              <h4 className="controls-title">Motor Inteligente SMKON</h4>
+              <h4 className="controls-title">Padrão da marca</h4>
               <button
                 type="button"
                 className="btn-sync-draft"
                 onClick={handleAutoInferFromDraft}
-                title="Detectar arquétipo, cores e mascote automaticamente a partir do roteiro do estúdio"
+                title="Escolhe arquétipo, cores e mascote a partir do roteiro do rascunho"
               >
-                ⚡ IA Auto-Padronizar
+                Ajustar pelo roteiro
               </button>
             </div>
 
@@ -725,8 +736,9 @@ export function BannerMockupInspector({
             </div>
             <div className="modal-body-frame">
               <iframe
-                title="Prévia do Infoproduto"
-                srcDoc={compiledHtml}
+                title="Prévia do infoproduto"
+                srcDoc={previewHtml}
+                sandbox=""
                 className="infoproduct-iframe"
               />
             </div>

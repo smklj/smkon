@@ -25,7 +25,7 @@ export default function AdminPage() {
         description="Membros, modelo operacional, domínios financeiros e conexões reais do workspace."
         actions={
           <Link className="link" href="/admin/studio">
-            🗄️ Abrir Data Studio (Prisma REA)
+            Abrir Data Studio
           </Link>
         }
       />

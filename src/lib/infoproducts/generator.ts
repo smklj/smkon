@@ -104,22 +104,32 @@ export function getBlueprintByNiche(niche: InfoproductNiche): InfoproductBluepri
   return INFOPRODUCT_BLUEPRINTS.find((b) => b.niche === niche) || INFOPRODUCT_BLUEPRINTS[0];
 }
 
+const HTML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+
+/** Escapa texto vindo do usuário antes de interpolar no HTML. */
+export function escapeHtml(value: string | number): string {
+  return String(value).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+}
+
 /**
- * Compila o infoproduto em um documento HTML autossuficiente e formatado para impressão/leitura.
+ * Compila o infoproduto em HTML autossuficiente. `styleNonce` só é usado na prévia dentro do
+ * app: o iframe srcdoc herda a CSP da página, que exige nonce no <style>. O arquivo baixado
+ * não leva nonce.
  */
-export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): string {
+export function compileInfoproductToHtml(blueprint: InfoproductBlueprint, options: { styleNonce?: string } = {}): string {
+  const e = escapeHtml;
   const chaptersHtml = blueprint.chapters
     .map(
       (c) => `
     <article class="infoproduct-chapter">
       <header class="chapter-header">
-        <span class="chapter-num">CAPÍTULO 0${c.number}</span>
-        <h2 class="chapter-title">${c.title}</h2>
-        <p class="chapter-hook">${c.hookSummary}</p>
+        <span class="chapter-num">CAPÍTULO ${String(c.number).padStart(2, "0")}</span>
+        <h2 class="chapter-title">${e(c.title)}</h2>
+        <p class="chapter-hook">${e(c.hookSummary)}</p>
       </header>
 
       <div class="chapter-body">
-        ${c.contentParagraphs.map((p) => `<p>${p}</p>`).join("\n")}
+        ${c.contentParagraphs.map((p) => `<p>${e(p)}</p>`).join("\n")}
       </div>
 
       ${
@@ -128,7 +138,7 @@ export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): strin
       <div class="chapter-checklist">
         <h3>📋 Checklist Prático de Aplicação</h3>
         <ul>
-          ${c.actionChecklist.map((item) => `<li><span class="box">☐</span> ${item}</li>`).join("\n")}
+          ${c.actionChecklist.map((item) => `<li><span class="box">☐</span> ${e(item)}</li>`).join("\n")}
         </ul>
       </div>
       `
@@ -140,7 +150,7 @@ export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): strin
           ? `
       <div class="chapter-protip">
         <strong>💡 Dica de Ouro:</strong>
-        <p>${c.proTip}</p>
+        <p>${e(c.proTip)}</p>
       </div>
       `
           : ""
@@ -155,7 +165,7 @@ export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): strin
     <section class="infoproduct-bonuses">
       <h2>🎁 Recursos & Prompts Bônus Inclusos</h2>
       <ul>
-        ${blueprint.bonusPromptsOrTemplates.map((b) => `<li>⚡ ${b}</li>`).join("\n")}
+        ${blueprint.bonusPromptsOrTemplates.map((b) => `<li>${e(b)}</li>`).join("\n")}
       </ul>
     </section>
   `
@@ -165,8 +175,8 @@ export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): strin
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>${blueprint.title} — ${blueprint.authorOrBrand}</title>
-  <style>
+  <title>${e(blueprint.title)} — ${e(blueprint.authorOrBrand)}</title>
+  <style${options.styleNonce ? ` nonce="${e(options.styleNonce)}"` : ""}>
     @page { margin: 25mm 20mm; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -333,9 +343,9 @@ export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): strin
 <body>
   <div class="infoproduct-container">
     <header class="cover-page">
-      <div class="cover-brand">${blueprint.authorOrBrand}</div>
-      <h1 class="cover-title">${blueprint.title}</h1>
-      <p class="cover-subtitle">${blueprint.subtitle}</p>
+      <div class="cover-brand">${e(blueprint.authorOrBrand)}</div>
+      <h1 class="cover-title">${e(blueprint.title)}</h1>
+      <p class="cover-subtitle">${e(blueprint.subtitle)}</p>
       <span class="cover-price-badge">Valor Sugerido: R$ ${blueprint.recommendedPriceBrl.toFixed(2)} · Licença Pessoal Exclusiva</span>
     </header>
 
@@ -344,7 +354,7 @@ export function compileInfoproductToHtml(blueprint: InfoproductBlueprint): strin
     ${bonusesHtml}
 
     <footer class="footer-notice">
-      <p>© ${new Date().getFullYear()} ${blueprint.authorOrBrand}. Todos os direitos reservados. Distribuição e reprodução não autorizadas são proibidas.</p>
+      <p>© ${new Date().getFullYear()} ${e(blueprint.authorOrBrand)}. Todos os direitos reservados. Distribuição e reprodução não autorizadas são proibidas.</p>
     </footer>
   </div>
 </body>

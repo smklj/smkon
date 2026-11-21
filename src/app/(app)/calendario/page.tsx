@@ -6,10 +6,13 @@ import { ScheduleForm } from "@/components/publication/ScheduleForm";
 import { errorFields, log } from "@/lib/observability/log";
 import { listApprovedContent, listPublicationJobs, type ApprovedContent } from "@/lib/publication/repository";
 import {
+  checksSummaryLabel,
   defaultScheduleValue,
   PUBLICATION_STATUS_LABEL,
   PUBLICATION_STATUS_TONE,
+  summarizeChecks,
   WORKSPACE_TIMEZONE,
+  type PublicationCheck,
   type PublicationJobRow,
 } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
@@ -50,10 +53,43 @@ const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeZone: WORKSPACE_TIMEZO
 function groupByDay(jobs: PublicationJobRow[]): Array<[string, PublicationJobRow[]]> {
   const groups = new Map<string, PublicationJobRow[]>();
   for (const job of jobs) {
-    const key = dayFormat.format(new Date(job.scheduled_for));
+    // "quinta-feira, 19 de novembro" → "Quinta-feira, 19 de novembro" (só a primeira letra).
+    const formatted = dayFormat.format(new Date(job.scheduled_for));
+    const key = formatted.charAt(0).toLocaleUpperCase("pt-BR") + formatted.slice(1);
     groups.set(key, [...(groups.get(key) ?? []), job]);
   }
   return [...groups.entries()];
+}
+
+function checkState(check: PublicationCheck): { mark: string; label: string; tone: string } {
+  if (check.ok) return { mark: "✓", label: "Aprovada", tone: "ok" };
+  return check.severity === "error"
+    ? { mark: "✕", label: "Bloqueio", tone: "error" }
+    : { mark: "!", label: "Aviso", tone: "warn" };
+}
+
+/** Verificações do dry-run recolhidas por padrão; abrem sozinhas quando algo bloqueia a publicação. */
+function Checks({ job }: { job: PublicationJobRow }) {
+  if (!job.checks.length) return null;
+  const summary = summarizeChecks(job.checks);
+  const tone = summary.errors ? "error" : summary.warnings ? "warn" : "ok";
+  return (
+    <details className={`checks checks-${tone}`} open={summary.errors > 0 && job.status !== "cancelled"}>
+      <summary>{checksSummaryLabel(summary)}</summary>
+      <ul className="checks-list">
+        {job.checks.map((check) => {
+          const state = checkState(check);
+          return (
+            <li key={check.check} className={`check check-${state.tone}`}>
+              <span className="check-mark" aria-hidden="true">{state.mark}</span>
+              <span className="sr-only">{state.label}: </span>
+              {check.detail}
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
 }
 
 export default async function CalendarPage() {
@@ -79,26 +115,24 @@ export default async function CalendarPage() {
           <div className="empty"><p className="empty-title">Nada agendado</p><p>Aprove um conteúdo no Studio e agende abaixo.</p></div>
         ) : (
           groupByDay(jobs).map(([day, items]) => (
-            <div key={day} className="stack-top">
-              <p className="row-meta">{day}</p>
+            <div key={day} className="calendar-day">
+              <h3 className="calendar-day-title">
+                <span>{day}</span>
+                <span className="calendar-day-count">{items.length} {items.length === 1 ? "publicação" : "publicações"}</span>
+              </h3>
               <ul className="rows">
                 {items.map((job) => (
-                  <li className="row row-top" key={job.id}>
+                  <li className={`row row-top${job.status === "cancelled" ? " row-muted" : ""}`} key={job.id}>
+                    <time className="calendar-time" dateTime={job.scheduled_for}>
+                      {timeFormat.format(new Date(job.scheduled_for))}
+                    </time>
                     <div className="row-main">
                       <p className="row-title">{job.content_title}</p>
                       <p className="row-meta">
-                        {timeFormat.format(new Date(job.scheduled_for))} · {job.channel} · versão {job.content_version}
-                        {job.last_run_at ? ` · verificado ${timeFormat.format(new Date(job.last_run_at))}` : ""}
+                        {job.channel} · versão {job.content_version}
+                        {job.last_run_at ? ` · verificado às ${timeFormat.format(new Date(job.last_run_at))}` : ""}
                       </p>
-                      {job.checks.length ? (
-                        <ul className="reasons">
-                          {job.checks.map((check) => (
-                            <li key={check.check}>
-                              {check.ok ? "✓" : check.severity === "error" ? "✗" : "!"} {check.detail}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
+                      <Checks job={job} />
                       {job.status === "cancelled" && job.cancel_reason ? <p className="row-meta">Motivo: {job.cancel_reason}</p> : null}
                       {data.state === "ok" && data.canEdit && job.status !== "cancelled" ? (
                         <JobActions jobId={job.id} label={`${job.content_title} em ${job.channel}`} />

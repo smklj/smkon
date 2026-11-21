@@ -4,6 +4,7 @@
  * Batalhas/Enquetes e Caixinhas de Perguntas com legendas e hashtags de alta conversão.
  */
 
+import { applySvgTypography } from "../media/svg-typography.ts";
 import {
   SMKON_BRAND_TOKENS,
   type MascotExpression,
@@ -477,16 +478,9 @@ export function generatePostSlideSvg(slide: PostSlide, aspectRatio: "1:1" | "4:5
   `
     : "";
 
-  return `
+  return applySvgTypography(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
       <defs>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Sora:wght@700;800;900&amp;display=swap');
-          .sora-title { font-family: 'Sora', sans-serif; font-weight: 900; letter-spacing: -0.03em; }
-          .sora-badge { font-family: 'Sora', sans-serif; font-weight: 800; letter-spacing: 0.04em; }
-          .inter-body { font-family: 'Inter', sans-serif; }
-        </style>
-
         <linearGradient id="postBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#080D12" />
           <stop offset="40%" stop-color="#11161F" />
@@ -629,5 +623,5 @@ export function generatePostSlideSvg(slide: PostSlide, aspectRatio: "1:1" | "4:5
         </text>
       </g>
     </svg>
-  `;
+  `);
 }
