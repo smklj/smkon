@@ -12,7 +12,7 @@ import type { AgentRpcClient, DbResult } from "../../src/lib/agents/executor/rpc
 
 const quiet: ExecutorLogger = () => {};
 const MODEL = "anthropic/claude-haiku-5.5";
-const OIDC = "eyJ.oidc-token-do-deployment.assinatura";
+const OIDC = "test-oidc-token-placeholder-for-unit-tests";
 const BASE = { AGENT_MODEL_PROVIDER: "vercel-ai-gateway", AGENT_MODEL: MODEL };
 const signal = () => new AbortController().signal;
 const planInput = { goal: "g", agent: "product_research" as const, tools: [], maxCalls: 1 };
@@ -163,4 +163,41 @@ test("tick relê o gasto antes de cada reserva e para ao atingir o teto", async 
   assert.equal(result.stoppedBy, "budget_exhausted");
   assert.deepEqual(claimed, ["r1"], "depois da 1ª execução o gasto passou do teto e nada mais é reservado");
   assert.equal(reads, 2);
+});
+
+
+test("body stream failure em resposta 2xx registra custo conservador antes de falhar", async () => {
+  const usage: ModelUsage[] = [];
+  const fetch: FetchLike = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => { throw new Error("stream reset"); },
+  });
+  const model = createGatewayModel({ apiKey: OIDC, model: MODEL, fetch, onUsage: async (u) => void usage.push(u) });
+
+  await assert.rejects(model.plan(planInput, signal()), /gateway_body_read_failed/);
+  assert.equal(usage.length, 1);
+  assert.equal(usage[0].phase, "plan");
+  assert.equal(usage[0].model, MODEL);
+  assert.ok(usage[0].inputTokens > 0);
+  assert.equal(usage[0].outputTokens, DEFAULT_PLAN_MAX_TOKENS);
+});
+
+test("abort durante body stream 2xx preserva o erro de timeout após registrar o pior caso", async () => {
+  const usage: ModelUsage[] = [];
+  const controller = new AbortController();
+  const aborted = new Error("aborted");
+  const fetch: FetchLike = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => {
+      controller.abort();
+      throw aborted;
+    },
+  });
+  const model = createGatewayModel({ apiKey: OIDC, model: MODEL, fetch, onUsage: async (u) => void usage.push(u) });
+
+  await assert.rejects(model.plan(planInput, controller.signal), (error) => error === aborted);
+  assert.equal(usage.length, 1);
+  assert.equal(usage[0].outputTokens, DEFAULT_PLAN_MAX_TOKENS);
 });
