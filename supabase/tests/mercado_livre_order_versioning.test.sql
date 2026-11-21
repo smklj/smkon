@@ -57,8 +57,8 @@ begin
     'fee_amount', 5.00,
     'shipping_amount', 0,
     'refund_amount', 0,
-    'occurred_at', '2026-11-20T00:00:00Z',
-    'source_updated_at', '2026-11-21T00:00:00Z',
+    'occurred_at', now() - interval '2 days',
+    'source_updated_at', now() - interval '1 day',
     'payload_hash', repeat('a', 64),
     'normalization_version', 2
   ));
@@ -77,8 +77,8 @@ begin
     'fee_amount', 0,
     'shipping_amount', 0,
     'refund_amount', 0,
-    'occurred_at', '2026-11-20T00:00:00Z',
-    'source_updated_at', '2026-11-20T12:00:00Z',
+    'occurred_at', now() - interval '2 days',
+    'source_updated_at', now() - interval '36 hours',
     'payload_hash', repeat('b', 64),
     'normalization_version', 2
   ));
@@ -104,7 +104,7 @@ begin
     and ee.event_type = 'order_snapshot';
 
   if v_status <> 'paid' or v_gross <> 100.00
-     or v_source_updated_at <> '2026-11-21T00:00:00Z'::timestamptz
+     or v_source_updated_at <> (now() - interval '1 day')
      or v_payload_hash <> repeat('a', 64) then
     raise exception 'stale snapshot regressed the order or event watermark';
   end if;
@@ -118,8 +118,8 @@ begin
     'fee_amount', 6.00,
     'shipping_amount', 0,
     'refund_amount', 0,
-    'occurred_at', '2026-11-20T00:00:00Z',
-    'source_updated_at', '2026-11-22T00:00:00Z',
+    'occurred_at', now() - interval '2 days',
+    'source_updated_at', now() - interval '1 hour',
     'payload_hash', repeat('c', 64),
     'normalization_version', 2
   ));
@@ -145,7 +145,7 @@ begin
     and ee.event_type = 'order_snapshot';
 
   if v_status <> 'fulfilled' or v_gross <> 120.00
-     or v_source_updated_at <> '2026-11-22T00:00:00Z'::timestamptz then
+     or v_source_updated_at <> (now() - interval '1 hour') then
     raise exception 'newer provider snapshot was not applied';
   end if;
 end;
