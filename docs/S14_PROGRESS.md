@@ -339,3 +339,74 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
     restrito a owner/admin em execução ativa. Ações revalidam `/agentes` como layout (inclui o detalhe).
 - **19/11/2026 — etapa 9.** `docs/S14_HANDOFF.md` e linha do S14 no `docs/ROADMAP_SPLITS.md`. Frente concluída no código;
   pendências do Owner no handoff.
+
+
+## 21/11/2026 13:10 BRT — reconciliação de estado real
+
+- PR #71 (head a834292) não está mergeable: comparação atual com a integração é diverged, 24 ahead / 8 behind. O body da PR está desatualizado ao declarar 24/0. O CI #44917422154 e o Preview READY correspondem ao SHA a834292; o E2E de navegador desse deployment não foi comprovado.
+- A integração está 128 ahead / 6 behind de main. A branch isolada release/s14-mainline-integration-20261121 está 34 ahead / 0 behind de main, mas não foi mergeada; main ainda não contém vercel.json nem a rota /api/agents/worker.
+- Supabase staging: 29 migrations; 108 runs (todas killed), 0 steps, 0 usage, 0 tool grants e 0 conteúdo ligado a runs. Produção: 20 migrations e zero dados S14. As três migrations S14 estão nos dois bancos.
+- RLS: 1 policy em cada tabela S14 (agent_runs, agent_steps, agent_model_usage, agent_tool_grants, agent_settings); content_items tem 4. Staging kill_switch=false, 500 runs/dia, 12 steps/run.
+- Vercel: OIDC/modelo/provider configurados; orçamento interno US$ 5; AGENT_EXECUTOR_ENABLED=true nos dois ambientes; SUPABASE_SECRET_KEY ausente. CRON_SECRET sensitive presente, mas seu valor não foi retornado para validar comprimento/whitespace.
+- AI Gateway sem budgets (incluindo defaults) e sem requests/tokens/custo em 24h/7d. agent_model_usage vazio; nenhuma chamada real comprovada. O deployment da PR #71 não registrou requests ao worker nos últimos 15 minutos.
+- Próximo gate: chave de serviço exclusiva de staging, budget externo sem efeito em Production, validação segura do Cron secret, grants mínimos, E2E atual e uma única execução controlada.
+- Sem alterações remotas, secrets, grants, Production ou merge.
+
+
+## 21/11/2026 13:16 BRT — PR #76 e validação atual
+
+- PR #71 fechada sem merge (24 ahead/8 behind); PR #76 é a substituta limpa, 2 ahead/0 behind, mergeable=true, Draft.
+- Head documental PR #76: 7c76fa16d6b069925d703d35ddb8cd1c2990f5bf; código/testes validados no SHA 41ee45e2fb80dd05613fc4bae0d1f3a129824b78; 3 commits à frente / 0 atrás, mergeable=true. CI #44923342292 success; 278/278 unit tests, typecheck, lint, build, dependency audit, migrations e SQL tests aprovados. O commit documental posterior não altera código.
+- E2E #44922532633: 36/36 Playwright passaram no Preview da integração SHA 99a9ac8616e07f85417f51772c175cc11a023712, incluindo agents.spec. Não foi executado no head PR #76.
+- Preview do head documental PR #76 não foi criado: Vercel recusou o deployment por api-deployments-free-per-day. Não usar Preview anterior como evidência deste SHA.
+- Supabase: staging 108 runs killed, 0 steps/usage/grants/agent-linked content; produção zero dados S14. Migrations S14 em ambos; RLS ativo. Staging kill_switch=false, 500 runs/dia, 12 steps/run.
+- OIDC/modelo/provider configurados; orçamento interno US$ 5; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive presente mas comprimento não validado; AGENT_EXECUTOR_ENABLED=true em Preview e Production.
+- AI Gateway sem budgets nem requests/tokens/custo em 24h/7d; agent_model_usage vazio. Não há chamada real comprovada.
+- Budget interno é soft; consulta antes do claim, sem reserva atômica por chamada. Falta outbox/reservation durável para reconciliação pós-cobrança se a RPC falhar.
+- main não contém vercel.json nem a rota do worker; Cron S14 não ativo em Production. Nenhuma alteração de produção ou chamada paga.
+
+
+## Reconciliação operacional — 21/11/2026 14:05 BRT
+
+Esta seção substitui estados anteriores quando houver divergência. Consultas somente de leitura; nenhum secret foi exibido.
+
+### GitHub e branches
+- PR #76 segue Draft, aberta e sem reviews/threads, mas a comparação real com a base atual é **diverged: 5 commits à frente / 2 atrás**; base `feature/smkon-production-readiness` em `79ff06be`. Head `a75a5f3f`; não mergear.
+- A base avançou desde o merge-base `99a9ac8` por dois commits apenas em `docs/INTEGRATION_STATUS.md`; não há conflito de código nos quatro arquivos S14 reaplicados.
+- Correções reaplicadas em branch limpa `fix/s14-timeout-ledger-rebased-20261121-1415`, criada diretamente de `79ff06be`. A PR substituta permanece Draft; a #76 só será encerrada depois da abertura da nova PR.
+- Integração: 130 commits à frente e 6 atrás de `main`; não promover a branch inteira. Candidata `release/s14-mainline-integration-20261121`: 34 à frente/0 atrás, não mergeada.
+- PRs #60 (S11), #70 (S17), #72/#75 (S4) são frentes distintas; não misturar ao S14.
+
+### CI, Preview e E2E
+- CI #44923342292: dois jobs GitHub Actions com sucesso no SHA de código `41ee45e2`; 278/278 unitários, audit, typecheck, lint, build, migrations e SQL.
+- CI #44923537721: dois jobs com sucesso no SHA documental `7c76fa16`; não atribuir automaticamente aos commits documentais posteriores da PR #76.
+- E2E #44922532633: Playwright 36/36 no Preview da base de integração SHA `99a9ac8`, não no head da PR #76.
+- Check Vercel do SHA `41ee45e2` falhou por `build-rate-limit`; não há deployment para a branch #76. Não atribuir Preview de outra branch a este código.
+
+### Supabase — estado real
+- Staging `xoyasrizivadxnpmzzno`: 29 migrations; 110 `agent_runs`, todas `killed`; 0 steps, 0 usage, US$ 0 no ledger, 0 tool grants e 0 drafts ligados a runs.
+- Produção `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, 0 steps, 0 usage, US$ 0 no ledger, 0 grants e 0 drafts ligados a runs.
+- Os nomes das três migrations S14 existem nos dois bancos, mas os **version IDs divergem**: staging `20261119101353`, `20261119101414`, `20261119114718`; produção `20261119040000`, `20261119050000`, `20261119060000`. Não executar repair/db push sem reconciliação do conteúdo e backup.
+- RLS ativo: `agent_runs`, `agent_steps`, `agent_model_usage`, `agent_tool_grants`, `agent_settings` (1 policy cada); `content_items` (4). As seis RPCs de claim, step, draft, usage, spend e reap consultadas concedem EXECUTE apenas a `service_role`.
+- Settings staging: `kill_switch=false`, `max_runs_per_day=500`, `max_steps_per_run=12`; workspace auditado segue sem grants.
+
+### Vercel, OIDC, AI Gateway e Cron
+- Inventário não secreto: provider `vercel-ai-gateway`, auth `oidc`, modelo `anthropic/claude-haiku-5.5`, teto interno `US$ 5` e `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `SUPABASE_SECRET_KEY` ausente. `CRON_SECRET` existe como sensitive em Preview e Production, mas o valor não foi lido; comprimento mínimo de 32 e ausência de whitespace não validados.
+- Código lê `x-vercel-oidc-token` e fallback `VERCEL_OIDC_TOKEN`; handler passa o header ao resolver. A disponibilidade do token no runtime ainda não foi comprovada.
+- AI Gateway: nenhum budget de team/project/user/API key nem default; uso agregado do projeto nos últimos 7 dias sem linhas (0 requests/tokens/custo). Catálogo contém o modelo configurado. `agent_model_usage` vazio; nenhuma chamada real comprovada.
+- Log recente de `/api/agents/worker` era de deployment da branch `feature/s4-audience-domain` e terminou em `unauthorized`; não é execução S14.
+- `vercel.json` e a rota do worker existem na integração, mas não em `main`; Cron diário `17 11 * * *` não está ativo em produção. Sem `SUPABASE_SECRET_KEY`, worker autenticado retorna `503 service_not_configured` antes de criar cliente/claim.
+
+### Orçamento e bloqueios
+- Limite interno é soft: gasto consultado antes de cada claim, sem reserva atômica por chamada. Não há outbox/reservation durável para reconciliar cobrança se a RPC falhar após resposta.
+- Não executar teste real enquanto faltarem service key exclusiva de staging, grants mínimos, budget externo isolado e validação segura do Cron secret.
+- Próximo gate: CI da branch limpa; Preview do SHA exato; E2E nesse Preview; provisionamento de staging; uma única `operations_review`; conferir request no Gateway, steps/verifier e ledger por run; reconciliar custo/tokens com agregado do Gateway.
+
+### Segurança
+Nenhum merge, alteração em `main`/Production, migration remota, secret, grant ou chamada paga foi executada nesta rodada.
+
+
+## Rebase adicional — 21/11/2026 14:15 BRT
+
+A integração recebeu mais cinco commits depois de `79ff06be`, avançando para `2455806c`. A comparação `79ff06be...feature/smkon-production-readiness` mostra apenas alterações de S4/audiência (10 arquivos), sem sobreposição com os quatro arquivos de código/testes S14. Para evitar outra PR divergente, as correções foram reaplicadas em `fix/s14-timeout-ledger-rebased-20261121-1415`, criada diretamente de `2455806c`. CI/Preview/E2E desta nova branch ainda precisam ser executados; evidências anteriores continuam vinculadas aos SHAs indicados na seção anterior.
