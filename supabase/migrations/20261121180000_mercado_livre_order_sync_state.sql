@@ -4,7 +4,7 @@ create table public.mercado_livre_order_sync_state (
   id uuid primary key default pg_catalog.gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   connection_id uuid not null,
-  domain text not null default 'owned_sales' check (domain = 'owned_sales'),
+  domain public.smkon_revenue_domain not null default 'owned_sales' check (domain = 'owned_sales'),
   created_from timestamptz not null,
   created_to timestamptz not null,
   next_offset integer not null default 0 check (next_offset between 0 and 10050),
