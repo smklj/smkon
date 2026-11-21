@@ -127,7 +127,7 @@ As versões diferem por ambiente, mas os três nomes lógicos estão presentes n
 
 **Implementado:** etapas 1–9 e UI de detalhe integradas na branch de integração.
 
-**Validado parcialmente:** testes históricos locais e E2E do detalhe; CI atual ainda requer confirmação após a falha temporal e a correção proposta.
+**Validado em CI/Preview:** typecheck, lint, testes unitários, build, migrations/SQL e E2E Playwright passaram; Preview do head atual está READY. A chamada real ao modelo continua não comprovada.
 
 **Publicado:** Preview da integração está READY.
 
@@ -152,7 +152,7 @@ e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com e
 
 ### Evidência atualizada de CI, Preview e E2E
 
-- PR #58 permanece **open / Draft**, com base em `feature/smkon-production-readiness`; a branch `fix/s14-deadline-timeout-classification` está 12 commits à frente e 0 atrás da base.
+- PR #58 permanece **open / Draft**, com base em `feature/smkon-production-readiness`; a branch `fix/s14-deadline-timeout-classification` está 15 commits à frente e 0 atrás da base.
 - CI `44868819971` terminou **success** nos dois jobs: typecheck/lint/unit/build e migrations/SQL.
 - E2E `44868983047` terminou **success** em Playwright contra staging isolado.
 - Preview do commit `d4055dae8ab3c7c1137aaf1ddebae2ea8a9120dc` permanece **READY**: https://smkon-rfqq1r07k-smkon.vercel.app.
