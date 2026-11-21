@@ -15,6 +15,11 @@
 
 Os dois primeiros são obrigatórios pela proteção da `main`.
 
+Os dois jobs de Playwright usam a mesma conta QA no staging, então rodam um por vez (fila
+`e2e-staging`, no nível do job). Enquanto um roda, só um outro fica pendente: se um terceiro
+chegar, o pendente mais antigo é cancelado e precisa de "Re-run". PRs do Dependabot não entram
+na fila (não recebem os secrets e não conseguiriam entrar no staging).
+
 ## Banco de dados
 1. Migration nova vai em `supabase/migrations/` com teste SQL correspondente em `supabase/tests/`.
 2. Nunca editar uma migration já aplicada: correções entram como migration nova.
@@ -29,7 +34,8 @@ Estado em 21/11/2026: staging e produção com as 31 migrations do repositório;
 - Lista completa e situação: `docs/SEGREDOS.md`.
 
 ## Dependências
-Dependabot semanal (npm) e mensal (GitHub Actions), agrupado por família.
+Dependabot semanal (npm) e mensal (GitHub Actions), agrupado por família. Saltos de versão
+maior (por exemplo `actions/checkout` 4 → 7) só entram depois de ler as notas de mudança.
 
 ## Removido
 `scheduled-deploy.yml` fazia commits vazios na `main` duas vezes por dia para driblar o limite diário de deploys do plano gratuito da Vercel. O limite continua existindo; o caminho correto é o plano Pro ou espaçar merges.

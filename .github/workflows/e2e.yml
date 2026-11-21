@@ -15,15 +15,20 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  # Um único run por vez: todos usam a mesma conta QA no staging.
-  group: e2e-staging
-  cancel-in-progress: false
+# A fila fica nos jobs, não no workflow: run que não executa nenhum job (Dependabot, deploy de
+# produção) não ocupa a vaga nem empurra para fora o run pendente de outro PR.
 
 jobs:
   local:
     name: Playwright · Build local
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    # Dependabot não recebe os secrets do repositório: não consegue entrar no staging.
+    if: >-
+      ${{ (github.event_name == 'pull_request' || github.event_name == 'push') &&
+          github.actor != 'dependabot[bot]' }}
+    concurrency:
+      # Um teste por vez: todos usam a mesma conta QA no staging.
+      group: e2e-staging
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -111,7 +116,11 @@ jobs:
       ${{ github.event_name == 'workflow_dispatch' ||
           (github.event.deployment_status.state == 'success' &&
            contains(github.event.deployment.environment, 'Preview') &&
-           !contains(github.event.deployment.environment, 'Production')) }}
+           !contains(github.event.deployment.environment, 'Production') &&
+           !startsWith(github.event.deployment.ref, 'dependabot/')) }}
+    concurrency:
+      group: e2e-staging
+      cancel-in-progress: false
     env:
       CI: "true"
       E2E_BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || secrets.E2E_BASE_URL }}
