@@ -1,3 +1,73 @@
+## Checkpoint operacional S14 — 21/11/2026 20:00 BRT
+
+> Esta seção é o estado atual auditado e substitui afirmações de status anteriores neste documento. O restante do arquivo é preservado como histórico/decisões de implementação.
+
+### GitHub e release
+
+- HEAD observado de `main`: `84afe632464cc83c347ca1cfe5923efe9bbc91fe` (commit Dependabot #110, 21/11/2026 19:50 BRT).
+- Os nove splits S14 (#35–#42 e #46) estão integrados; a correção de timeout/ledger do S14 também está no histórico da `main`.
+- A PR documental #102 permanece aberta, sem reviews, mas sua branch está divergente: 5 commits à frente e 10 atrás de `main`. Esta atualização substitui a #102 por uma branch criada sobre o HEAD atual.
+- `feature/smkon-production-readiness` está congelada e divergente (2 à frente / 36 atrás de `main`; diff observado somente em documentação). Não mesclar essa branch.
+- `release/s14-mainline-integration-20261121` está obsoleta/divergente (34 à frente / 289 atrás de `main`). Não promover essa branch.
+- A base operacional é `main`; qualquer release futura deve ser uma PR pequena e específica, nunca a promoção integral das branches históricas.
+
+### Vercel, Production e Cron
+
+- Último deployment Production consultado: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, READY, commit `86bd67c928b834e472d2fc1eba180f138ddaeb11`, criado em 21/11/2026 às 19:37 BRT.
+- `main` está 7 commits à frente e 0 atrás desse deployment. O compare identifica somente mudanças de workflow, dependências e extração de CSS em 12 módulos; não há alteração S14 nesse intervalo.
+- O SHA implantado contém `vercel.json` e `src/app/api/agents/worker/route.ts`. Cron declarado: `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. Próxima janela programada: 22/11/2026 às 08:17 BRT.
+- A rota e o Cron estão publicados, mas não há evidência de invocação real. Runtime logs do projeto Production: nenhum registro na janela consultada de 50 minutos.
+- A Vercel não expôs Preview recente da branch documental #102; o check retornou `api-deployments-free-per-day`. O Preview anterior da PR #101 não é evidência do HEAD atual.
+- Não declarar o deployment Production como atualizado para o HEAD atual: ele está 7 commits atrás.
+
+### Variáveis e autenticação (inventário sem descriptografar)
+
+- `SUPABASE_SECRET_KEY`: ausente em Preview e Production no inventário de variáveis do projeto.
+- `CRON_SECRET`: entradas do tipo Sensitive existem para Preview e Production; o valor não foi lido e o comprimento mínimo de 32 caracteres não foi validado.
+- `AGENT_EXECUTOR_ENABLED`: `true` em Preview e Production.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5` e `AGENT_MONTHLY_BUDGET_USD=5` estão configurados nos dois ambientes.
+- `AI_GATEWAY_API_KEY` não está configurada; o caminho escolhido é OIDC. A configuração de emissão OIDC do projeto não foi exposta pela leitura de metadados e não há token/header OIDC observado em runtime. Portanto, OIDC está selecionado no ambiente/código, mas não está comprovado em execução.
+- O handler falha fechado: exige flag habilitada, `CRON_SECRET` válido (mínimo 32, sem espaços nas pontas), Bearer correto, modelo/credencial resolvidos e orçamento/preço válido; depois cria o cliente de serviço. `src/lib/supabase/service.ts` usa exatamente `SUPABASE_SECRET_KEY`. Sem ela, o worker retorna `503 service_not_configured` antes de reivindicar qualquer run, desde que as barreiras anteriores tenham passado.
+- Como `AGENT_EXECUTOR_ENABLED=true` está em Production e a chave de serviço está ausente, a recomendação é manter o executor desabilitado em Production até homologação. Nenhuma variável de Production foi alterada nesta auditoria.
+
+### Supabase — staging e produção
+
+- Projetos ativos: staging `xoyasrizivadxnpmzzno` (sa-east-1) e produção `hpplboyysmfcjsnjrdmw` (us-west-2).
+- Ambos listam 31 nomes de migrations, sem nomes exclusivos de um ambiente. Os 31 version IDs, porém, diferem entre staging e produção. Não executar `db repair`, `db push` nem migrations remotas sem reconciliação explícita do histórico.
+- Staging: 136 runs, todas `killed`; 0 steps; 0 registros em `agent_model_usage`; 0 grants; 1 linha de settings com `kill_switch=false`, 500 runs/dia e 12 steps/run.
+- Production: 0 runs; 0 steps; 0 usage; 0 grants; nenhuma linha de settings.
+- Nas seis tabelas auditadas (`agent_runs`, `agent_steps`, `agent_model_usage`, `agent_tool_grants`, `agent_settings`, `content_items`), RLS está habilitado nos dois ambientes. As cinco tabelas S14 têm uma policy cada; `content_items` tem quatro.
+- ACL observada: `anon` sem SELECT nas seis tabelas; `authenticated` e `service_role` com SELECT; sem INSERT direto nas cinco tabelas de agentes. `content_items` permite INSERT a `authenticated` e `service_role`, sujeito a RLS/RPCs do domínio.
+- Foram observadas 19 funções `agent_*`: EXECUTE por `anon` = 0, por `authenticated` = 6, por `service_role` = 12. As funções administrativas autenticadas dependem das verificações de papel/owner já implementadas; manter essa validação nos testes SQL.
+
+### AI Gateway e ledger
+
+- Consulta do projeto Vercel nos últimos 7 dias: nenhuma linha de uso (0 requests/tokens/custo).
+- Budget específico do projeto: nenhum; budgets default: nenhum; regras de roteamento: nenhuma.
+- O catálogo atual contém `anthropic/claude-haiku-5.5`; isso confirma disponibilidade no catálogo, não uma chamada real.
+- `agent_model_usage`: 0 linhas em staging e produção; input/output tokens e custo somados = 0 nos dois ambientes. Isso é consistente com ausência de tráfego, mas não valida reconciliação após cobrança.
+- O teto interno de US$ 5 é verificado pelo worker, mas não constitui reserva atômica por chamada. Não há evidência de outbox durável para reconciliar falha de gravação após resposta cobrada.
+- Não há chamada real comprovada ao AI Gateway. Os testes do adaptador usam `fetch` falso.
+
+### Validação e bloqueio da homologação
+
+- Último CI S14/integração com contagem explicitamente observada: 406/406 testes no run #44954944211, commit `41fb60ab`. Esse run não é do HEAD atual `84afe632`; novo CI será executado pela PR documental atual.
+- E2E anterior #44953753229: 35/36, com falha CSP em `/studio`. A PR #106, que declara correção de CSP, foi fechada depois; a suíte precisa ser reexecutada no HEAD atual antes de declarar E2E verde.
+- Não executar teste real em staging: `SUPABASE_SECRET_KEY` está ausente e `agent_tool_grants` está vazio. Sem isso, não há caminho seguro para claim, leitura ou draft. Não simular sucesso.
+- Próximos passos: (1) provisionar chave exclusiva de staging como Sensitive em Preview; (2) validar `CRON_SECRET` sem revelar valor; (3) comprovar emissão OIDC em runtime; (4) criar apenas grants mínimos de leitura aprovados; (5) definir budget externo restrito ao projeto; (6) rodar E2E atual; (7) só então uma única `operations_review` em staging e reconciliar request/tokens/custo com `agent_model_usage`.
+- Não fazer merge, deploy, alteração de secrets, grants, budgets ou migrations de Production sem autorização específica. Não houve nenhuma dessas alterações nesta rodada.
+
+### Evidência de código
+
+- `src/lib/agents/worker/handler.ts`: ordem das barreiras e retorno `service_not_configured`.
+- `src/lib/supabase/service.ts`: cliente server-only, dependente de `SUPABASE_SECRET_KEY`.
+- `src/lib/agents/worker/auth.ts`: `CRON_SECRET` mínimo de 32 caracteres e comparação Bearer em tempo constante.
+- `src/lib/agents/executor/model.ts`: OIDC opt-in, lendo header `x-vercel-oidc-token` ou `VERCEL_OIDC_TOKEN`.
+- `src/lib/agents/worker/budget.ts`: RPC de registro por resposta e leitura de gasto mensal; sem reserva atômica.
+
+
+---
+
 # S14 — Handoff: executor real dos agentes (Planner → Executor → Verifier)
 
 **Estado em 19/11/2026:** código das 9 etapas integrado na branch `feature/smkon-production-readiness` (PRs #35–#42
