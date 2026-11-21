@@ -340,10 +340,10 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
   pendências do Owner no handoff.
 
 
-## Auditoria operacional — 21/11/2026, 06:01 BRT
+## Auditoria operacional — 21/11/2026 (atualização final da rodada)
 
-- PR #61: branch limpa, 7 commits ahead / 0 behind, Draft e mergeable. PR #58 foi fechado sem merge como superseded; nenhum patch necessário ficou apenas no branch antigo.
-- CI #44887809941 no commit de código d9ff3869 passou integralmente (audit, typecheck, lint, unit tests, build, migrations e SQL). E2E #44883164342 passou no commit anterior e0faaa29; E2E do patch novo não foi executado porque o deployment Preview foi bloqueado pelo limite de builds da Vercel.
+- PR #61: branch limpa, sem commits atrás, Draft e mergeable; head documental atual 769e1f6b. PR #58 foi fechado sem merge como superseded; nenhum patch necessário ficou apenas no branch antigo.
+- CI #44887809941 no commit de código d9ff3869 e CI #44887986827 no head documental 769e1f6 passaram integralmente (audit, typecheck, lint, unit tests, build, migrations e SQL). E2E #44883164342 passou no commit anterior e0faaa29; E2E do patch novo não foi executado porque o deployment Preview foi bloqueado pelo limite de builds da Vercel.
 - Correção de consumo: resposta 2xx com falha ao ler body agora registra estimativa conservadora de pior caso antes de lançar gateway_body_read_failed; teste sem rede adicionado em agents-budget.test.ts. Se a RPC Supabase de registro falhar após cobrança do provedor, ainda falta reservation/outbox para reconciliação durável.
 - Vercel: provider Gateway, modelo Haiku 5.5, auth OIDC, teto interno US$ 5 e flag AGENT_EXECUTOR_ENABLED=true estão configurados em Preview e Production. CRON_SECRET presente nos dois ambientes e validado internamente como >=32 caracteres sem whitespace nas pontas; valor não exposto. SUPABASE_SECRET_KEY ausente. Nenhum budget externo/default; uso do Gateway nos últimos 7 dias = zero.
 - Supabase: staging 26 migrations, 88 runs killed, 0 steps/usage/drafts/grants, kill switch false, limites 500/dia e 12 passos. Production 20 migrations, sem runs/steps/usage/drafts/grants e sem linha de settings. As três migrations S14 estão nos dois projetos.
