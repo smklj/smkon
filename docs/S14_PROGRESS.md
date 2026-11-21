@@ -339,3 +339,43 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
     restrito a owner/admin em execução ativa. Ações revalidam `/agentes` como layout (inclui o detalhe).
 - **19/11/2026 — etapa 9.** `docs/S14_HANDOFF.md` e linha do S14 no `docs/ROADMAP_SPLITS.md`. Frente concluída no código;
   pendências do Owner no handoff.
+
+
+## Reconciliação operacional — 21/11/2026, 08:00 BRT (consulta direta)
+
+Esta seção supersede contagens e estados anteriores quando houver divergência.
+
+### GitHub, branches, PRs e validação
+- PR #61 continua aberta/Draft, mas o estado atual não é o descrito no corpo antigo: head `6e26aee1f92b338ec9860a820a98a748b0dec444`, base branch atual em `564bee5a210185b04887a430fc073b95ac770bb0`; comparação `17 ahead / 5 behind`, `status=diverged`, `mergeable=false`. Não fazer merge nem forçar atualização.
+- Os cinco commits que avançaram a integração desde o merge-base alteraram somente `docs/INTEGRATION_STATUS.md`, `docs/ROADMAP_SPLITS.md`, `docs/S16_HANDOFF.md`, `docs/S16_PROGRESS.md`, `tests/e2e/admin-finance.spec.mjs` e `tests/e2e/products.spec.mjs`; não há conflito de arquivo com o patch S14.
+- O patch de três arquivos de código/teste da PR #61 foi portado para uma branch nova baseada na head atual da integração: `fix/s14-timeout-ledger-rebased-20261121-0800`. A nova PR de revisão será aberta em Draft; aguardar CI/E2E do novo head antes de fechar a PR #61.
+- CI #44892920449: sucesso nos dois jobs da PR #61 (dependency audit, typecheck, lint, unit tests, build, migrations e SQL), mas validou o head antigo `6e26aee`, não a branch rebaseada.
+- Preview READY do head antigo: https://smkon-7baypxr65-smkon.vercel.app (commit `6e26aee`). Runtime log de Preview registrou `GET /api/agents/worker` com evento `unauthorized` às 10:15:58Z; foi uma requisição sem Bearer válido, portanto comprova rejeição de acesso, não execução autenticada do worker nem chamada ao modelo.
+- O E2E anterior #44883164342 é de SHA anterior; não há E2E comprovado para o head atual nem para a nova branch.
+
+### Vercel e AI Gateway
+- Inventário de variáveis, sem descriptografar secrets: `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5` e `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `CRON_SECRET` existe como sensitive separada em Preview e Production. O valor não foi lido; comprimento e whitespace não foram validados.
+- `SUPABASE_SECRET_KEY` não consta no inventário de variáveis do projeto. `AI_GATEWAY_API_KEY` ausente é compatível com o modo OIDC escolhido.
+- O código de `executor/model.ts` aceita o token OIDC da invocação (`x-vercel-oidc-token`) ou `VERCEL_OIDC_TOKEN`, apenas quando `AGENT_MODEL_AUTH=oidc`. O token não foi observado em execução autenticada.
+- O catálogo do Gateway contém `anthropic/claude-haiku-5.5`; o catálogo atual informa preço base de US$ 0,10/1M tokens de entrada e US$ 0,50/1M tokens de saída até 100k tokens.
+- `list_ai_gateway_budgets` retornou zero budgets e `defaults=true` retornou zero defaults. Uso do projeto nos últimos 7 dias: nenhuma linha, portanto zero requests/tokens/custo observados. Nenhuma chamada real está comprovada.
+- `vercel.json` na integração agenda `GET /api/agents/worker` diariamente às 11:17 UTC. `vercel.json` e `src/app/api/agents/worker/route.ts` não existem em `main` (404 ao consultar os caminhos); Cron S14 não está ativo em Production.
+
+### Supabase — leitura somente
+- Staging `xoyasrizivadxnpmzzno`: 28 migrations; 94 `agent_runs`, todas `status=killed` e `error_code=kill_switch`; 0 `agent_steps`, 0 `agent_model_usage`, 0 `agent_tool_grants` e 0 conteúdos ligados por `agent_run_id`. Há uma configuração: `kill_switch=false`, limite 500 execuções/dia e 12 passos/execução.
+- Production `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, steps, usage, grants e conteúdos ligados; nenhuma linha de `agent_settings`.
+- As migrations S14 de draft, claim queue e model usage constam nos dois históricos. Nenhuma migration remota foi aplicada nesta auditoria.
+- RLS está habilitado em `agent_model_usage`, `agent_runs`, `agent_steps` e `agent_tool_grants`, com uma policy em cada tabela. As RPCs `agent_claim_next_run`, `agent_draft_content`, `agent_model_spend_since` e `agent_record_model_usage` são SECURITY DEFINER e só `service_role` tem EXECUTE; `anon` e `authenticated` não têm EXECUTE. A verificação foi feita nos dois bancos.
+- Ledger: zero linhas em `agent_model_usage` e zero uso no Gateway; os dois lados estão consistentes com ausência de chamadas reais. Isso não prova funcionamento do caminho de contabilização em produção.
+
+### Bloqueios e riscos remanescentes
+1. Falta `SUPABASE_SECRET_KEY` no Preview de staging; o worker não consegue criar o cliente privilegiado.
+2. Não há tool grants no workspace de staging; as ferramentas `read_*` e `draft_content` não podem ser exercitadas por uma execução real.
+3. Não há budget externo nem default no AI Gateway; não iniciar chamada paga antes de existir limite externo.
+4. `CRON_SECRET` está presente, mas seu valor não foi lido nem validado quanto a 32+ caracteres. A requisição observada sem Bearer válido recebeu `unauthorized`.
+5. A flag `AGENT_EXECUTOR_ENABLED=true` está em Production; não foi alterada. Manter sem release S14 e revisar/desligar antes de qualquer publicação autorizada.
+6. O código registra uso após resposta do provedor e melhorou o pior caso em falha de leitura de body 2xx; ainda falta reservation/outbox durável para reconciliar custo se a RPC Supabase falhar após cobrança.
+7. Primeiro smoke test continua bloqueado. Só executar uma única `operations_review` em staging após secret de staging, budget externo baixo, CRON_SECRET validado e grants mínimos estarem prontos.
+
+Nenhum merge em `main`, alteração de secrets, alteração de configuração Production, migration remota, concessão de grants ou chamada paga ao modelo foi feita nesta rodada.
