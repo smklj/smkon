@@ -6,11 +6,10 @@ import { EvidenceForm } from "@/components/products/EvidenceForm";
 import { ReviewControls } from "@/components/products/ReviewControls";
 import { Score } from "@/components/products/Score";
 import { StatusForm } from "@/components/products/StatusForm";
-import { isUuid } from "@/lib/content/server";
 import { formatMoney } from "@/lib/finance/commissions";
 import { errorFields, log } from "@/lib/observability/log";
-import { canAddEvidence, canEditProducts, getProduct, listEvidence } from "@/lib/products/server";
-import { workspaceDate } from "@/lib/products/validation";
+import { getProduct, listEvidence } from "@/lib/products/repository";
+import { canAddEvidence, canEditProducts } from "@/lib/products/service";
 import {
   EVIDENCE_KIND_META,
   REVENUE_DOMAIN_LABEL,
@@ -22,7 +21,8 @@ import {
   type ReviewStatus,
 } from "@/lib/products/types";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { findWorkspace, type Workspace } from "@/lib/tenancy/service";
+import { isUuid, workspaceDate } from "@/lib/validation/fields";
 
 export const metadata: Metadata = { title: "Produto" };
 

@@ -93,3 +93,66 @@ test("API de produtos valida entrada e ignora score enviado pelo cliente", async
   expect(result.created).toBe(201);
   expect(result.score).toBeNull();
 });
+
+// S16: paginação por cursor da API de produtos (depende de `score_rank`, migration 20261119120000 no staging).
+test("API de produtos pagina por cursor sem repetir nem perder itens", async ({ page }) => {
+  await page.goto("/produtos");
+  const result = await page.evaluate(async (suffix) => {
+    const names = [1, 2, 3].map((n) => `E2E Página ${n} ${suffix}`);
+    const ids = [];
+    for (const name of names) {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, source: "manual" }),
+      });
+      if (response.status !== 201) return { error: `criação ${response.status}` };
+      ids.push((await response.json()).id);
+    }
+
+    // Percorre o catálogo de 2 em 2 até achar os 3 produtos criados (ou acabar o catálogo).
+    const seen = new Set();
+    const order = [];
+    let duplicates = 0;
+    let pages = 0;
+    let cursor = null;
+    let cacheControl = "";
+    const pageSizes = [];
+    do {
+      const url = `/api/products?limit=2${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const response = await fetch(url);
+      if (response.status !== 200) return { error: `página ${pages + 1}: ${response.status}` };
+      if (pages === 0) cacheControl = response.headers.get("cache-control") ?? "";
+      const body = await response.json();
+      pageSizes.push(body.items.length);
+      for (const item of body.items) {
+        if (seen.has(item.id)) duplicates += 1;
+        seen.add(item.id);
+        if (ids.includes(item.id)) order.push(item.id);
+      }
+      cursor = body.nextCursor;
+      pages += 1;
+    } while (cursor && order.length < ids.length && pages < 200);
+
+    const invalid = await fetch("/api/products?cursor=nao-e-um-cursor");
+    return {
+      found: order.length,
+      // Sem score, a ordem é updated_at desc: o último criado aparece primeiro.
+      newestFirst: order.join() === [...ids].reverse().join(),
+      duplicates,
+      maxPageSize: Math.max(...pageSizes),
+      cacheControl,
+      invalid: invalid.status,
+      invalidCode: (await invalid.json()).code ?? null,
+    };
+  }, runId);
+
+  expect(result.error).toBeUndefined();
+  expect(result.found).toBe(3);
+  expect(result.newestFirst).toBe(true);
+  expect(result.duplicates).toBe(0);
+  expect(result.maxPageSize).toBeLessThanOrEqual(2);
+  expect(result.cacheControl).toContain("no-store");
+  expect(result.invalid).toBe(400);
+  expect(result.invalidCode).toBe("invalid_input");
+});

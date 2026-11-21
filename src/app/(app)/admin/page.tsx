@@ -3,8 +3,10 @@ import { AreaCard } from "@/components/admin/AreaCard";
 import { ConnectionsPanel } from "@/components/admin/ConnectionsPanel";
 import { ContentList } from "@/components/admin/ContentList";
 import { DomainCard } from "@/components/admin/DomainCard";
-import { IntegrationPlaceholders } from "@/components/admin/IntegrationPlaceholders";
+import { ExternalActionsPanel } from "@/components/admin/ExternalActionsPanel";
+import { IntegrationHubPanel } from "@/components/admin/IntegrationHubPanel";
 import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
+import { MembersPanel } from "@/components/admin/MembersPanel";
 import { PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { AREAS, REVENUE_DOMAINS } from "@/lib/admin/constants";
 
@@ -22,8 +24,13 @@ export default function AdminPage() {
         description="Membros, modelo operacional, domínios financeiros e conexões reais do workspace."
       />
 
+      <section className="panel" aria-labelledby="membros-titulo">
+        <SectionHeading id="membros-titulo" title="Membros" aside={<span className="muted">papéis e acesso</span>} />
+        <MembersPanel />
+      </section>
+
       <section className="panel" aria-labelledby="convites-titulo">
-        <SectionHeading id="convites-titulo" title="Membros e convites" aside={<span className="muted">acesso somente por convite</span>} />
+        <SectionHeading id="convites-titulo" title="Convites" aside={<span className="muted">acesso somente por convite</span>} />
         <InvitationsPanel />
       </section>
 
@@ -57,12 +64,19 @@ export default function AdminPage() {
         <ConnectionsPanel />
       </section>
 
-      <details className="panel panel-collapsible">
-        <summary>
-          <SectionHeading id="planejadas-titulo" title="Integrações planejadas" aside={<span className="muted">ainda não validadas</span>} />
-        </summary>
-        <IntegrationPlaceholders />
-      </details>
+      <section className="panel" aria-labelledby="acoes-externas-titulo">
+        <SectionHeading
+          id="acoes-externas-titulo"
+          title="Ações externas e publicações"
+          aside={<span className="muted">aprovação humana por hash exato</span>}
+        />
+        <ExternalActionsPanel />
+      </section>
+
+      <section className="panel" aria-labelledby="hub-titulo">
+        <SectionHeading id="hub-titulo" title="Hub de integrações" aside={<span className="muted">redes e plataformas</span>} />
+        <IntegrationHubPanel />
+      </section>
     </div>
   );
 }

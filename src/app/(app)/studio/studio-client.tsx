@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { LICENSE_STATUS_LABEL, type LicenseStatus } from "@/lib/media/types";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CHANNELS,
   ContentItem,
   ContentItemRow,
   ContentStatusLabel,
+  LABEL_TO_STATUS,
   LEGACY_STORAGE_KEY,
   LegacyDraft,
   emptyItem,
@@ -23,6 +24,21 @@ const FILTERS: Filter[] = ["Todos", "Rascunho", "Aprovado", "Arquivado"];
 
 type MediaOption = { id: string; name: string; kind: "video" | "image"; licenseStatus: LicenseStatus };
 
+/** Contagens do workspace inteiro (a lista é paginada, então não dá para contar só o que foi carregado). */
+type StatusCounts = { total: number; draft: number; approved: number; archived: number };
+
+function contentListUrl(filter: Filter, cursor?: string): string {
+  const params = new URLSearchParams();
+  if (filter !== "Todos") params.set("status", LABEL_TO_STATUS[filter]);
+  if (cursor) params.set("cursor", cursor);
+  const query = params.toString();
+  return query ? `/api/content?${query}` : "/api/content";
+}
+
+function formatCount(value: number | undefined, loading: boolean): string {
+  return loading || value === undefined ? "…" : value.toString().padStart(2, "0");
+}
+
 export default function StudioClient() {
   const [items, setItems] = useState<ContentItem[]>([]);
   const [draft, setDraft] = useState<ContentItem>(emptyItem);
@@ -33,15 +49,27 @@ export default function StudioClient() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [media, setMedia] = useState<MediaOption[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [counts, setCounts] = useState<StatusCounts | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // O filtro vale para todas as recargas (salvar, aprovar, excluir) sem recriar loadItems.
+  const filterRef = useRef<Filter>("Todos");
+  // Respostas de uma lista que já foi trocada (filtro mudou, recarga mais nova) são descartadas.
+  const listVersion = useRef(0);
 
+  /** Recarrega a primeira página do filtro atual e as contagens. */
   const loadItems = useCallback(async () => {
     setError("");
+    const version = ++listVersion.current;
     try {
-      const res = await fetch("/api/content");
+      const res = await fetch(contentListUrl(filterRef.current));
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Falha ao carregar conteúdos.");
-      const mapped = (body.items ?? []).map(rowToItem);
+      const mapped: ContentItem[] = (body.items ?? []).map(rowToItem);
+      if (version !== listVersion.current) return mapped;
       setItems(mapped);
+      setNextCursor(typeof body.nextCursor === "string" ? body.nextCursor : null);
+      if (body.counts) setCounts(body.counts as StatusCounts);
       return mapped;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível carregar os conteúdos.";
@@ -135,6 +163,38 @@ export default function StudioClient() {
       cancelled = true;
     };
   }, [loadItems, migrateLegacy]);
+
+  function changeFilter(next: Filter) {
+    if (next === filterRef.current) return;
+    filterRef.current = next;
+    setFilter(next);
+    setLoading(true);
+    void loadItems();
+  }
+
+  /** Próxima página (cursor): acrescenta ao fim sem repetir peças já carregadas. */
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    setError("");
+    const version = listVersion.current;
+    try {
+      const res = await fetch(contentListUrl(filterRef.current, nextCursor));
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Falha ao carregar mais peças.");
+      if (version !== listVersion.current) return;
+      const more: ContentItem[] = (body.items ?? []).map(rowToItem);
+      setItems((current) => {
+        const known = new Set(current.map((item) => item.id));
+        return [...current, ...more.filter((item) => !known.has(item.id))];
+      });
+      setNextCursor(typeof body.nextCursor === "string" ? body.nextCursor : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível carregar mais peças.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const visibleItems = useMemo(
     () =>
@@ -306,18 +366,18 @@ export default function StudioClient() {
       {notice && <p className="feedback feedback-ok" role="status">{notice}</p>}
 
       <section className="metrics" aria-label="Indicadores do Studio">
-        <div className="metric"><span>Peças</span><strong>{loading ? "…" : items.length.toString().padStart(2, "0")}</strong></div>
-        <div className="metric"><span>Rascunhos</span><strong>{loading ? "…" : items.filter((item) => item.status === "Rascunho").length.toString().padStart(2, "0")}</strong></div>
-        <div className="metric"><span>Aprovados</span><strong>{loading ? "…" : items.filter((item) => item.status === "Aprovado").length.toString().padStart(2, "0")}</strong></div>
-        <div className="metric"><span>Arquivados</span><strong>{loading ? "…" : items.filter((item) => item.status === "Arquivado").length.toString().padStart(2, "0")}</strong></div>
+        <div className="metric"><span>Peças</span><strong>{formatCount(counts?.total, loading && !counts)}</strong></div>
+        <div className="metric"><span>Rascunhos</span><strong>{formatCount(counts?.draft, loading && !counts)}</strong></div>
+        <div className="metric"><span>Aprovados</span><strong>{formatCount(counts?.approved, loading && !counts)}</strong></div>
+        <div className="metric"><span>Arquivados</span><strong>{formatCount(counts?.archived, loading && !counts)}</strong></div>
       </section>
 
       <div className="studio-layout">
         <aside className="studio-library">
-          <div className="studio-library-head"><div><p className="eyebrow">Biblioteca</p><h2>Suas peças</h2></div><span>{loading ? "…" : items.length}</span></div>
+          <div className="studio-library-head"><div><p className="eyebrow">Biblioteca</p><h2>Suas peças</h2></div><span>{loading && !counts ? "…" : counts?.total ?? items.length}</span></div>
           <div className="studio-filters">
             {FILTERS.map((item) => (
-              <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item}</button>
+              <button key={item} className={filter === item ? "selected" : ""} onClick={() => changeFilter(item)} aria-pressed={filter === item}>{item}</button>
             ))}
           </div>
           <div className="studio-draft-list">
@@ -331,6 +391,13 @@ export default function StudioClient() {
                 <span className="draft-channels">{item.channels.join(" · ")}</span>
               </button>
             ))}
+            {!loading && nextCursor ? (
+              <div className="studio-load-more">
+                <button className="button button-secondary button-small" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? "Carregando…" : "Carregar mais"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </aside>
 

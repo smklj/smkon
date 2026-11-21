@@ -1,12 +1,9 @@
-/** Utilidades server-side compartilhadas pelas rotas de conteúdo. */
-
-export const CONTENT_SELECT_COLUMNS =
-  "id,title,product,source_url,asset_url,script,caption,cta,hashtags,channels,rights_confirmed,media_asset_id,status,version,content_hash,approved_version,approved_at,created_at,updated_at";
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-export function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
-}
-
-export const CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/;
+/**
+ * Compatibilidade (S4): o conteúdo foi dividido em schema.ts (validação),
+ * repository.ts (dados) e service.ts (regras). Este arquivo só reexporta o que
+ * os testes existentes importam; o código da aplicação importa dos arquivos novos.
+ */
+export { CONTENT_KEYSET, CONTENT_SELECT_COLUMNS } from "./repository.ts";
+export { CONTENT_HASH_PATTERN, CONTENT_STATUSES, parseContentStatusFilter } from "./schema.ts";
+/** A definição única de UUID estrito está em src/lib/validation/fields.ts. */
+export { isUuid } from "../validation/fields.ts";

@@ -8,10 +8,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
-        headers: securityHeaders({
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-          isDev: process.env.NODE_ENV === "development",
-        }),
+        // A CSP (com nonce por requisição) é definida no Proxy: src/lib/supabase/proxy.ts.
+        headers: securityHeaders(),
       },
     ];
   },

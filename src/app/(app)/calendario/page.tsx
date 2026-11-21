@@ -4,7 +4,7 @@ import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { JobActions } from "@/components/publication/JobActions";
 import { ScheduleForm } from "@/components/publication/ScheduleForm";
 import { errorFields, log } from "@/lib/observability/log";
-import { listApprovedContent, listPublicationJobs, type ApprovedContent } from "@/lib/publication/server";
+import { listApprovedContent, listPublicationJobs, type ApprovedContent } from "@/lib/publication/repository";
 import {
   defaultScheduleValue,
   PUBLICATION_STATUS_LABEL,
@@ -13,7 +13,8 @@ import {
   type PublicationJobRow,
 } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
-import { canEditContent, findWorkspace } from "@/lib/tenancy/workspace";
+import { canOperateCalendar } from "@/lib/publication/service";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Calendário" };
 
@@ -36,7 +37,7 @@ async function load(): Promise<Data> {
       listPublicationJobs(supabase, workspace.organizationId, new Date(now - 7 * DAY).toISOString(), new Date(now + 60 * DAY).toISOString()),
       listApprovedContent(supabase, workspace.organizationId),
     ]);
-    return { state: "ok", canEdit: canEditContent(workspace.role), jobs, contents };
+    return { state: "ok", canEdit: canOperateCalendar(workspace.role), jobs, contents };
   } catch (error) {
     log("error", "page.calendario", errorFields(error));
     return { state: "error" };

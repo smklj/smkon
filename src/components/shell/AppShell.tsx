@@ -6,15 +6,18 @@ import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { Toaster } from "@/components/ui/Toaster";
+import { WorkspaceSwitcher, type WorkspaceOption } from "@/components/shell/WorkspaceSwitcher";
 import { NAV_ITEMS, STATUS_LABEL, isActive } from "@/lib/navigation";
 
 type AppShellProps = {
   children: React.ReactNode;
   userEmail: string | null;
+  workspaces: WorkspaceOption[];
+  activeWorkspaceId: string | null;
   signOutAction: () => Promise<void>;
 };
 
-export function AppShell({ children, userEmail, signOutAction }: AppShellProps) {
+export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, signOutAction }: AppShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
@@ -92,6 +95,7 @@ export function AppShell({ children, userEmail, signOutAction }: AppShellProps) 
         </nav>
 
         <div className="app-sidebar-footer">
+          <WorkspaceSwitcher workspaces={workspaces} activeId={activeWorkspaceId} />
           {userEmail ? <p className="app-user" title={userEmail}>{userEmail}</p> : null}
           <form action={signOutAction}>
             <button type="submit" className="app-nav-item app-signout">

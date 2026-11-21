@@ -5,18 +5,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { dbErrorMessage } from "@/lib/http/errors";
 import { errorFields, log } from "@/lib/observability/log";
-import {
-  addEvidence,
-  canAddEvidence,
-  canEditProducts,
-  createProduct,
-  reviewEvidence,
-  updateProductStatus,
-} from "@/lib/products/server";
-import { PRODUCT_STATUSES, type ProductStatus } from "@/lib/products/types";
-import { parseEvidenceInput, parseProductInput, parseReviewInput } from "@/lib/products/validation";
-import { findWorkspace } from "@/lib/tenancy/workspace";
-import { isUuid } from "@/lib/content/server";
+import { updateProductStatus } from "@/lib/products/repository";
+import { isProductStatus } from "@/lib/products/schema";
+import { canAddEvidence, canEditProducts, decideEvidence, registerProduct, submitEvidence } from "@/lib/products/service";
+import { findWorkspace } from "@/lib/tenancy/service";
+import { formDataToRaw as fields, isUuid } from "@/lib/validation/fields";
 
 export type FormState = { error?: string; ok?: string; at?: number } | null;
 
@@ -28,16 +21,12 @@ async function workspaceContext() {
   return { supabase, workspace };
 }
 
-function fields(formData: FormData): Record<string, unknown> {
-  return Object.fromEntries(Array.from(formData.entries()).filter(([, value]) => typeof value === "string"));
-}
-
 export async function createProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const { supabase, workspace } = await workspaceContext();
   if (!workspace || !canEditProducts(workspace.role)) return { error: "Apenas owner ou admin cadastram produtos." };
   let id: string;
   try {
-    id = await createProduct(supabase, workspace.organizationId, parseProductInput(fields(formData)));
+    id = await registerProduct(supabase, workspace.organizationId, fields(formData));
   } catch (error) {
     log("warn", "products.create", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível salvar o produto.") };
@@ -52,7 +41,7 @@ export async function addEvidenceAction(_prev: FormState, formData: FormData): P
   const { supabase, workspace } = await workspaceContext();
   if (!workspace || !canAddEvidence(workspace.role)) return { error: "Seu papel não permite adicionar evidências." };
   try {
-    await addEvidence(supabase, workspace.organizationId, productId, parseEvidenceInput(fields(formData)));
+    await submitEvidence(supabase, workspace.organizationId, productId, fields(formData));
   } catch (error) {
     log("warn", "products.evidence.add", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível registrar a evidência.") };
@@ -66,8 +55,7 @@ export async function reviewEvidenceAction(_prev: FormState, formData: FormData)
   const { supabase, workspace } = await workspaceContext();
   if (!workspace || !canEditProducts(workspace.role)) return { error: "Apenas owner ou admin revisam evidências." };
   try {
-    const { evidenceId, decision, note } = parseReviewInput(fields(formData));
-    await reviewEvidence(supabase, evidenceId, decision, note);
+    await decideEvidence(supabase, fields(formData));
   } catch (error) {
     log("warn", "products.evidence.review", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível revisar a evidência.") };
@@ -80,11 +68,11 @@ export async function reviewEvidenceAction(_prev: FormState, formData: FormData)
 export async function setProductStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const productId = String(formData.get("product_id") ?? "");
   const status = String(formData.get("status") ?? "");
-  if (!isUuid(productId) || !(PRODUCT_STATUSES as readonly string[]).includes(status)) return { error: "Dados inválidos." };
+  if (!isUuid(productId) || !isProductStatus(status)) return { error: "Dados inválidos." };
   const { supabase, workspace } = await workspaceContext();
   if (!workspace || !canEditProducts(workspace.role)) return { error: "Apenas owner ou admin alteram o status." };
   try {
-    await updateProductStatus(supabase, workspace.organizationId, productId, status as ProductStatus);
+    await updateProductStatus(supabase, workspace.organizationId, productId, status);
   } catch (error) {
     log("warn", "products.status", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível alterar o status.") };

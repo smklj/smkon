@@ -38,6 +38,19 @@ test("Agentes: limites, nova execução na fila, kill switch interrompe e bloque
   await expect(form.getByRole("button", { name: "Criar execução" })).toBeDisabled();
   await snap(page, "61-agentes-kill-switch");
 
+  // Detalhe da execução (S14 etapa 8): estado, motivo legível, consumo do modelo e nenhuma ação de publicar.
+  await run.getByRole("link", { name: new RegExp(goal) }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Execução de agente" })).toBeVisible();
+  const resumo = page.getByRole("region", { name: "Resumo" });
+  await expect(resumo.getByText("Interrompida", { exact: true })).toBeVisible();
+  await expect(resumo.getByRole("status")).toContainText("kill switch do workspace foi ligado");
+  await expect(page.getByRole("region", { name: "Consumo do modelo" })).toContainText("Nenhuma chamada ao modelo registrada");
+  await expect(page.getByRole("region", { name: "Passos" })).toContainText("Nenhum passo registrado");
+  await expect(page.getByRole("button", { name: /publicar|aprovar/i })).toHaveCount(0);
+  await snap(page, "62-agentes-detalhe");
+  await page.getByRole("link", { name: "Voltar aos agentes" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Agentes de IA" })).toBeVisible();
+
   await kill.getByRole("button", { name: "Desligar kill switch" }).click();
   await expect(kill.getByRole("status")).toContainText("Kill switch desligado.");
   await expect(form.getByRole("button", { name: "Criar execução" })).toBeEnabled();

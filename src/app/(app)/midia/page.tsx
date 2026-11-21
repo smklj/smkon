@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { LicenseForm } from "@/components/media/LicenseForm";
 import { MediaUpload } from "@/components/media/MediaUpload";
+import { Pager, pageHref } from "@/components/ui/Pager";
 import { ArchiveMedia, RevokeLicense } from "@/components/media/RevokeLicense";
-import { listMedia, type MediaWithLicenses } from "@/lib/media/server";
+import { listMedia, type MediaWithLicenses } from "@/lib/media/repository";
 import {
   formatBytes,
   LICENSE_STATUS_LABEL,
@@ -13,21 +14,32 @@ import {
   todayInBrazil,
 } from "@/lib/media/types";
 import { errorFields, log } from "@/lib/observability/log";
+import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { createClient } from "@/lib/supabase/server";
-import { canEditContent, findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { canEditContent, findWorkspace, type Workspace } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Mídia e licenças" };
 
-type Data = { state: "no-workspace" } | { state: "error" } | { state: "ok"; workspace: Workspace; media: MediaWithLicenses[] };
+type Data =
+  | { state: "no-workspace" }
+  | { state: "error" }
+  | { state: "ok"; workspace: Workspace; media: MediaWithLicenses[]; nextCursor: string | null; cursorReset: boolean };
 
-async function load(): Promise<Data> {
+async function load(cursor: string | null): Promise<Data> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { state: "no-workspace" };
     const workspace = await findWorkspace(supabase, user.id);
     if (!workspace) return { state: "no-workspace" };
-    return { state: "ok", workspace, media: await listMedia(supabase, workspace.organizationId, { signUrls: true }) };
+    try {
+      const page = await listMedia(supabase, workspace.organizationId, { signUrls: true, cursor });
+      return { state: "ok", workspace, media: page.items, nextCursor: page.nextCursor, cursorReset: false };
+    } catch (error) {
+      if (!(error instanceof InvalidCursorError)) throw error;
+      const page = await listMedia(supabase, workspace.organizationId, { signUrls: true });
+      return { state: "ok", workspace, media: page.items, nextCursor: page.nextCursor, cursorReset: true };
+    }
   } catch (error) {
     log("error", "page.midia", errorFields(error));
     return { state: "error" };
@@ -39,8 +51,10 @@ function formatDate(value: string): string {
   return `${day}/${month}/${year}`;
 }
 
-export default async function MediaPage() {
-  const data = await load();
+export default async function MediaPage({ searchParams }: { searchParams: Promise<{ cursor?: string }> }) {
+  const params = await searchParams;
+  const cursor = typeof params.cursor === "string" ? params.cursor : null;
+  const data = await load(cursor);
   const today = todayInBrazil();
   const canEdit = data.state === "ok" && canEditContent(data.workspace.role);
 
@@ -63,9 +77,12 @@ export default async function MediaPage() {
 
       <section className="panel" aria-labelledby="biblioteca-titulo">
         <SectionHeading id="biblioteca-titulo" title="Biblioteca" />
+        {data.state === "ok" && data.cursorReset ? (
+          <p className="feedback feedback-info" role="status">O link de paginação expirou. Mostrando a primeira página.</p>
+        ) : null}
         {data.state === "no-workspace" ? (
           <div className="empty"><p className="empty-title">Workspace ainda não criado</p><p>Ele é criado no primeiro login.</p></div>
-        ) : data.state === "ok" && data.media.length === 0 ? (
+        ) : data.state === "ok" && data.media.length === 0 && !cursor ? (
           <div className="empty"><p className="empty-title">Nenhum arquivo</p><p>Envie o vídeo ou a imagem da peça e registre a licença.</p></div>
         ) : data.state === "ok" ? (
           <ul className="rows">
@@ -103,6 +120,13 @@ export default async function MediaPage() {
               );
             })}
           </ul>
+        ) : null}
+        {data.state === "ok" ? (
+          <Pager
+            shown={data.media.length}
+            nextHref={data.nextCursor ? pageHref("/midia", { cursor: data.nextCursor }) : null}
+            firstHref={cursor && !data.cursorReset ? pageHref("/midia", {}) : null}
+          />
         ) : null}
       </section>
     </div>
