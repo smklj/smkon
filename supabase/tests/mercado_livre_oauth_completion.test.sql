@@ -37,6 +37,7 @@ declare
   v_scopes text[];
   v_version bigint;
   v_lease uuid;
+  v_consumed_count integer;
 begin
   insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
   values
@@ -49,6 +50,37 @@ begin
   values (v_org, v_user, 'owner'), (v_org, v_non_admin, 'viewer');
   insert into public.source_connections (id, organization_id, domain, provider, display_name, status)
   values (v_connection, v_org, 'owned_sales', 'mercado_livre', 'Mercado Livre', 'pending');
+
+  -- OAuth state is one-time, owner-bound and expires.
+  insert into public.mercado_livre_oauth_attempts (
+    state_hash, organization_id, connection_id, domain, created_by,
+    encrypted_verifier, expires_at
+  ) values (
+    repeat('f', 64), v_org, v_connection, 'owned_sales', v_user,
+    '{"v":1,"alg":"A256GCM","kid":"test","iv":"AAAAAAAAAAAAAAAA","tag":"AAAAAAAAAAAAAAAAAAAAAA==","ciphertext":"AA=="}'::jsonb,
+    now() + interval '5 minutes'
+  );
+  select count(*) into v_consumed_count
+  from public.mercado_livre_consume_oauth_attempt(repeat('f', 64), v_non_admin);
+  if v_consumed_count <> 0 then raise exception 'OAuth state must not be consumable by another user'; end if;
+  select count(*) into v_consumed_count
+  from public.mercado_livre_consume_oauth_attempt(repeat('f', 64), v_user);
+  if v_consumed_count <> 1 then raise exception 'OAuth state must be consumable once by its initiating user'; end if;
+  select count(*) into v_consumed_count
+  from public.mercado_livre_consume_oauth_attempt(repeat('f', 64), v_user);
+  if v_consumed_count <> 0 then raise exception 'OAuth state replay must be rejected'; end if;
+
+  insert into public.mercado_livre_oauth_attempts (
+    state_hash, organization_id, connection_id, domain, created_by,
+    encrypted_verifier, expires_at
+  ) values (
+    repeat('e', 64), v_org, v_connection, 'owned_sales', v_user,
+    '{"v":1,"alg":"A256GCM","kid":"test","iv":"BBBBBBBBBBBBBBBB","tag":"BBBBBBBBBBBBBBBBBBBBBB==","ciphertext":"AQ=="}'::jsonb,
+    now() - interval '1 minute'
+  );
+  select count(*) into v_consumed_count
+  from public.mercado_livre_consume_oauth_attempt(repeat('e', 64), v_user);
+  if v_consumed_count <> 0 then raise exception 'expired OAuth state must be rejected'; end if;
 
   perform public.mercado_livre_complete_oauth_connection(
     v_connection, v_org, v_user, '123456789', 'Mercado Livre · seller-test',
