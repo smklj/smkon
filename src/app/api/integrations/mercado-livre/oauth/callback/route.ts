@@ -12,7 +12,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const state = url.searchParams.get("state") ?? "";
   const code = url.searchParams.get("code") ?? "";
-  if (!state || !code || code.length > 2048) {
+  const providerError = url.searchParams.get("error");
+  if (!state || (!providerError && (!code || code.length > 2048))) {
     return NextResponse.json({ error: "Invalid Mercado Livre OAuth callback." }, { status: 400 });
   }
 
@@ -21,11 +22,23 @@ export async function GET(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: "Authentication required; restart connection." }, { status: 401 });
 
-    // Atomically consumes state before exchanging the code; replayed callbacks are rejected.
+    // Check server configuration before consuming one-time state, so a transient
+    // deployment configuration issue does not force the user to restart OAuth.
+    const clientId = process.env.MERCADO_LIVRE_CLIENT_ID;
+    const clientSecret = process.env.MERCADO_LIVRE_CLIENT_SECRET;
+    const redirectUri = process.env.MERCADO_LIVRE_REDIRECT_URI;
+    if (!clientId || !clientSecret || !redirectUri) {
+      return NextResponse.json({ error: "Mercado Livre OAuth is not configured." }, { status: 503 });
+    }
+
+    // Consume state atomically even when the provider returns an explicit denial.
     const attempt = await consumeMercadoLivreOAuthAttempt(state, user.id);
     if (!attempt) return NextResponse.json({ error: "OAuth state expired, invalid or already used." }, { status: 400 });
-    await assertMercadoLivreManager(attempt.organizationId);
+    if (providerError) {
+      return NextResponse.json({ error: "Mercado Livre authorization was declined. You can restart the connection flow." }, { status: 400 });
+    }
 
+    await assertMercadoLivreManager(attempt.organizationId);
     const { data: connection, error: connectionError } = await supabase
       .from("source_connections")
       .select("id, external_account_id")
@@ -35,13 +48,6 @@ export async function GET(request: Request) {
       .eq("domain", "owned_sales")
       .maybeSingle();
     if (connectionError || !connection) return NextResponse.json({ error: "Mercado Livre connection not found." }, { status: 404 });
-
-    const clientId = process.env.MERCADO_LIVRE_CLIENT_ID;
-    const clientSecret = process.env.MERCADO_LIVRE_CLIENT_SECRET;
-    const redirectUri = process.env.MERCADO_LIVRE_REDIRECT_URI;
-    if (!clientId || !clientSecret || !redirectUri) {
-      return NextResponse.json({ error: "Mercado Livre OAuth is not configured." }, { status: 503 });
-    }
 
     const context = {
       organizationId: attempt.organizationId,
