@@ -185,3 +185,51 @@ Não executar operations_review real enquanto faltarem: (1) SUPABASE_SECRET_KEY 
 
 ### Segurança
 Nenhum merge, alteração em main/Production, migration remota, alteração de secret, concessão de grant, criação de budget compartilhado ou chamada paga ao modelo foi executada nesta rodada.
+
+## Reconciliação operacional S14 — 21/11/2026 18:01 BRT (auditoria run 11)
+
+### GitHub e release
+- PR #82 foi incorporada à integração e PR #87 levou a release S14 à `main` (merge commit `efbfb56fb16617b1816a70706a6e51be98af17d1`). PRs #94 e #95 também foram incorporadas depois; HEAD atual de `main`: `4347080dee246871e20b15461e020e3719c57b9f` (#95).
+- PRs documentais #88 e #96 são tentativas anteriores, ambas divergidas do HEAD atual; esta atualização foi reaplicada numa branch nova diretamente baseada no HEAD `4347080`.
+- Os nove splits originais S14 (#35–#42 e #46) estão integrados; não há split original pendente.
+
+### Produção Vercel — estado corrigido
+- Deployment Production READY: `dpl_CgbrQ8jM7pzDCeWzCNbAQco5sUEZ`, branch `main`, SHA `d30c42a447484316d7f189a1ca62595bfe8b5f59`, criado em 21/11/2026 às 17:23 BRT.
+- Compare GitHub `efbfb56...d30c42a`: 6 commits à frente / 0 atrás; o deployment é descendente do merge #87 e inclui o release S14. O build log confirma Next.js 16.4.6, TypeScript concluído, npm audit com zero vulnerabilidades e rota dinâmica `/api/agents/worker` no output.
+- HEAD atual de `main` está 4 commits à frente do deployment Production; o deployment não contém as últimas mudanças de Frente D/E (#92, #94, #95 e commits adjacentes).
+- `vercel.json` na revisão implantada declara Cron `17 11 * * *` para `/api/agents/worker` (08:17 BRT). Como o deployment foi criado após o horário de 21/11, a próxima janela programada é 22/11/2026 às 08:17 BRT.
+- Runtime logs do deployment Production nos últimos 30 minutos: nenhum registro. A consulta de 1 hora foi recusada porque o plano Hobby não retém essa janela; não há evidência de invocação do Cron após o deployment.
+
+### Worker, OIDC e variáveis — inventário sem decrypt
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `CRON_SECRET` consta como sensitive separadamente em Preview e Production. Valores não foram lidos; comprimento mínimo de 32 caracteres e ausência de whitespace não foram validados.
+- `SUPABASE_SECRET_KEY` não aparece no inventário do projeto para Preview nem Production.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5` e `AGENT_MONTHLY_BUDGET_USD=5` estão configurados.
+- O handler verifica flag, CRON_SECRET, Bearer, modelo/credencial, budget e só depois cria o cliente service_role. `getServiceEnv()` retorna null sem `SUPABASE_SECRET_KEY`; se os gates anteriores passarem, o worker registra `service_not_configured` e retorna 503 antes de claim. Isso é análise do código, não teste runtime.
+- OIDC está selecionado, mas o token da invocação e a autenticação efetiva ao Gateway não foram comprovados em runtime.
+- Com flag true e Cron implantado, há risco de a próxima invocação agendada retornar 503 enquanto a chave de serviço estiver ausente. Recomendação ao Owner: manter/desligar o executor em Production até homologação. Nenhuma configuração de Production foi alterada.
+
+### AI Gateway e orçamento
+- Catálogo confirma `anthropic/claude-haiku-5.5`.
+- Uso agregado do projeto nos últimos 7 dias: 0 requests, 0 input/output tokens e US$ 0. Budgets de projeto/default e regras de roteamento: nenhum.
+- `agent_model_usage`: 0 linhas, 0 tokens e US$ 0 em Staging e Production. Coerente com o agregado zero do Gateway, mas não prova a contabilização após uma chamada paga.
+- O limite interno de US$ 5 é soft; não há reserva atômica por chamada nem outbox durável para reconciliar cobrança se a gravação falhar após resposta.
+
+### Supabase — estado consultado
+- Staging `xoyasrizivadxnpmzzno`: ACTIVE_HEALTHY, 31 migrations, 121 `agent_runs` (todas `killed`), 0 steps, 0 usage, 0 tool grants e 0 conteúdos associados. `agent_settings`: kill switch false, 500 runs/dia, 12 steps/run.
+- Production `hpplboyysmfcjsnjrdmw`: ACTIVE_HEALTHY, 20 migrations; 0 runs, steps, usage, grants, settings e conteúdos associados.
+- Assinaturas de colunas, constraints, policies, RLS/ACL e definições de funções selecionadas para `agent_runs`, `agent_steps`, `agent_model_usage`, `agent_tool_grants`, `agent_settings` e `content_items` são idênticas nos dois ambientes.
+- Histórico de migrations S14 continua divergente: Staging `20261119101353`, `20261119101414`, `20261119114718`; Production `20261119040000`, `20261119050000`, `20261119060000`. A paridade dos objetos auditados não reconcilia o histórico. Não executar repair/db push sem plano e backup.
+- RLS ativo nas tabelas auditadas; anon sem SELECT; authenticated com SELECT sujeito a RLS; service_role com SELECT. Nas cinco tabelas S14 não há DML direto de service_role. RPCs de worker/consumo são service_role-only; RPCs administrativas permitem EXECUTE autenticado, mas chamam `agent_require_role` com validações owner/admin.
+
+### Testes e evidências
+- CI S14 #44933511061: 288/288 unitários no SHA `46a6d1f5`, mais typecheck, lint, audit, build e SQL/migrations.
+- E2E #44933605001: 36/36 no Preview exato do SHA `46a6d1f5`; valida UI/fila/kill switch, não chama o modelo.
+- CI integração #44943940164: 350/350 no SHA `419694eb`, anterior às últimas mudanças de Frente D/E.
+- Deployment Production `dpl_CgbrQ8jM7pzDCeWzCNbAQco5sUEZ` READY e build com rota worker. Status Vercel do HEAD atual `4347080`: failure `build-rate-limit`; consulta de workflow runs por PR para esse commit retornou zero.
+
+### Bloqueio para teste real
+Não executar `operations_review` real enquanto faltarem: (1) chave service exclusiva de Staging/Preview; (2) grants mínimos de leitura; (3) budget externo comprovadamente isolado de Production; (4) validação segura do CRON_SECRET; (5) OIDC comprovado em runtime; (6) Preview/E2E do SHA de homologação. Nenhuma chamada real ao AI Gateway foi comprovada.
+
+### Segurança
+Somente consultas read-only e documentação em branch nova. Nenhum merge, alteração Production, migration remota, secret, grant, budget, deploy ou chamada paga foi executado.

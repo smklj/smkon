@@ -437,3 +437,15 @@ Não executar operations_review real enquanto faltarem: (1) SUPABASE_SECRET_KEY 
 
 ### Segurança
 Nenhum merge, alteração em main/Production, migration remota, alteração de secret, concessão de grant, criação de budget compartilhado ou chamada paga ao modelo foi executada nesta rodada.
+
+## Checkpoint S14 — 21/11/2026 18:01 BRT (run 11)
+
+- PR #82 e release #87 incorporadas; PRs #94/#95 também estão em main. HEAD atual: `4347080`. Splits #35–#42 e #46 integrados.
+- Production deployment READY `dpl_CgbrQ8jM7pzDCeWzCNbAQco5sUEZ`, SHA `d30c42a`, descendente do release #87 e 4 commits atrás da main atual. Build inclui `/api/agents/worker`.
+- Cron `17 11 * * *` (08:17 BRT) declarado na revisão implantada. Sem runtime logs nos últimos 30 min; 1h não está disponível no plano Hobby. Próxima janela: 22/11/2026 08:17 BRT.
+- Inventário Vercel sem decrypt: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação do tamanho; `AGENT_EXECUTOR_ENABLED=true` em Preview/Production; OIDC/Gateway/modelo e teto interno US$ 5 configurados. Sem chave, handler falha fechado em `service_not_configured` antes do claim se os gates anteriores passarem.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets/rules externos inexistentes. Staging 121 runs, todas killed; 0 steps/usage/grants. Production sem runs/usage. Ledger zero consistente com Gateway zero, sem chamada real.
+- Assinaturas de schema/constraints/policies/RLS/ACL e funções selecionadas coincidem entre Staging e Production; IDs das migrations S14 diferem. Não executar repair/db push sem plano e backup.
+- CI S14 288/288 e E2E 36/36 no Preview/SHA 46a6d1f5; CI integração 350/350 no SHA 419694eb, anterior às últimas frentes. HEAD atual tem Vercel build-rate-limit e nenhuma workflow run PR associada.
+- Bloqueios: service key Staging ausente, zero grants, budget externo ausente, CRON_SECRET/OIDC não validados em runtime. Não executar teste real até fechar gates.
+- Nenhuma alteração Production, merge, migration, secret, grant, budget ou chamada paga nesta rodada.
