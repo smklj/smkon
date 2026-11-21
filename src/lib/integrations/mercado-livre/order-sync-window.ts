@@ -52,7 +52,7 @@ function oneYearBefore(value: Date): Date {
 }
 
 function parseDate(value: unknown): Date | null {
-  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(value)) return null;
+  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return null;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? floorToHour(parsed) : null;
 }
@@ -103,11 +103,12 @@ export function parseMercadoLivreOrderSearchPage(
 
   let providerTotal: number | null = null;
   if (Object.prototype.hasOwnProperty.call(input, "paging")) {
-    if (!isRecord(input.paging)) {
+    const paging = input.paging;
+    if (!isRecord(paging)) {
       return { ok: false, error: "Mercado Livre order search paging metadata is malformed." };
     }
-    if (Object.prototype.hasOwnProperty.call(input.paging, "total")) {
-      const total = input.paging.total;
+    if (Object.prototype.hasOwnProperty.call(paging, "total")) {
+      const total = paging.total;
       if (typeof total !== "number" || !Number.isSafeInteger(total) || total < 0) {
         return { ok: false, error: "Mercado Livre order search total is invalid." };
       }
