@@ -1,3 +1,49 @@
+## Checkpoint atual — 21/11/2026 20:00 BRT
+
+> Este checkpoint substitui o estado histórico abaixo. Não marcar operação real como concluída sem request real do Gateway e ledger reconciliado.
+
+### Status do checklist
+
+| Frente | Estado auditado |
+|---|---|
+| Planner → Executor → Verifier | Implementação integrada; CI unitário anterior aprovado; operação real ainda não homologada |
+| Ferramentas `read_*` | Implementadas com isolamento por organization_id; staging sem grants |
+| `draft_content` | Implementado; escreve apenas `status='draft'`; não testado em execução real |
+| Claim queue / lease / kill switch | Implementados; staging contém 136 runs `killed`, 0 steps |
+| Worker / Cron | Rota e cron presentes no deployment Production; nenhuma invocação real observada |
+| AI Gateway / OIDC | Provider/model/auth configurados; OIDC não comprovado em runtime |
+| Budget interno | US$ 5; verificação sem reserva atômica |
+| Budget externo Gateway | Não configurado (projeto/default sem budget) |
+| `agent_model_usage` | Tabela existe nos dois bancos; 0 linhas; consistência com uso zero, sem teste de cobrança real |
+| Preview / E2E atual | Preview atual da branch documental indisponível por rate limit; E2E anterior 35/36 (CSP); reexecutar no HEAD atual |
+
+### Bloqueadores que impedem homologação
+
+1. `SUPABASE_SECRET_KEY` ausente em Preview e Production. Para teste, provisionar apenas a chave do projeto staging no target Preview.
+2. `CRON_SECRET` existe como Sensitive nos dois targets, mas seu comprimento/validade não foi verificado.
+3. OIDC está selecionado, porém não há prova de token emitido e aceito no runtime.
+4. `agent_tool_grants` tem zero linhas no staging auditado.
+5. Não há budget externo do projeto nem budget default no AI Gateway.
+6. Não há request real no Gateway nem registro em `agent_model_usage`.
+
+### Critério de aceite da primeira execução real
+
+- Worker autenticado no Preview de staging, com chave do projeto staging apenas.
+- Uma única run `operations_review`, grants mínimos e kill switch monitorado.
+- Evidência de request HTTP ao AI Gateway, modelo, request id e resposta sem registrar prompt/segredo.
+- Planner, Executor, leitura autorizada, criação de draft e Verifier concluídos.
+- Uma linha por chamada em `agent_model_usage`, com run_id, fase, modelo, tokens e custo estimado; reconciliar com métricas do Gateway.
+- Confirmar que o draft permanece em `draft` e que não há publicação/aprovação automática.
+
+### Estado de repositório e deploy
+
+- `main` HEAD `84afe632`; Production READY no SHA `86bd67c`, 7 commits atrás.
+- Cron `17 11 UTC` = 08:17 BRT; próximo horário após a auditoria: 22/11/2026 08:17 BRT.
+- PR #102 está divergente (5 ahead/10 behind), sem reviews; substituída por PR documental criada sobre o HEAD atual.
+
+
+---
+
 # S14 — Executor real dos agentes (Planner → Executor → Verifier)
 
 **Branch de integração:** `feature/smkon-production-readiness` · uma etapa por PR (`feature/s14-<etapa>`).
