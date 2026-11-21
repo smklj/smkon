@@ -21,7 +21,7 @@ type Row = {
   last_synced_at: string | null;
 };
 
-type State = { state: "ok"; rows: Row[] } | { state: "no-workspace" } | { state: "error" };
+type State = { state: "ok"; rows: Row[]; canManage: boolean } | { state: "no-workspace" } | { state: "error" };
 
 async function load(): Promise<State> {
   try {
@@ -38,7 +38,7 @@ async function load(): Promise<State> {
       .order("domain")
       .order("provider");
     if (error) throw error;
-    return { state: "ok", rows: data ?? [] };
+    return { state: "ok", rows: data ?? [], canManage: workspace.role === "owner" || workspace.role === "admin" };
   } catch (error) {
     log("error", "admin.connections", errorFields(error));
     return { state: "error" };
@@ -52,12 +52,12 @@ export async function ConnectionsPanel() {
     return <p className="feedback feedback-error" role="alert">Não foi possível carregar as conexões agora.</p>;
   }
 
-  const rows = data.state === "ok" ? data.rows : [];
+  const rows = data.state === "ok" ? data.rows : [];\n  const canManage = data.state === "ok" && data.canManage;
   const mercadoLivreConnected = rows.some((row) => row.provider === "mercado_livre" && row.status === "connected");
 
   return (
     <div>
-      <MercadoLivreConnectCard connected={mercadoLivreConnected} />
+      <MercadoLivreConnectCard connected={mercadoLivreConnected} canManage={canManage} />
       {rows.length > 0 ? (
         <ul className="rows">
           {rows.map((row) => (
