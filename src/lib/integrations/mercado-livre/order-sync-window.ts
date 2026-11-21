@@ -1,3 +1,5 @@
+import type { MercadoLivreOrderInput } from "./order-snapshot.ts";
+
 export const MERCADO_LIVRE_ORDER_PAGE_SIZE = 50;
 export const MERCADO_LIVRE_ORDER_MAX_OFFSET = 10_000;
 
@@ -20,6 +22,21 @@ export type MercadoLivreOrderSyncActionResult =
   | { ok: true; value: MercadoLivreOrderSyncAction }
   | { ok: false; error: string };
 
+export type MercadoLivreOrderSearchPage = {
+  orders: MercadoLivreOrderInput[];
+  providerTotal: number | null;
+  hasMore: boolean;
+  nextOffset: number;
+};
+
+export type MercadoLivreOrderSearchPageResult =
+  | { ok: true; value: MercadoLivreOrderSearchPage }
+  | { ok: false; error: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function floorToHour(value: Date): Date {
   const result = new Date(value);
   result.setUTCMinutes(0, 0, 0);
@@ -35,7 +52,7 @@ function oneYearBefore(value: Date): Date {
 }
 
 function parseDate(value: unknown): Date | null {
-  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return null;
+  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(value)) return null;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? floorToHour(parsed) : null;
 }
@@ -43,11 +60,11 @@ function parseDate(value: unknown): Date | null {
 /** The browser can choose only resume or an explicit restart; offsets/windows live server-side. */
 export function parseMercadoLivreOrderSyncAction(input: unknown): MercadoLivreOrderSyncActionResult {
   if (input === undefined) return { ok: true, value: "next" };
-  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+  if (!isRecord(input)) {
     return { ok: false, error: "Invalid sync request." };
   }
 
-  const body = input as Record<string, unknown>;
+  const body = input;
   if (Object.keys(body).some((key) => key !== "action")) {
     return { ok: false, error: "Sync cursor fields are managed by the server." };
   }
@@ -56,6 +73,71 @@ export function parseMercadoLivreOrderSyncAction(input: unknown): MercadoLivreOr
     return { ok: false, error: "Invalid sync action." };
   }
   return { ok: true, value: action };
+}
+
+/**
+ * Validates the Mercado Livre /orders/search response before any snapshot or
+ * checkpoint write. A short page is terminal only when paging.total confirms
+ * that the returned range reaches the provider's total.
+ */
+export function parseMercadoLivreOrderSearchPage(
+  input: unknown,
+  offset: number,
+  pageSize = MERCADO_LIVRE_ORDER_PAGE_SIZE,
+): MercadoLivreOrderSearchPageResult {
+  if (!isRecord(input)) {
+    return { ok: false, error: "Mercado Livre returned an invalid order search page." };
+  }
+  if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(pageSize) || pageSize < 1) {
+    return { ok: false, error: "Mercado Livre order search pagination parameters are invalid." };
+  }
+  if (!Array.isArray(input.results)) {
+    return { ok: false, error: "Mercado Livre order search results must be an array." };
+  }
+  if (input.results.length > pageSize) {
+    return { ok: false, error: "Mercado Livre returned more orders than the requested page size." };
+  }
+  if (!input.results.every(isRecord)) {
+    return { ok: false, error: "Mercado Livre order search contains a malformed order." };
+  }
+
+  let providerTotal: number | null = null;
+  if (Object.prototype.hasOwnProperty.call(input, "paging")) {
+    if (!isRecord(input.paging)) {
+      return { ok: false, error: "Mercado Livre order search paging metadata is malformed." };
+    }
+    if (Object.prototype.hasOwnProperty.call(input.paging, "total")) {
+      const total = input.paging.total;
+      if (typeof total !== "number" || !Number.isSafeInteger(total) || total < 0) {
+        return { ok: false, error: "Mercado Livre order search total is invalid." };
+      }
+      providerTotal = total;
+    }
+  }
+
+  const orders = input.results as MercadoLivreOrderInput[];
+  const nextOffset = offset + orders.length;
+  if (!Number.isSafeInteger(nextOffset)) {
+    return { ok: false, error: "Mercado Livre order search offset overflowed." };
+  }
+
+  let hasMore: boolean;
+  if (providerTotal !== null) {
+    if (offset > providerTotal || nextOffset > providerTotal) {
+      return { ok: false, error: "Mercado Livre order search page exceeds the provider total." };
+    }
+    hasMore = nextOffset < providerTotal;
+    if (hasMore && orders.length < pageSize) {
+      return { ok: false, error: "Mercado Livre returned a partial page before the provider total was reached." };
+    }
+  } else {
+    hasMore = orders.length === pageSize;
+  }
+
+  return {
+    ok: true,
+    value: { orders, providerTotal, hasMore, nextOffset },
+  };
 }
 
 /**
@@ -68,8 +150,8 @@ export function parseMercadoLivreOrderSyncPageRequest(
 ): MercadoLivreOrderSyncPageRequestResult {
   const body = input === undefined
     ? {}
-    : input !== null && typeof input === "object" && !Array.isArray(input)
-      ? input as Record<string, unknown>
+    : isRecord(input)
+      ? input
       : null;
 
   if (body === null) return { ok: false, error: "Invalid sync request." };
