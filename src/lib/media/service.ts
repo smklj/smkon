@@ -12,7 +12,7 @@ import { recordLicense, type SupabaseClient } from "./repository";
 import { parseLicenseInput } from "./schema";
 
 /** Enviar mídia, registrar/revogar licenças e arquivar: owner ou admin (definição em tenancy). */
-export { canEditContent as canManageMedia } from "@/lib/tenancy/workspace";
+export { canEditContent as canManageMedia } from "@/lib/tenancy/service";
 
 /** Valida a licença (data padrão = `today` no fuso do workspace) e a registra para o arquivo. */
 export async function registerLicense(

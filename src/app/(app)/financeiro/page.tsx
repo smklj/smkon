@@ -11,7 +11,7 @@ import { loadCommissionOverview } from "@/lib/finance/service";
 import type { CommissionHistoryRow, CommissionSummary } from "@/lib/finance/types";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Financeiro" };
 

@@ -4,7 +4,7 @@ import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { parsePageSize } from "@/lib/pagination/keyset";
 import { listProducts } from "@/lib/products/repository";
 import { canEditProducts, registerProduct } from "@/lib/products/service";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 import { isPlainObject } from "@/lib/validation/fields";
 
 async function context() {

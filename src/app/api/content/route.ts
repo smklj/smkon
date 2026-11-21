@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ValidationError, jsonError, toErrorResponse } from "@/lib/http/errors";
-import { ensureWorkspace, findWorkspace } from "@/lib/tenancy/workspace";
+import { ensureWorkspace, findWorkspace } from "@/lib/tenancy/service";
 import { CONTENT_KEYSET, deleteContent, emptyCounts, insertContent, updateContent } from "@/lib/content/repository";
 import { parseContentPayload, parseContentStatusFilter, readContentJson } from "@/lib/content/schema";
 import { canEditContent, listLibrary } from "@/lib/content/service";

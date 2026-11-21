@@ -2,12 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isUuid } from "@/lib/content/server";
-import { dbErrorMessage } from "@/lib/http/errors";
+import { ValidationError, dbErrorMessage } from "@/lib/http/errors";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
-import { setActiveWorkspace } from "@/lib/tenancy/admin";
+import { formDataToRaw } from "@/lib/validation/fields";
 import { isMissingSchemaObject } from "@/lib/tenancy/members";
+import { parseWorkspaceId } from "@/lib/tenancy/schema";
+import { setActiveWorkspace } from "@/lib/tenancy/service";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -27,8 +28,13 @@ export type SwitchWorkspaceState = { error?: string } | null;
  * um registro do workspace anterior.
  */
 export async function switchWorkspace(_prev: SwitchWorkspaceState, formData: FormData): Promise<SwitchWorkspaceState> {
-  const organizationId = String(formData.get("organization_id") ?? "");
-  if (!isUuid(organizationId)) return { error: "Workspace inválido." };
+  let organizationId: string;
+  try {
+    organizationId = parseWorkspaceId(formDataToRaw(formData));
+  } catch (error) {
+    if (error instanceof ValidationError) return { error: error.message };
+    throw error;
+  }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");

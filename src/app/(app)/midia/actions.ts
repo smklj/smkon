@@ -9,7 +9,7 @@ import { canManageMedia, registerLicense } from "@/lib/media/service";
 import { todayInBrazil } from "@/lib/media/types";
 import { errorFields, log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 import { formDataToRaw as fields } from "@/lib/validation/fields";
 
 export type MediaState = { error?: string; ok?: string; at?: number } | null;
