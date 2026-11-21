@@ -3,29 +3,86 @@
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
 `feature/smkon-production-readiness`. Correções desta frente usam `fix/integration-*`.
 
-**Última verificação:** 19/11/2026 ~23:30 UTC (execução 6) · commit `a227ba8` (Merge S4 etapa 2b, PR #55)
+**Última verificação:** 19/11/2026 ~19:30 UTC (execução 5) · commit `72942c0` (Merge S15, PR #47)
+
+## 0. Quadro atual — execução 7 (21/11/2026 ~10:20 UTC)
+
+> Esta seção é o estado vigente. As seções 1–6 são o histórico da execução 5; as seções 7+ são auditorias S11 de 20–21/11.
+
+**Base verificada:** `7ab9b86` (docs(roadmap): record S11 staging index validation).
+
+### CI da integração (push)
+- Último run: [CI #427](https://github.com/smklj/smkon/actions/runs/44879037718) em `7ab9b86` — ✅ success. Runs #423–#426 foram
+  cancelados por pushes seguidos (não são falhas). Nenhuma quebra de integração; nenhuma correção de código necessária.
+
+### Validação local (Postgres 16 descartável, Node 22.23.5) — `7ab9b86` + este PR
+| Etapa | Resultado real |
+|---|---|
+| `npm ci` | ✅ 362 pacotes, 0 vulnerabilidades |
+| `npm run typecheck` | ✅ |
+| `npm run lint` | ✅ |
+| `npm run test:unit` | ✅ 250/250 (0 falhas, 0 pulados) |
+| `npm run build` | ✅ |
+| `npm run test:db` (26 migrations) | ✅ 23/23 arquivos de teste |
+
+### Migrations (comparação por nome; `list_migrations` em 21/11 ~10:15 UTC)
+- Repositório (integração): 26 migrations, até `20261121170000_mercado_livre_fk_indexes`.
+- **Staging** (`xoyasrizivadxnpmzzno`): 28 — as 26 do repositório **mais 2 que não estão na integração**:
+  `mercado_livre_order_sync_state` (versão `20261121090433`) e `mercado_livre_order_versioning` (`20261121091235`).
+  Ambas existem só na branch do PR #60 (`feat/s11-manual-history-pagination`, Draft, não mergeado) como
+  `20261121180000_*` e `20261121200000_*`. ⚠️ Desvio: staging à frente da integração; conferir que o conteúdo mergeado
+  do #60 seja idêntico ao aplicado (ou corrigir por migration nova) antes de qualquer `db push`.
+- **Produção** (`hpplboyysmfcjsnjrdmw`): 20. Faltam (🔐 Owner), em ordem: `20261119120000_keyset_pagination_indexes`,
+  `20261121130000_mercado_livre_credentials`, `20261121140000_mercado_livre_oauth_attempts`,
+  `20261121150000_mercado_livre_order_sync`, `20261121160000_mercado_livre_oauth_atomic_completion`,
+  `20261121170000_mercado_livre_fk_indexes` (+ as 2 do #60 quando mergeadas).
+
+### S5.1 (desta frente)
+- ✅ `workspace_members` aplicada no staging (versão `20261119232430`), grants/RLS e advisors conferidos na execução 6.
+- ✅ E2E de admin endurecido neste PR (#56): o teste "Membros" exige a lista com o próprio usuário e rejeita o aviso
+  de migration ausente. Resultado no "Playwright · Staging" deste PR deve ser conferido antes do merge.
+- 🔐 Decisão do Owner (não alterada): `ensure_workspace` cria workspace vazio para usuário removido de todos os workspaces.
+
+### Quadro das frentes
+| Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
+|---|---|---|---|---|---|
+| S14 (agentes) | ✅ handoff; correção de timeout em andamento | #61 (Draft) | — | #61 | Produção ok p/ `agent_model_usage` (já aplicada); `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
+| S15 (CRM/LGPD) | ✅ handoff | — | ✅ | — | — (migration já na produção) |
+| S16 (performance) | ✅ handoff (`docs/S16_HANDOFF.md`) | — | ✅ | — | Produção de `keyset_pagination_indexes` |
+| S6.1 (CSP/logs) | ✅ handoff | — | ✅ | — | Destino externo de logs (opcional) |
+| S4 (domínio) | Etapas 1–2b (#54, #55); faltam 2c–2g e handoff | — | — | Sem atividade desde 19/11 23:00 UTC | — |
+| S11 (Mercado Livre) | Conector parcial mergeado (#57, #59); paginação histórica em #60 | #60 (Draft) | — | Staging à frente (2 migrations do #60) | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
+| Integração | Execução 7: CI e validação local verdes | #56 | aguardando | Merge do #56 | — |
+
+Handoffs: ✅ S14, ✅ S15, ✅ S16, ✅ S6.1 · ⏳ S4. Relatório final ao Owner só quando S4 tiver handoff.
+
+### Autorizações para produção (acumulado)
+1. Migrations na produção na ordem acima (keyset + 5 S11, e as do #60 após merge).
+2. Merge na `main` com plano de release — a integração está muito à frente de `main` e 6 commits atrás; não promover sem reconciliar.
+3. Vercel: `SUPABASE_SECRET_KEY`, OIDC/AI Gateway, `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED`; credenciais OAuth e chave de criptografia do Mercado Livre; opcional `LOG_DRAIN_URL`/`LOG_DRAIN_TOKEN`.
+4. Segurança (revisão antes da promoção): `rate_limit_consume` executável por anon (intencional), 31 SECURITY DEFINER para authenticated, leaked-password protection desativada (configuração de Auth).
 
 ## 1. CI da branch de integração (push)
 
 | Commit | Run | Resultado |
 |---|---|---|
-| `a227ba8` Merge S4 etapa 2b (#55) | [#266](https://github.com/smklj/smkon/actions/runs/44636487861) | ✅ success |
-| `db7fedc` Merge S4 etapas 1, 2 e 2a (#54) | [#261](https://github.com/smklj/smkon/actions/runs/44633165509) | ✅ success |
-| `d1a1e15` Merge S16 etapas 2c e 6 (#53) | [#256](https://github.com/smklj/smkon/actions/runs/44602524544) | ✅ success |
-| `2cb920e` Merge Integração execução 5 (#52) | [#255](https://github.com/smklj/smkon/actions/runs/44600995717) | ✅ success |
+| `72942c0` Merge S15 audiência/CRM (#47) | [#251](https://github.com/smklj/smkon/actions/runs/44596546028) | ✅ success |
+| `919b5ef` Merge S16 etapas 2b e 4 (#51) | [#248](https://github.com/smklj/smkon/actions/runs/44593980296) | ✅ success |
+| `d96278e` Merge S16 etapas 1–3 e 5 (#49) | [#245](https://github.com/smklj/smkon/actions/runs/44590845115) | ✅ success |
+| `495994a` Merge Integração execução 4 (#50) | [#244](https://github.com/smklj/smkon/actions/runs/44590025633) | ✅ success |
 
-Nenhuma quebra de integração após os merges do S16 (handoff) e do S4 (etapas 1–2b); nenhuma correção de código necessária.
+Nenhuma quebra de integração após os merges de S15 e S16; nenhuma correção de código `fix/integration-*` necessária.
 
-## 2. Validação local (Postgres 16 descartável, Node 22.23.5) — commit `a227ba8` + E2E endurecido
+## 2. Validação local (Postgres 16 descartável, Node 22.23.5) — commit `72942c0`
 
 | Etapa | Resultado real |
 |---|---|
-| `npm ci` | ✅ |
+| `npm ci` | ✅ 362 pacotes |
 | `npm run typecheck` | ✅ sem erros |
 | `npm run lint` | ✅ sem erros |
-| `npm run test:unit` | ✅ 238/238 (0 falhas, 0 pulados) — eram 211 na execução 5 (+S16 #53, +S4 #54/#55) |
+| `npm run test:unit` | ✅ 211/211 (0 falhas, 0 pulados) — eram 180 na execução 4 (+S15 #47, +S16 #49/#51) |
 | `npm run build` | ✅ |
-| `npm run test:db` (21 migrations) | ✅ 19/19 arquivos de teste |
+| `npm run test:db` (21 migrations) | ✅ 19/19 arquivos de teste (inclui `030_audience_consent`, `040_keyset_pagination_indexes`) |
 
 ## 3. Migrations: repositório × staging × produção (comparação por nome)
 
@@ -34,58 +91,150 @@ Repositório (integração): 21 migrations, de `20261117183000_split_01_revenue_
 | Migration | Integração | Staging `xoyasrizivadxnpmzzno` | Produção `hpplboyysmfcjsnjrdmw` |
 |---|---|---|---|
 | `split_01_revenue_domains` … `agent_claim_queue` (17) | ✅ | ✅ | ✅ |
-| `20261119060000_agent_model_usage` (S14) | ✅ | ✅ (`20261119114718`) | ✅ (`20261119232518`) ⚠️ ver nota |
-| `20261119070000_workspace_members` (S5.1) | ✅ | ✅ (`20261119232430`) | ❌ falta 🔐 |
-| `20261119110000_audience_consent` (S15) | ✅ | ✅ (`20261119132522`) | ❌ falta 🔐 |
-| `20261119120000_keyset_pagination_indexes` (S16) | ✅ | ✅ (`20261119232441`) | ❌ falta 🔐 |
+| `20261119060000_agent_model_usage` (S14) | ✅ | ✅ (versão `20261119114718`) | ❌ falta 🔐 |
+| `20261119070000_workspace_members` (S5.1) | ✅ | ❌ **falta** | ❌ falta 🔐 |
+| `20261119110000_audience_consent` (S15) | ✅ (#47 mergeado) | ✅ (versão `20261119132522`) | ❌ falta 🔐 |
+| `20261119120000_keyset_pagination_indexes` (S16) | ✅ (#49 mergeado) | ❌ falta (aplicação é da frente S16, também bloqueada por confirmação) | ❌ falta 🔐 |
 
-**Staging em dia com o repositório** (21/21).
-**Falta na produção (🔐 Owner):** `workspace_members`, `audience_consent`, `keyset_pagination_indexes`, nesta ordem.
-
-⚠️ **Nota:** `agent_model_usage` apareceu na produção às 23:25 UTC de 19/11/2026. **Não foi aplicada por esta frente** e nenhum
-documento da branch de integração registra a aplicação (origem a confirmar pelo Owner). Conferência somente leitura na produção:
-`agent_model_usage` com RLS ligada, 1 política, sem `select` para `anon`; `agent_model_spend_since` sem `execute` para `anon`.
-As versões no staging e na produção não seguem o timestamp do arquivo (comparação por nome, como nas execuções anteriores).
+**Falta no staging:** `workspace_members`, `keyset_pagination_indexes`.
+**Falta na produção (🔐 Owner):** `agent_model_usage`, `workspace_members`, `audience_consent`, `keyset_pagination_indexes`.
+**Desvio resolvido:** `audience_consent` foi aplicada no staging antes do merge; o arquivo mergeado é idêntico ao de
+`aa4b856` (13:15 UTC, anterior à aplicação), conferido com `git diff aa4b856 72942c0` (sem diferenças).
 
 ## 4. Pendências do S5.1 (desta frente)
 
-- ✅ **`20261119070000_workspace_members` aplicada no staging** às 23:24 UTC (versão `20261119232430`). A aplicação não foi feita
-  por esta execução (as 5 tentativas anteriores expiraram na confirmação interativa); a migration já constava em `list_migrations`.
-  Conferido nesta execução (somente leitura):
-  - `user_active_workspace`: RLS ligada; `authenticated` só com `SELECT`; `anon` sem privilégios; política
-    "users read their own active workspace" (SELECT).
-  - `set_active_workspace`, `list_workspace_members`, `change_member_role`, `remove_member`: `security definer`,
-    `search_path=""`, `execute` para `authenticated`, **sem** `execute` para `anon`.
-  - `keyset_pagination_indexes` (S16) também aplicada: `products.score_rank` e os 4 índices presentes.
-- ✅ **`get_advisors`** (staging, 23:26 UTC): nada novo de nível ERROR. As 4 funções do S5.1 aparecem no aviso genérico
-  `authenticated_security_definer_function_executable` (WARN), como as demais RPCs do projeto — intencional, cada função valida
-  papel/membro internamente (coberto por `supabase/tests`). Achados preexistentes, não relacionados ao S5.1, registrados para o Owner:
-  `rate_limit_consume` executável por `anon` (WARN; usado antes do login), `rate_limit_buckets` com RLS sem política (INFO, acesso
-  só via função), proteção de senha vazada desligada no Auth (WARN, configuração de Auth 🔐), 4 FKs compostas sem índice de
-  cobertura (INFO: `consent_events`, `data_subject_requests`, `media_licenses`, `product_evidence`) e índices ainda não usados (INFO).
-- ✅ **E2E de admin endurecido** (`tests/e2e/admin-finance.spec.mjs`, teste "Membros"): agora exige a lista
-  "Membros do workspace" com o próprio usuário e falha se o aviso `20261119070000_workspace_members` aparecer.
+- ⛔ **Aplicar `20261119070000_workspace_members` no staging** (autorizado pelo Owner em 19/11/2026) — **continua bloqueado**.
+  Testes SQL passaram localmente antes da tentativa (19/19). Cinco tentativas (execuções 1, 3, 4 e 5 de 19/11/2026):
+  `apply_migration` do conector Supabase **pede confirmação interativa** e expira em 180 s sem resposta (execução agendada).
+  **Nada foi aplicado** (conferido com `list_migrations` após a tentativa da execução 5). Não usamos `execute_sql` para
+  contornar a confirmação. Para destravar (Owner): aprovar `apply_migration` do Supabase como "sempre permitir" para esta
+  tarefa agendada, ou aplicar manualmente pelo SQL Editor do staging o conteúdo do arquivo (registrando o nome `workspace_members`).
+- ⏳ Depois de aplicada: conferir grants/RLS de `user_active_workspace` e das 4 funções, rodar `get_advisors` (security e
+  performance) e endurecer o E2E de admin (`tests/e2e/admin-finance.spec.mjs`, teste "Membros", que hoje aceita o aviso
+  `20261119070000_workspace_members`) para exigir a lista de membros. Não endurecemos antes da aplicação para não quebrar o
+  "Playwright · Staging" de todas as frentes.
 - 🔐 Decisão do Owner (não alterar): `ensure_workspace` cria workspace vazio para usuário removido de todos os workspaces.
 
 ## 5. Quadro das frentes
 
 | Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
 |---|---|---|---|---|---|
-| S14 (agentes) | ✅ **handoff** (`docs/S14_HANDOFF.md`) | — | ✅ | — | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway na Vercel; Vercel Cron; gasto com modelo (migration já está na produção, ver nota da seção 3) |
-| S15 (CRM/LGPD) | ✅ **handoff** (`docs/S15_HANDOFF.md`) | — | ✅ | Contatos fictícios de E2E no staging (removíveis pela tela) | Produção de `audience_consent` |
-| S16 (performance) | ✅ **handoff** (`docs/S16_HANDOFF.md`, #53) | — | ✅ | Staging aplicado; falta E2E de paginação da API de produtos (sugerido no handoff) | Produção de `keyset_pagination_indexes`; `LOAD_COOKIE` (opcional) |
+| S14 (agentes) | ✅ **handoff** (`docs/S14_HANDOFF.md`) | — | ✅ | — | Produção de `agent_model_usage`; `SUPABASE_SECRET_KEY`/OIDC/AI Gateway na Vercel; Vercel Cron; gasto com modelo |
+| S15 (CRM/LGPD) | ✅ **handoff** (`docs/S15_HANDOFF.md`, #47 mergeado) | — | ✅ | Contatos fictícios de E2E no staging (removíveis pela tela) | Produção de `audience_consent` |
+| S16 (performance) | Etapas 1–5 mergeadas (#49, #51); falta 2c (paginação da audiência, agora desbloqueada) e 6 (handoff) | — | ✅ | Staging de `keyset_pagination_indexes` (bloqueado por confirmação); 2c; handoff | Produção de `keyset_pagination_indexes`; `LOAD_COOKIE` de usuário de teste (opcional) |
 | S6.1 (CSP/logs) | ✅ **handoff** (`docs/S6_1_HANDOFF.md`) | — | ✅ | — | Destino externo de logs (serviço/segredo) |
-| S4 (camada de domínio) | Etapas 1, 2, 2a, 2b mergeadas (#54, #55); faltam 2c–2g e 3 (handoff) | — | ✅ | 2c mídia, 2d financeiro, 2e tenancy, 2f audiência, 2g agentes, handoff; regerar tipos do Supabase (staging agora em dia) | — |
-| S5.1 (membros) | ✅ concluída (#43); staging aplicado e E2E endurecido | — | ✅ | — | Produção da migration |
-| Integração | Execução 6: CI e validação local verdes; S5.1 fechado no staging | este PR | — | — | Produção (seção 6) |
+| S4 (camada de domínio) | Não iniciada (sem branch `feature/s4-*`) | — | — | Tudo | — |
+| S5.1 (membros) | ✅ concluída (#43) | — | ✅ | Staging + E2E (seção 4) | Produção da migration |
+| Integração | Execução 5: CI e validação local verdes | este PR | — | Seção 4 (bloqueada por confirmação) | Liberar `apply_migration` no staging |
 
-Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15, ✅ S16 · pendente: **S4**.
+Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 
 ## 6. Autorizações necessárias para produção (acumulado)
 
-1. Migrations na produção, em ordem: `20261119070000_workspace_members`, `20261119110000_audience_consent`,
-   `20261119120000_keyset_pagination_indexes` (`agent_model_usage` já está lá — confirmar a origem).
+1. Migrations na produção, em ordem: `20261119060000_agent_model_usage`, `20261119070000_workspace_members`,
+   `20261119110000_audience_consent`, `20261119120000_keyset_pagination_indexes`.
 2. Merge de `feature/smkon-production-readiness` na `main` e promoção do deploy.
 3. Variáveis/segredos (S14): `SUPABASE_SECRET_KEY` por ambiente, credencial OIDC/AI Gateway, `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED`.
    (S6.1, opcional): `LOG_DRAIN_URL`/`LOG_DRAIN_TOKEN` — destino externo de logs (ver `docs/S6_1_HANDOFF.md`).
-4. Auth (recomendado pelos advisors): ligar a proteção de senha vazada no staging e na produção.
+4. Staging (já autorizado, falta só a confirmação da ferramenta): `workspace_members` e `keyset_pagination_indexes`.
+
+
+## 7. Auditoria atualizada — 20/11/2026 (consulta Supabase 21/11 UTC)
+
+> Esta seção substitui os estados antigos das seções 3–5 quando houver divergência. O restante do documento é histórico da execução 5.
+
+- **Staging:** 21/21 migrations presentes, incluindo `workspace_members`, `audience_consent` e `keyset_pagination_indexes`.
+- **Produção:** 20 migrations presentes. Inclui `agent_model_usage`, `workspace_members` e `audience_consent`; falta somente `20261119120000_keyset_pagination_indexes` do conjunto atual. A origem da aplicação de `agent_model_usage` não foi estabelecida.
+- **S4:** PRs #54 e #55 mergeados (etapas 1–2b). Restam 2c mídia, 2d financeiro, 2e tenancy, 2f audiência, 2g agentes e handoff. Como staging está em dia, a regeneração/comparação de tipos do Supabase pode ser retomada.
+- **S11:** nenhum conector financeiro real ou handoff foi encontrado na árvore do commit consultado. Há placeholders de conexão e módulo de comissões. Não declarar integração operacional.
+- **S14:** código integrado, mas não há evidência de chamada real ao AI Gateway. Migration de consumo `agent_model_usage` agora consta em produção; conferir a configuração efetiva de `SUPABASE_SECRET_KEY`, OIDC/API key, orçamento e cron sem revelar valores.
+- **Segurança produção:** Advisors consultados em 21/11 UTC: 1 SECURITY DEFINER executável por anon (`rate_limit_consume`), 31 executáveis por authenticated, RLS sem política em `rate_limit_buckets` e leaked-password protection desativada. A tabela não mostrou grants diretos a anon/authenticated; função de rate limit tem `search_path=''`, allowlist de scopes e validação de subject. Revisar sem revogação em lote.
+- **PR #56:** aberto; API GitHub retornou `mergeable=false`. Status check Vercel do commit consultado estava success, mas isso não autoriza merge nem prova Production.
+- **Validações:** os números 238/238 unitários e 19/19 SQL vêm do corpo do PR #56; não foram reexecutados nesta auditoria.
+- **Ações protegidas:** nenhuma migration de produção, alteração de Auth/segredos, merge em `main` ou deploy executado.
+- **Plano detalhado:** `docs/RELEASE_AUDIT_S4_S11_S14_SECURITY.md`.
+
+
+## 8. Decisão e plano S11 — 20/11/2026
+
+- **Provedor inicial:** Mercado Livre.
+- **Ambiente:** staging do SMKON, com usuários/dados de teste do ambiente de desenvolvedor do Mercado Livre quando disponíveis.
+- **Modo inicial:** somente leitura e dry-run; nenhuma ação de escrita no marketplace.
+- **Documento de execução:** [S11_HANDOFF.md](S11_HANDOFF.md).
+- **Estado:** decisão registrada e plano definido; conector ainda não implementado nem operacionalmente validado.
+- **Próxima etapa:** inspeção dos padrões de OAuth, ConnectionsPanel, tenancy e financeiro; adapter tipado + fixtures; testes de OAuth, paginação, idempotência, falhas e isolamento multi-tenant.
+- **Não autorizado nesta decisão:** contas reais, secrets, sincronização recorrente, migrations aplicadas, custos pagos, merge em `main` ou deploy de produção.
+
+
+## 9. S11 Mercado Livre — validação do banco descartável (21/11/2026 UTC)
+
+- Branch: `feature/s11-mercado-livre-adapter`; PR #57 permanece Draft, base `feature/smkon-production-readiness`.
+- Schema do fixture conferido contra `20261117183000_split_01_revenue_domains.sql` e `supabase/tests/_support/supabase_shim.sql`: colunas de `organizations`, `organization_members`, `source_connections` e `auth.users` correspondem ao schema usado pelo teste.
+- Assinaturas das RPCs conferidas contra a migration `20261121130000_mercado_livre_credentials.sql`: claim(uuid, integer), save(uuid, bigint, uuid, jsonb, timestamptz), release(uuid, uuid).
+- O teste comportamental em `supabase/tests/mercado_livre_credentials.test.sql` cobre lease exclusivo, segundo worker sem lease, rejeição de lease incorreto, CAS válido com incremento de versão, limpeza do lease, novo lease e proteção contra release obsoleto.
+- Delimitador PL/pgSQL nomeado `$s11_lease_test$` foi relido e está balanceado.
+- Workflow `.github/workflows/ci.yml` executa `bash scripts/test-db.sh shim` no job Database, usando PostgreSQL 17 descartável; também executa typecheck, lint, unit tests, build e audit de dependências no job Quality.
+- **Resultado de execução do teste novo:** pendente de run GitHub Actions associado ao commit que contém o fixture corrigido. Revisão estática não equivale a execução aprovada.
+- Preview Vercel do commit `e5ea42629ed76bf1454f7b4891aa373574894e5a`: READY em ambiente Preview; não é deploy de produção nem validação de OAuth.
+- Nenhuma migration aplicada em Supabase hospedado; nenhuma credencial/secret configurada; nenhuma conta Mercado Livre conectada; nenhum merge ou deploy de produção.
+- Próxima ação: aguardar o CI do head mais recente e registrar os jobs/resultado. Se houver falha, inspecionar logs, corrigir no mesmo branch e repetir. Só então considerar encerrada a validação de banco.
+
+
+### Fechamento da validação automatizada S11 — 21/11/2026 UTC
+
+- Workflow GitHub Actions **CI #364**: [execução #364](https://github.com/smklj/smkon/actions/runs/44866546044), commit testado `e5ea42629ed76bf1454f7b4891aa373574894e5a` (posterior aos commits do fixture e da correção do delimitador).
+- Job **Typecheck, lint and build**: success. Passaram npm ci, auditoria de dependências de produção (high+), typecheck, lint, unit tests e build.
+- Job **Database migrations and SQL tests**: success. O step `bash scripts/test-db.sh shim` passou em PostgreSQL 17 descartável, aplicando as migrations e executando os arquivos SQL de teste, incluindo `mercado_livre_credentials.test.sql` com fixture de lease/CAS.
+- **Conclusão:** validação automatizada do banco descartável e quality gate do CI fechados com sucesso no commit acima. Os runs #358, #360 e #362 foram cancelados por pushes subsequentes e não são considerados falhas de teste; #364 é a evidência final válida.
+- Escopo não coberto por esse CI: OAuth real com conta de teste Mercado Livre, configuração de secrets, migrations em Supabase hospedado, sincronização e reconciliação financeira.
+- Estado protegido: PR #57 continua Draft; nenhum merge, migration hospedada ou deploy de produção foi realizado.
+
+
+## 10. S11 Mercado Livre — persistência e validação em staging (21/11/2026 UTC)
+
+- **Branch/PR:** `feature/s11-mercado-livre-adapter`, PR #57 Draft, base `feature/smkon-production-readiness`. A base foi integrada ao branch S11 por merge commit `c3c5f0a`; o head atual no registro é `af27230`.
+- **Implementação:** conexão one-click, OAuth Authorization Code/state one-time/PKCE, AES-256-GCM, refresh lease/CAS, callback validado com `GET /users/me`, conclusão OAuth atômica e reautorização da conexão existente.
+- **Importação:** manual e limitada aos 50 pedidos recentes; snapshots normalizados sem PII; upsert transacional idempotente de `external_events` + `sales_orders`; nenhum ledger ou `settled_at` inferido.
+- **CI:** PR run #408 [passou nos dois jobs](https://github.com/smklj/smkon/actions/runs/44869249003) no head `af272309d3dade2cd333c9bec73723fb4a1590a4`: typecheck/lint/unit/build e migrations/SQL tests. O push run #407 ainda estava em execução no momento deste registro; o PR check #408 é a evidência concluída.
+- **Preview:** deployment Vercel `dpl_zpPfhaJoadYfNz63YdfnP1drMQJw` READY em [smkon-obl46ubjj-smkon.vercel.app](https://smkon-obl46ubjj-smkon.vercel.app). E2E do Preview mais recente ainda pendente; não declarar E2E verde no head atual.
+- **Staging:** 25 migrations aplicadas, incluindo as quatro S11: credentials, OAuth attempts, order snapshots e OAuth atomic completion. Testes rollback-only executados no projeto `smkon-staging` (`xoyasrizivadxnpmzzno`) para lease/CAS, state one-time, RLS/grants, idempotência, isolamento, PII, valores inválidos, atomicidade de OAuth e rollback quando existe refresh lease ativo; sem exceções.
+- **Produção:** 20 migrations registradas; falta `20261119232441_keyset_pagination_indexes` e as quatro S11. Não há evidência verificável de backup/restauração no conector. O PR #57 tem como base a branch de integração, não `main`; a branch de integração está divergente de `main` (92 commits à frente e 6 atrás). Nenhuma migration/deploy de produção ou merge em `main` foi executado.
+- **Configuração:** Vercel não tem `SUPABASE_SECRET_KEY` nem as variáveis de OAuth/criptografia Mercado Livre. OAuth real e importação de dados reais continuam bloqueados.
+- **Classificação:** S11 parcialmente implementado e validado em staging; não está operacional como conector financeiro completo.
+
+## S11 — estado após merge do PR #57 (21/11/2026 UTC)
+
+- PR #57 foi mergeado por squash na branch `feature/smkon-production-readiness`, commit `8c73cbc87575ae49dd102c493deada17c19c9123`; não houve merge em `main`.
+- CI #412 passou nos dois jobs no head `399e08b0119018df1294688b332bab9025956a09`: typecheck, lint, unit tests, build, dependency audit e migrations/SQL tests.
+- Playwright E2E #193 passou no job `Playwright · Staging`. Os dois commits após o Preview READY `af27230` foram apenas documentação e fixture SQL; o código de runtime validado no Preview é o mesmo do head.
+- Os três testes SQL S11 foram reexecutados no Supabase staging em rollback-only e terminaram sem exceções.
+- Vercel bloqueou novos deployments pelo limite `api-deployments-free-per-day`; Preview S11 anterior continua READY, mas o merge commit ainda não tem Preview próprio.
+- Staging: quatro migrations S11 presentes por nome; os versions do histórico (20261121050108/110/114/631) diferem dos prefixos dos arquivos no Git (20261121130000/140000/150000/160000). Alinhar o histórico antes de qualquer novo `supabase db push` no staging.
+- Produção: 20 migrations; faltam keyset pagination e as quatro migrations S11. Sem evidência verificável de backup/restauração. Não foram aplicadas migrations nem feito deploy.
+- Vercel ainda sem `SUPABASE_SECRET_KEY` e sem credenciais OAuth/criptografia Mercado Livre; OAuth real não validado.
+- S11 continua **parcial**: importação manual de até 50 pedidos, sem paginação histórica, checkpoint, reconciliação financeira ou sync recorrente. Nenhuma liquidação/ledger é inferida.
+
+
+## Auditoria complementar S11 — 21/11/2026 04:10 BRT
+
+- PR #57 foi fechado como **merged** por squash em `feature/smkon-production-readiness` no commit `8c73cbc87575ae49dd102c493deada17c19c9123`. O PR não foi integrado em `main` e não promoveu produção.
+- Head do PR: `399e08b0119018df1294688b332bab9025956a09`. CI #412 passou (Quality + Database/SQL). E2E Playwright #193 foi reportado como sucesso no comentário de fechamento; Preview de código `af27230` está READY. O check Vercel do merge commit está em failure por quota `api-deployments-free-per-day`, não por falha de compilação.
+- Staging `smkon-staging` registra 25 migrations: 21 da base incluindo keyset + quatro S11. Os nomes correspondem aos arquivos; os valores de version do histórico foram registrados em timestamps diferentes dos prefixos Git. Não rodar `db push` até comparar o conteúdo aplicado e reconciliar o histórico de forma suportada.
+- Produção `smkonlj` registra 20 migrations: falta `20261119120000_keyset_pagination_indexes` e faltam as quatro migrations S11. Nenhuma migration S11 foi aplicada em produção.
+- Auditoria de ACL em Staging confirmou RLS ligado nas tabelas de credenciais e tentativas OAuth; SELECT negado a `anon` e `authenticated`; leitura e RPCs de persistência/completion concedidas a `service_role` apenas. As três tabelas sem policies específicas aparecem como INFO no Advisor e são intencionais: o acesso de aplicação é server-side via service role, sem grants aos papéis browser.
+- Advisor de performance do Staging encontrou quatro FKs S11 sem índice cobrindo todas as colunas (credentials connection/org/domain; OAuth attempts connection/org/domain, created_by e organization_id). Esta branch adiciona migration aditiva `20261121170000_mercado_livre_fk_indexes.sql` e teste `mercado_livre_fk_indexes.test.sql`; validar no CI e aplicar primeiro em Staging após revisão.
+- Advisor de segurança também reporta 1 SECURITY DEFINER executável por anon (`rate_limit_consume`), 31 executáveis por authenticated e proteção de senha vazada desativada. São alertas preexistentes/abrangentes; não foram alterados nesta frente por risco de quebrar fluxos existentes. Revisão específica e grants esperados devem ocorrer antes da promoção global.
+- Variáveis Vercel de Mercado Livre e `SUPABASE_SECRET_KEY` não aparecem configuradas (listagem feita sem descriptografar valores). OAuth real continua bloqueado; não foram criados secrets nem conectada conta.
+- Produção permanece intacta. Não há evidência verificável de backup/restauração no conector. A branch de integração está 97 commits à frente e 6 atrás de `main`; promover tudo junto não é seguro. Não fazer merge da integração inteira em `main` sem plano de release/cherry-pick e validação de dependências.
+- Limitações funcionais: importação manual limitada à primeira página (máximo 50), sem backfill/cursor histórico; pagamentos, frete, descontos, estornos, provisões e repasses não reconciliados; nenhum ledger é criado e `settled_at` permanece nulo.
+
+
+### Atualização S11 — follow-up de performance em Staging (21/11/2026 04:10 BRT)
+
+- PR #59 (`fix/s11-performance-hardening`) foi mergeado por squash na branch de integração em `8e2106c8d26cd4fac43cf83f49ecddfafa411e12`.
+- CI #422 passou nos dois jobs: Database migrations/SQL tests e Quality (audit, typecheck, lint, unit tests e build). O check Vercel continua failure por quota `api-deployments-free-per-day`; o PR contém somente SQL/documentação, sem código de runtime.
+- Migration `mercado_livre_fk_indexes` aplicada em `smkon-staging` e registrada como versão `20261121071019`. O teste SQL estrutural foi executado diretamente em staging em transação com rollback e não lançou exceções.
+- Advisor de performance deixou de apontar as quatro FKs S11; restam quatro FKs sem cobertura em tabelas de S15/S10 (`consent_events`, `data_subject_requests`, `media_licenses`, `product_evidence`). Os índices novos aparecem como unused enquanto o conector ainda não importa pedidos reais; isso é esperado antes de tráfego.
+- Advisor de segurança mantém 3 INFO de RLS sem policy (credenciais, tentativas OAuth e rate-limit buckets), 1 WARN de SECURITY DEFINER acessível a anon (`rate_limit_consume`, intencional para rate limit pré-login conforme migration/teste S6) e 31 WARN para funções SECURITY DEFINER acessíveis a authenticated, além de leaked-password protection desativada. Não foi feita revogação em lote; cada função precisa de revisão de autorização/uso.
+- ACLs S11 verificadas novamente: RLS ativo; browser roles sem SELECT nas tabelas secretas; RPCs sensíveis apenas para `service_role`.
+- Produção permanece sem alterações: 20 migrations, sem keyset e sem S11; backup/restauração não verificáveis pelo conector; OAuth real sem secrets. A integração segue divergente de `main` e não deve ser promovida inteira.
