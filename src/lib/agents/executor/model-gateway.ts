@@ -114,7 +114,14 @@ export function createGatewayModel(options: GatewayModelOptions): AgentModel {
     }
     if (!response.ok) throw new ModelCallError(`gateway_http_${response.status}`);
 
-    const raw = await response.text();
+    let raw: string;
+    try {
+      raw = await response.text();
+    } catch {
+      // A resposta 2xx pode já ter gerado custo; contabiliza o pior caso mesmo se o stream falhar.
+      await recordUsage(phase, system, user, maxTokens, null);
+      throw new ModelCallError("gateway_body_read_failed");
+    }
     if (Buffer.byteLength(raw, "utf8") > MAX_RESPONSE_BYTES) {
       await recordUsage(phase, system, user, maxTokens, null);
       throw new ModelCallError("model_response_too_large");
