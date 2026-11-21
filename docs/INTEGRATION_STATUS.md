@@ -340,3 +340,18 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - Produção continua com 20 migrations e sem objetos S11. Nenhuma migration/deploy de produção foi executado.
 - Preview do head continua bloqueado por HTTP 402 api-deployments-free-per-day; o Preview READY mais recente é do commit intermediário 5809300, anterior à rota/UI do checkpoint. Credenciais Mercado Livre e SUPABASE_SECRET_KEY continuam ausentes.
 - Pendências: dividir automaticamente janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, conciliação financeira e backup/restauração comprováveis.
+
+
+## S14 — atualização factual pós-release #87 (21/11/2026 17:03 BRT)
+
+O GitHub registra PR #82 merged em `feature/smkon-production-readiness` (merge `aa275791`) e PR #87 merged em `main` (merge `efbfb56`, release das Frentes A/B/C). Esses merges são estado observado e não foram executados por esta automação. `main` contém S14, `vercel.json` e a rota `src/app/api/agents/worker/route.ts`.
+
+O deployment Production observado continua no SHA `01677bad` (19/11 00:42 BRT), anterior ao merge S14; compare com o merge S14 é diverged (153/6). O check Vercel do commit #87 falhou por `build-rate-limit`, e nenhum deployment Production novo apareceu na listagem. Portanto, S14 está em main, mas não há publicação Production comprovada.
+
+Evidências: CI S14 #44933511061 (288/288 unitários, 2 jobs success, SHA `46a6d1f5`); E2E #44933605001 (36/36 no Preview exato); CI de integração #44943940164 (2 jobs success, SHA `419694eb`). Preview S14 e Preview de integração estão READY; nenhum é Production.
+
+Supabase staging: 119 runs, todas killed; 0 steps, usage, grants e conteúdo ligado a runs; kill switch false, limites 500/12. Produção: 0 dados S14. RLS ativo nas cinco tabelas S14. RPCs do worker/ledger são service_role-only; RPCs administrativas com EXECUTE authenticated têm SECURITY DEFINER e verificações owner/admin ou owner. Histórico de migrations S14 diverge por version ID entre ambientes.
+
+Vercel: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive, comprimento não validado; `AGENT_EXECUTOR_ENABLED=true` em Preview/Production; provider Gateway/OIDC/modelo Haiku 5.5 e teto interno US$ 5. Budgets externos ausentes. AI Gateway 7d sem requests/tokens/custo; `agent_model_usage` vazio. Não há chamada real comprovada.
+
+O Cron está em source (`17 11 * * *`) e a rota existe em main, mas não há deployment Production atual nem invocação autenticada comprovando execução. Não realizar teste real até provisionar chave exclusiva de staging, grants mínimos, budget externo e validar CRON_SECRET/OIDC em runtime.
