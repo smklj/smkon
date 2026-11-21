@@ -58,7 +58,7 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
   motivo legível, consumo vazio, nenhum botão de publicar/aprovar). Resultado no CI do PR `feature/s14-run-detail`.
 - Nunca houve chamada real ao modelo: todos os testes do adaptador usam `fetch` falso.
 
-## Estado dos bancos (conferido em 19/11/2026 com `list_migrations`)
+## Estado dos bancos (conferido em 21/11/2026 com `list_migrations` e SQL read-only)
 
 | Migration lógica | Staging (`xoyasrizivadxnpmzzno`) | Produção (`hpplboyysmfcjsnjrdmw`) |
 |---|---|---|
@@ -101,8 +101,8 @@ As versões diferem por ambiente, mas os três nomes lógicos estão presentes n
 - No commit de integração `011accdb`, o CI `44867365527` passou em typecheck, lint e testes SQL; falhou em um teste unitário temporal:
   `prazo total: chamada lenta perto do fim do prazo falha com worker_timeout` (esperado `worker_timeout`, observado `step_timeout`).
 - O E2E Browser Tests `44867496055` terminou com sucesso.
-- O job unitário foi reexecutado (attempt 2) para distinguir flutuação de relógio de regressão. A correção determinística está proposta na branch `fix/s14-deadline-timeout-classification`, commit `28dc192d9481d739ab65c7c283ce3e8852390203`: o executor passa a classificar pelo limite que efetivamente reduziu o timeout, sem depender da precisão de `Date.now()` no instante em que o timer dispara.
-- Esta correção ainda precisa de CI verde antes de ser considerada validada.
+- O rerun do CI `44867365527` (attempt 2) terminou **success**, confirmando que a falha inicial foi transitória/flaky. A correção determinística está proposta na branch `fix/s14-deadline-timeout-classification`, PR #58, commit `28dc192d9481d739ab65c7c283ce3e8852390203`: o executor classifica pelo limite que efetivamente reduziu o timeout, sem depender da precisão de `Date.now()` no instante do timer.
+- CI do PR #58 (`44868749870`) ainda estava em andamento nesta auditoria; o Preview do commit `3e52508` está READY. O E2E específico do PR foi cancelado por supersessão de deployment; o E2E da integração (`44867496055`) passou.
 
 ### Vercel e AI Gateway
 
