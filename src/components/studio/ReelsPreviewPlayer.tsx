@@ -138,7 +138,7 @@ export function ReelsPreviewPlayer({
           {isShowingHook && hook && (
             <div className="reels-hook-card">
               <span className="hook-badge">{hook.badge}</span>
-              <p className="hook-text">"{hook.text}"</p>
+              <p className="hook-text">&ldquo;{hook.text}&rdquo;</p>
             </div>
           )}
 
