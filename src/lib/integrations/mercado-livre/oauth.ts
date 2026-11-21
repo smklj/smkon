@@ -1,43 +1,15 @@
 import "server-only";
 
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { MercadoLivreOAuthConfig, MercadoLivreTokenResponse, MercadoLivreTokenSet } from "./types";
+import type { OAuthAttempt } from "./oauth-state";
+import { createCodeChallenge, createOAuthAttempt, isOAuthAttemptValid, safeEqualState } from "./oauth-state";
 
 const TOKEN_ENDPOINT = "https://api.mercadolibre.com/oauth/token";
 const DEFAULT_AUTHORIZATION_URL = "https://auth.mercadolivre.com.br/authorization";
 const MAX_RESPONSE_BYTES = 64 * 1024;
 
-export type OAuthAttempt = {
-  state: string;
-  codeVerifier: string;
-  createdAt: number;
-};
-
-export function createOAuthAttempt(now = Date.now()): OAuthAttempt {
-  return { state: randomBytes(32).toString("base64url"), codeVerifier: randomBytes(32).toString("base64url"), createdAt: now };
-}
-
-export function createCodeChallenge(verifier: string): string {
-  if (!/^[A-Za-z0-9._~-]{43,128}$/.test(verifier)) throw new Error("Invalid PKCE verifier.");
-  return createHash("sha256").update(verifier, "ascii").digest("base64url");
-}
-
-export function safeEqualState(expected: string, received: string): boolean {
-  const a = Buffer.from(expected);
-  const b = Buffer.from(received);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
-export function isOAuthAttemptValid(
-  attempt: OAuthAttempt | null,
-  receivedState: string,
-  now = Date.now(),
-  maxAgeMs = 10 * 60 * 1000,
-): boolean {
-  if (!attempt || !receivedState || !Number.isFinite(attempt.createdAt)) return false;
-  const age = now - attempt.createdAt;
-  return age >= 0 && age <= maxAgeMs && safeEqualState(attempt.state, receivedState);
-}
+export { createCodeChallenge, createOAuthAttempt, isOAuthAttemptValid, safeEqualState };
+export type { OAuthAttempt };
 
 export function buildAuthorizationUrl(config: Pick<MercadoLivreOAuthConfig, "clientId" | "redirectUri" | "authorizationBaseUrl">, state: string, challenge: string): string {
   const url = new URL(config.authorizationBaseUrl ?? DEFAULT_AUTHORIZATION_URL);
@@ -50,10 +22,7 @@ export function buildAuthorizationUrl(config: Pick<MercadoLivreOAuthConfig, "cli
   return url.toString();
 }
 
-async function requestToken(
-  body: URLSearchParams,
-  fetchImpl: typeof fetch = fetch,
-): Promise<MercadoLivreTokenResponse> {
+async function requestToken(body: URLSearchParams, fetchImpl: typeof fetch = fetch): Promise<MercadoLivreTokenResponse> {
   const response = await fetchImpl(TOKEN_ENDPOINT, {
     method: "POST",
     headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
@@ -84,7 +53,7 @@ function toTokenSet(token: MercadoLivreTokenResponse, now = Date.now()): Mercado
     tokenType: "bearer",
     expiresAt: new Date(now + token.expires_in * 1000).toISOString(),
     userId: String(token.user_id),
-    scopes: typeof token.scope === "string" ? token.scope.split(/\s+/).filter(Boolean) : [],
+    scopes: typeof token.scope === "string" ? token.scope.split(/\\s+/).filter(Boolean) : [],
   };
 }
 
@@ -106,7 +75,7 @@ export async function exchangeAuthorizationCode(
   return toTokenSet(await requestToken(body, fetchImpl));
 }
 
-/** O refresh token é rotativo e de uso único: o chamador deve persistir atomicamente o novo par. */
+/** O refresh token é rotativo e de uso único: persistir atomicamente o novo par antes de novas chamadas. */
 export async function refreshAccessToken(
   config: Pick<MercadoLivreOAuthConfig, "clientId" | "clientSecret">,
   refreshToken: string,
