@@ -164,45 +164,201 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 **Estado:** decisão de produto tomada; plano documentado; implementação ainda não iniciada; integração operacional não comprovada.
 
 
-## 10. Fluxo de conexão Mercado Livre no produto — 21/11/2026 UTC
+---
 
-A conexão deve existir como etapa futura do produto, sem exigir que Samuel configure o provedor agora e sem bloquear o restante do SMKON.
+## 10. Implementação inicial — 20/11/2026
 
-### Jornada planejada
+**Branch de trabalho:** `feature/s11-mercado-livre-adapter` (criada a partir de `feature/smkon-production-readiness`).  
+**Estado:** adapter técnico inicial implementado; OAuth ainda não integrado a rotas nem persistido; nenhuma conta conectada.
 
-1. **Desconectado:** área de integrações apresenta Mercado Livre como disponível para conectar, com explicação curta das permissões e finalidade.
-2. **Configuração do provedor:** Owner cria/seleciona o app no DevCenter, configura a redirect URI exata e cadastra as variáveis apenas em Vercel Preview. Segredos não são enviados pelo chat.
-3. **Autorização:** usuário com papel permitido inicia o OAuth pelo servidor; redirecionamento ao Mercado Livre; callback valida sessão iniciadora, state de uso único, PKCE, organização, role, provider, domínio e identidade externa.
-4. **Conectado:** mostrar identificação da conta autorizada, status e horário da última validação; nunca mostrar access/refresh token.
-5. **Validação de dados:** primeiro executar leitura limitada e dry-run manual; apresentar contagens, totais e divergências sem lançar valores no Finance Center.
-6. **Reconexão/desconexão:** oferecer ações explícitas, tratar refresh expirado e revogação quando suportada, limpar credenciais com segurança e registrar auditoria sem segredos.
-7. **Operação posterior:** sincronização persistente/recorrente só depois de mapper, idempotência, checkpoint, reconciliação e testes multi-tenant, com aprovação separada do Owner.
+### Arquivos adicionados
 
-### Estados de interface exigidos
+- `src/lib/integrations/mercado-livre/types.ts`: tipos de configuração, tokens e erros.
+- `src/lib/integrations/mercado-livre/oauth-state.ts`: geração de state/verifier, PKCE S256, comparação constante e validade temporal.
+- `src/lib/integrations/mercado-livre/oauth-url.ts`: construção da URL de autorização Brasil.
+- `src/lib/integrations/mercado-livre/oauth.ts`: troca server-side de authorization code e refresh token; respostas limitadas e sem propagar mensagens do provedor.
+- `src/lib/integrations/mercado-livre/client.ts`: cliente HTTP server-only, GET-only, origem fixa, timeout, limite de resposta e erros tipados.
+- `tests/unit/mercado-livre-oauth.test.ts`: testes de state, expiração, PKCE e URL.
 
-- Não configurado (app/credenciais ausentes).
-- Desconectado / pronto para conectar.
-- Aguardando autorização.
-- Conectado e validado.
-- Conectado com atenção (token próximo de expirar ou reautorização necessária).
-- Falha de conexão com mensagem segura e ação recomendada.
-- Desconectando / desconectado.
+### Evidência oficial consultada
 
-A interface deve distinguir “OAuth autorizado” de “dados sincronizados” e de “financeiro reconciliado”. Não usar um único selo “conectado” para sugerir que a ingestão financeira está operacional.
+- [Autenticação e autorização — Mercado Livre](https://developers.mercadolivre.com.br/pt_br/registre-o-seu-aplicativo/autenticacao-e-autorizacao): Authorization Code server-side e access token enviado no header Bearer.
+- [Quick Start in-house — Mercado Livre](https://developers.mercadolivre.com.br/desenvolvimento-in-house): redirect URI HTTPS exato, state imprevisível, scopes mínimos e PKCE opcional conforme configuração da aplicação.
+- [Autenticação e autorização para testes](https://developers.mercadolivre.com.br/pt_br/realizacao-de-testes/autenticacao-e-autorizacao): troca de code e refresh token; refresh token é de uso único e cada refresh devolve um novo token.
+- A documentação informa access token com validade de seis horas e refresh token rotativo; por isso o novo par precisa ser persistido atomicamente antes de qualquer chamada subsequente.
 
-### Escopo que permanece fora
+### Decisões técnicas e limitações intencionais
 
-- Nenhuma conexão real foi feita nesta atualização.
-- Não configurar secrets, não aplicar migrations hospedadas, não habilitar sync recorrente, não gravar lançamentos financeiros, não fazer merge ou deploy de produção.
-- A UI de conexão não deve ser declarada pronta até existir implementação e teste no PR.
-- O primeiro teste externo deve usar conta de teste do Mercado Livre, Preview e leitura/dry-run.
+- O client permite apenas GET; não existe caminho de escrita no marketplace neste incremento.
+- URL de API é fixa em `https://api.mercadolibre.com`; não aceita host informado pelo chamador.
+- O OAuth usa PKCE S256. O fluxo só será compatível se PKCE estiver habilitado na configuração da aplicação do DevCenter.
+- Ainda não há callback, armazenamento server-side de state, criptografia/persistência de tokens, lock de refresh, repository, sync, mapper financeiro ou migration. Não declarar OAuth ou S11 operacional.
+- A persistência de tokens está bloqueada até definir e revisar um secret store/criptografia já suportado pelo ambiente. Nenhuma chave ou variável foi criada.
+- A URL de autorização usa o domínio brasileiro `auth.mercadolivre.com.br`; confirmar que o app do DevCenter e seu redirect URI foram cadastrados para Brasil.
+- O client HTTP e os testes não foram executados neste ambiente. A validação deve rodar no checkout com Node 22.18+ e dependências instaladas: `npm run test:unit`, `npm run typecheck` e `npm run lint`.
 
-### Critérios de aceite da jornada
+### Próxima etapa segura
 
-- OAuth iniciado por usuário autorizado e callback vinculado à mesma sessão/organização.
-- State inválido, expirado ou reutilizado rejeitado; PKCE S256 validado.
-- Tokens armazenados somente cifrados server-side; ausência em browser, logs e telemetria.
-- Identidade externa verificada e isolamento entre organizações demonstrado.
-- Reconexão, refresh concorrente e desconexão testados.
-- Dry-run apresenta origem, período, contagens e divergências; nenhuma escrita financeira automática.
-- Documentação e status distinguem implementado, validado, publicado e operacional.
+1. Validar a compilação/testes no CI desta branch.
+2. Inspecionar o suporte de cookies/sessão e a política de rotas para desenhar o armazenamento de state one-time server-side.
+3. Escolher, com base nos recursos já configurados, o mecanismo de cifragem e armazenamento de tokens; não armazenar tokens em `source_connections`.
+4. Só então adicionar rotas OAuth e testes de callback sem conectar conta até o Owner fornecer o cadastro de app e aprovar a configuração de credenciais.
+
+**Validação atual:** código commitado na branch; testes ainda não executados; nenhum acesso externo ao Mercado Livre foi realizado.
+
+
+### Correção após primeira execução do CI — 21/11/2026 UTC
+
+- Primeira execução: typecheck e lint passaram; testes unitários falharam em um único arquivo por resolução ESM dos imports sem extensão `.ts`. O restante dos 238 testes passou; testes de migrations/SQL passaram.
+- Corrigido o teste para usar extensões explícitas, seguindo o padrão já utilizado por `tests/unit/tenancy-members.test.ts`.
+- Revisão do adapter também encontrou e corrigiu a normalização da lista de scopes OAuth (separação por espaços) e passou a exigir `token_type=bearer` na resposta.
+- Commit de correção mais recente: `63eee98244f57772bd1e08f8a0e46fdf39495d52`.
+- **Revalidação:** aguardando workflow para o head atualizado; não declarar CI verde até consultar a nova execução.
+
+### Revalidação concluída — 21/11/2026 UTC
+
+- CI do PR #57, head `520671b10cc7ac7cab18fb7dbc3e0a2051ea60a0`: **Typecheck, lint, unit tests, build e migrations/SQL tests passaram**.
+- Execução CI push do mesmo head também passou nos dois jobs.
+- A execução E2E separada acionada por `deployment_status` foi cancelada e não faz parte do CI principal.
+- Vercel Preview foi consultado sem descriptografar valores. Não há variáveis de configuração Mercado Livre visíveis no projeto; portanto, nenhum app OAuth está configurado e nenhuma conta pode ser conectada nesta etapa.
+- O projeto não possui ainda módulo de cifragem/persistência de tokens para esse adapter. Próxima implementação deve adicionar envelope AES-256-GCM com chave de 32 bytes gerida como secret server-side, tabela isolada por organization, RLS sem acesso direto de cliente e operações de refresh serializadas. Não criar chave real, não gravar tokens e não aplicar migration sem validação.
+- PR #57 permanece Draft; merge e deploy não autorizados.
+
+
+### Incremento de criptografia de tokens — 21/11/2026 UTC
+
+- Adicionado `token-crypto.ts`: envelope versionado AES-256-GCM, IV aleatório de 96 bits, tag de autenticação, AAD vinculando organization/provider/conta externa, limite de payload e validação estrita do envelope.
+- Adicionado `token-crypto.server.ts` como entrypoint protegido por `server-only`; o núcleo criptográfico permanece isolado para testes unitários.
+- Chave configurada por `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` (base64 de 32 bytes) e identificador `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY_ID`. Nenhuma chave foi criada/configurada. O loader atual lê uma chave ativa; o formato suporta keyring com chaves antigas retidas quando fornecido pelo servidor.
+- Testes adicionados para round-trip, adulteração, AAD cross-tenant, rotação via keyring e entradas inválidas.
+- **Limite:** ainda não há repository, tabela, callback, lock de refresh ou persistência integrada. O módulo criptográfico isolado não torna a conexão operacional.
+- CI para head `9961b9cf5197e3ba72962e6fd32170d85903efba` está pendente no momento do registro; commits intermediários tiveram execuções canceladas por novo push. Consultar o run mais recente antes de declarar aprovação.
+- Nenhuma migration aplicada, nenhuma conta conectada, nenhum secret configurado e nenhum deploy realizado.
+
+
+### Persistência server-side e refresh serializado — 21/11/2026 UTC
+
+- Migration preparada: `supabase/migrations/20261121130000_mercado_livre_credentials.sql`.
+- A migration cria `mercado_livre_credentials`, vinculada por FK composta a `source_connections(id, organization_id)`; guarda apenas envelope cifrado JSONB, expiração e versão do token. RLS habilitado; sem grants para anon/authenticated; acesso de tabela somente service_role.
+- RPCs service_role-only: `mercado_livre_claim_refresh` (lease transacional para impedir refresh simultâneo), `mercado_livre_save_refreshed_tokens` (CAS por versão e lease ativo) e `mercado_livre_release_refresh`.
+- Repository server-only adicionado. Escrita de credenciais exige sessão autenticada, papel owner/admin e validação da conexão no mesmo organization_id, provider Mercado Livre e domínio owned_sales antes do uso do service role.
+- Limites atuais: o repository ainda não orquestra o refresh end-to-end nem implementa callback OAuth; o caminho de claim deve ser integrado a uma operação que descriptografe, faça refresh, cifre o novo par e salve via CAS, liberando lease em falha. O save retorna false se a lease/version não corresponder.
+- CI precisa ser verificado no head mais recente após estes commits. Migration é apenas arquivo versionado; **não foi aplicada** em Supabase local, staging ou produção.
+- Nenhuma chave real, token ou conta conectada; nenhum deploy ou merge.
+
+
+### Orquestração de refresh e callback OAuth — 21/11/2026 UTC
+
+- Adicionado `refresh.ts`: adquire lease exclusivo, descriptografa o par atual com AAD de organização/provedor/conta, valida o usuário externo, chama refresh OAuth, confirma que a conta retornada não mudou, cifra o novo par e persiste via CAS/versão/lease. O lease é liberado no `finally`; nenhum token é escrito em logs ou retornado por API.
+- Adicionada migration `20261121140000_mercado_livre_oauth_attempts.sql`: estado OAuth armazenado como hash SHA-256, verifier cifrado, usuário iniciador, conexão/workspace e expiração de 10 minutos. RPC consome state atomicamente uma única vez; tabela e RPC acessíveis apenas por service_role.
+- Adicionado repository `oauth-attempts.ts`, rota autenticada `POST /api/integrations/mercado-livre/oauth/start` e callback `GET /api/integrations/mercado-livre/oauth/callback`.
+- O start exige usuário autenticado, papel owner/admin e conexão Mercado Livre/owned_sales existente; cria state aleatório, PKCE S256 e retorna URL de autorização sem expor verifier.
+- O callback exige a mesma sessão iniciadora, consome state antes da troca do code, valida a conta externa, persiste apenas tokens cifrados e atualiza metadados da conexão. State inválido, expirado ou reutilizado é rejeitado.
+- Variáveis esperadas no servidor: `MERCADO_LIVRE_CLIENT_ID`, `MERCADO_LIVRE_CLIENT_SECRET`, `MERCADO_LIVRE_REDIRECT_URI`, `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` e opcional `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY_ID`. Nenhuma variável foi criada nem configurada.
+- Adicionado teste SQL estrutural `supabase/tests/mercado_livre_credentials.test.sql` para RLS, grants, FK composta, SECURITY DEFINER, search_path e privilégio da RPC.
+- **Limitações/validação pendente:** CI ainda não foi confirmado para o head mais recente; testes concorrentes com fixtures reais de duas conexões e execução end-to-end OAuth em conta de teste ainda não foram realizados. O callback não foi exercitado contra o Mercado Livre. A migration continua sem aplicação em qualquer Supabase hospedado.
+- **Atenção operacional:** callback requer que a conexão `source_connections` exista previamente e que a sessão Supabase do usuário seja preservada durante o redirecionamento do provedor. O app deve cadastrar exatamente o mesmo redirect URI em DevCenter e Vercel antes de qualquer teste.
+- PR #57 permanece Draft. Nenhum merge, deploy, secret, conta real ou chamada OAuth foi executado.
+
+
+### Revisão de robustez pós-CI — 21/11/2026 UTC
+
+- CI do head anterior `c09635d5e3bccd5721d461cdf0b796a569ec132a`: **sucesso confirmado**. Jobs concluídos: Typecheck/lint/unit tests/build e migrations/SQL tests em banco descartável.
+- O teste SQL atual é estrutural (RLS, grants, FK composta, SECURITY DEFINER, search_path e privilégios). Ele **não comprova ainda concorrência real** entre workers nem CAS com fixtures persistidas; esses cenários continuam pendentes.
+- Callback OAuth ajustado para verificar configuração server-side antes de consumir o state e para consumir/inutilizar state também em caso de recusa explícita do provedor.
+- Refresh ajustado para não executar cleanup redundante após CAS bem-sucedido e para não mascarar a falha primária caso a liberação do lease falhe.
+- Commits de correção: `ecf101193a3c795bc3a518bd3d70290eacea7281` (callback) e `212fc3170609fbc3e53ee297472554ab1045d3fd` (refresh). Ambos estão presentes na branch consultada.
+- **CI das correções:** ainda sem workflow associado retornado na consulta; status Vercel estava pending no momento da checagem. Não declarar as correções validadas até o novo CI terminar.
+- Próximo teste de banco: fixture isolada com usuário, organização e source_connection; adquirir lease uma vez, confirmar segunda aquisição vazia, rejeitar save com lease/version incorretos, aceitar save com lease correto e confirmar incremento de versão/limpeza do lease. Executar somente no banco descartável do pipeline.
+- Nenhuma migration aplicada em Supabase hospedado; nenhuma credencial ou segredo criado; nenhuma conta Mercado Livre conectada; nenhum merge ou deploy de produção.
+
+
+### Teste comportamental de lease e CAS — 21/11/2026 UTC
+
+- Acrescentado fixture transacional ao teste SQL S11 usando usuário, organização, membership owner, source_connection Mercado Livre e credencial fictícia no banco descartável.
+- O teste comprova: primeiro worker adquire lease; segundo worker não adquire enquanto ativo; save com lease incorreto falha; save com lease/versão corretos incrementa token_version e limpa lease; worker seguinte recebe novo lease; cleanup com lease antigo não libera lease novo; segundo CAS correto é aceito.
+- Commit do teste: `f6dc0a8878fca6b429dc6a1695afc1a5b44b5bbd`.
+- O teste é executado somente por `npm run test:db` no banco descartável criado pelo pipeline. Não foi executado contra qualquer banco hospedado.
+- CI das correções anteriores: run #356, **sucesso** nos dois jobs (typecheck/lint/unit/build e migrations/SQL tests). O run #354 foi cancelado por novo push e não é evidência de falha de código.
+- CI para o novo teste comportamental: aguardar run do commit atual antes de declarar aprovado.
+
+
+- Correção de sintaxe do bloco PL/pgSQL de fixture: delimitador nomeado `$s11_lease_test$` (commit `04681e354ea7131c511b00e9fcb67f47cf752372`). O arquivo foi relido após a correção e o bloco abre/fecha com o mesmo delimitador.
+- A consulta de workflows ainda não retornou execução associada ao commit do teste corrigido. Portanto, o teste está commitado, mas sua execução automatizada permanece **não comprovada** até o pipeline mais recente terminar.
+
+
+### Fechamento da validação automatizada — 21/11/2026 UTC
+
+- **CI #364:** [execução GitHub Actions](https://github.com/smklj/smkon/actions/runs/44866546044), commit `e5ea42629ed76bf1454f7b4891aa373574894e5a`, posterior ao fixture comportamental e à correção do delimitador PL/pgSQL.
+- Job `Typecheck, lint and build`: success — npm ci, auditoria de dependências de produção high+, typecheck, lint, testes unitários e build.
+- Job `Database migrations and SQL tests`: success — `bash scripts/test-db.sh shim` em PostgreSQL 17 descartável; o step de migrations + SQL tests concluiu com sucesso, incluindo o teste de lease/CAS.
+- **Resultado:** validação automatizada de banco descartável e quality gate de CI aprovados. Runs #358, #360 e #362 foram cancelados por pushes concorrentes; #364 é a execução concluída e bem-sucedida usada como evidência.
+- **Fora do escopo aprovado/validado:** OAuth real contra conta de teste do Mercado Livre, secrets, migration em Supabase hospedado, sync, dry-run financeiro e reconciliação. Não declarar S11 operacional.
+- PR #57 continua Draft. Nenhum merge, migration hospedada, credencial real ou deploy de produção.
+- Status compartilhado atualizado em `docs/INTEGRATION_STATUS.md`.
+
+## Continuidade — conexão da conta Mercado Livre como etapa futura (21/11/2026 UTC)
+
+**Decisão:** a conexão da conta Mercado Livre permanece planejada como etapa futura do S11. Não é pré-requisito para continuar desenvolvendo outras frentes do SMKON e não deve ser iniciada até o Owner preparar o aplicativo e as credenciais de staging.
+
+### Sequência de execução quando houver disponibilidade
+
+1. Criar/selecionar o aplicativo SMKON no DevCenter do Mercado Livre e conferir os produtos/permissões necessários.
+2. Definir a URL pública do callback no Preview e cadastrá-la exatamente no DevCenter.
+3. Configurar no ambiente **Preview** da Vercel, sem copiar valores para o chat:
+   - `MERCADO_LIVRE_CLIENT_ID`
+   - `MERCADO_LIVRE_CLIENT_SECRET`
+   - `MERCADO_LIVRE_REDIRECT_URI`
+   - `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` (Base64 de 32 bytes)
+   - `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY_ID` (opcional)
+4. Reimplantar Preview se a configuração de ambiente exigir.
+5. Na interface SMKON, iniciar “Conectar Mercado Livre”; autenticar e consentir na conta de teste.
+6. Validar callback, state one-time, PKCE S256, usuário/workspace iniciador, papel owner/admin, external account id e scopes.
+7. Verificar que tokens são persistidos somente cifrados e que refresh usa lease/CAS; conferir logs sem tokens/segredos.
+8. Testar desconectar/reconectar e executar ingestão limitada read-only/dry-run, com reconciliação manual antes de qualquer persistência financeira.
+
+### Critérios de aceite
+
+- OAuth completo em Preview com conta de teste, sem redirecionamento indevido.
+- State inválido, expirado e replay rejeitados.
+- Isolamento entre workspaces comprovado.
+- Token access/refresh nunca exposto ao browser, logs ou respostas.
+- Refresh concorrente serializado e recuperação de falha documentada.
+- Dados importados com origem, timestamps, moeda e estados explícitos; sem inferir liquidação a partir de pedido concluído.
+- Sync manual/dry-run validado antes de qualquer agendamento.
+
+### Bloqueios e limites atuais
+
+- O Owner ainda precisa configurar o app no DevCenter e cadastrar secrets no Preview.
+- Nenhuma conta real ou de teste foi conectada; OAuth real não foi executado.
+- Nenhum secret foi criado/alterado; nenhuma migration hospedada foi aplicada nesta etapa.
+- Nenhuma sync recorrente, mutação no marketplace, merge do PR #57 ou deploy de produção está autorizado.
+- O PR #57 contém implementação do fluxo server-side e persistência/refresh, mas isso não equivale a conexão real ou operação ponta a ponta. Existe risco documentado de credencial persistida sem metadata se a atualização de `source_connections` falhar; esse caso precisa de reconciliação/atomicidade antes de declarar robustez operacional.
+
+**Próxima ação / responsável:** ChatGPT/Claude continua as frentes independentes. Quando Samuel estiver pronto, ele configura o app e secrets de Preview; em seguida ChatGPT/Claude executa o checklist OAuth e registra evidências.
+
+## Incremento de preparação one-click e smoke test read-only — 21/11/2026 UTC
+
+- **Branch/PR:** `feature/s11-mercado-livre-adapter` / PR #57 (Draft).
+- **Interface:** `ConnectionsPanel` agora apresenta ação “Conectar Mercado Livre” mesmo sem conexão existente; botão chama endpoint de preparação e depois inicia OAuth. Após retorno, usuário é redirecionado para Administração.
+- **Criação do vínculo:** `POST /api/integrations/mercado-livre/connect` deriva usuário e workspace da sessão, exige owner/admin, valida presença de configuração server-side e formato da chave de criptografia, e cria/reutiliza conexão pendente do domínio `owned_sales`. Não aceita organizationId arbitrário do browser.
+- **Validação OAuth:** callback consulta `GET /users/me` com access token recém-trocado e compara o ID retornado com o user_id do token antes de marcar a conexão como connected.
+- **Leitura de vendas:** `POST /api/integrations/mercado-livre/sync/preview` valida workspace/role, lê credencial cifrada via service role, renova token sob lease quando próximo da expiração, confere identidade novamente e consulta uma página limitada (até 50) de `/orders/search`. Retorna apenas totais agregados por moeda/status.
+- **Segurança do smoke test:** endpoint é read-only e bounded; não persiste pedidos, compradores, payloads, eventos ou lançamentos financeiros. Nenhuma mutação no marketplace.
+- **Interface conectada:** apresenta “Testar leitura de vendas” e resumo do dry-run, informando explicitamente que nada foi gravado.
+- **Limites restantes antes de operação:** sincronização persistente/idempotente, paginação incremental/checkpoint, reconciliação de pagamentos/estornos/taxas, política de retenção/PII, desconexão e recuperação de falhas ainda precisam ser implementadas e testadas. A página de preview não deve ser interpretada como operação financeira.
+- **Ambiente:** nenhum secret configurado, nenhuma conta autorizada, nenhuma migration hospedada aplicada, nenhum deploy de produção.
+- **CI:** workflow disparado após as alterações; resultado precisa ser consultado no último head antes de declarar validação.
+- **Próxima ação:** fechar revisão de código/CI e completar pipeline persistente em staging com fixtures; depois configurar credenciais e realizar OAuth/dry-run real. Agendamento automático somente após reconciliação comprovada e aprovação do Owner.
+
+
+## Revisão do modelo financeiro e semântica do Mercado Livre — 21/11/2026 UTC
+
+- **Ambiente inspecionado:** projeto Supabase `smkon-staging` (`xoyasrizivadxnpmzzno`), somente leitura. Nenhuma DDL/DML foi executada nesta revisão.
+- **Modelo existente confirmado:** `sales_orders`, `external_events`, `sales_order_adjustments` e `financial_ledger_entries`. `sales_orders` possui unicidade por `(organization_id, provider, external_order_id)`; `external_events` por `(organization_id, provider, external_id, event_type)`. Isso permite ingestão repetível sem duplicação, desde que os upserts ocorram na mesma transação.
+- **Restrições relevantes:** `sales_orders.order_status` aceita `pending`, `paid`, `fulfilled`, `cancelled`, `refunded`, `partially_refunded`; valores monetários são não negativos. Ledger aceita `sales_gross`, `sales_discount`, `sales_fee`, `sales_shipping`, `sales_refund`, mas a existência desses tipos não prova liquidação.
+- **Semântica externa verificada:** documentação oficial diferencia status de order e status dos pagamentos; order `paid` indica pagamento aprovado, mas não comprova repasse/recebimento líquido. Os objetos de pagamento incluem `status`, `status_detail`, `date_approved` e `transaction_amount_refunded`. Portanto, não preencher `settled_at` nem criar lançamento de recebimento liquidado apenas com `order.status=paid`.
+- **Taxas:** `sale_fee` é reportada por item e deve ser agregada com quantidade, mas a reconciliação completa exige considerar marketplace_fee, descontos, frete do vendedor e ajustes de faturamento. Não tratar uma soma simplificada de `sale_fee` como valor líquido final.
+- **Plano de implementação seguro:** primeira fase deve persistir snapshot normalizado sem PII, com upsert transacional de evento+pedido e hash do payload; manter `settled_at=null` e não produzir ledger de liquidação. Pagamentos/estornos/encargos serão reconciliados numa etapa separada usando endpoints de billing/payment e ajustes com chave externa idempotente.
+- **Documentação oficial consultada:** https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas ; https://developers.mercadolivre.com.br/pt_br/pagamentos ; https://developers.mercadolivre.com.br/pt_br/api-docs-pt-br/provisoes .
+- **Decisão:** não ativar persistência nem agendamento até que a RPC transacional, testes de replay/atualização e mapeamento de pagamentos estejam implementados. A revisão foi apenas de schema e semântica, não de execução financeira.
