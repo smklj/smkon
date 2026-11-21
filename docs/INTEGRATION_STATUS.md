@@ -3,31 +3,30 @@
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
 `feature/smkon-production-readiness`. Correções desta frente usam `fix/integration-*`.
 
-**Última verificação:** 21/11/2026 ~11:20 UTC (execução 8) · commit `f9db09e` (Merge S4 etapa 2c, PR #63)
+**Última verificação:** 21/11/2026 ~12:20 UTC (execução 9) · commit `c9fc70c` (Merge S4 etapa 2d, PR #65)
 
-## 0. Quadro atual — execução 8 (21/11/2026 ~11:20 UTC)
+## 0. Quadro atual — execução 9 (21/11/2026 ~12:20 UTC)
 
 > Esta seção é o estado vigente. As seções 1–6 são o histórico da execução 5; as seções 7+ são auditorias S11 de 20–21/11.
 
-**Base verificada:** `f9db09e` (Merge S4 etapa 2c, PR #63). Desde a execução 7 entraram #56 (Integração), #62 (S16, E2E de
-paginação) e #63 (S4 etapa 2c) — nenhum com migration nova.
+**Base verificada:** `c9fc70c` (Merge S4 etapa 2d, PR #65). Desde a execução 8 entraram #66 (Integração, só docs) e
+#65 (S4 etapa 2d, domínio financeiro: `src/lib/finance/*` + testes) — nenhum com migration nova.
 
 ### CI da integração (push)
-- Último run: [CI #502](https://github.com/smklj/smkon/actions/runs/44897981953) em `f9db09e` — ✅ success.
-  Também verdes: [#484](https://github.com/smklj/smkon/actions/runs/44895632082) (`564bee5`, #62) e
-  [#483](https://github.com/smklj/smkon/actions/runs/44895065642) (`a79c597`, #56). Nenhuma quebra; nenhuma correção de código necessária.
+- Último run: [CI #514](https://github.com/smklj/smkon/actions/runs/44902091282) em `c9fc70c` — ✅ success.
+  Também verde: [#508](https://github.com/smklj/smkon/actions/runs/44899894407) (`b08654b`, #66). Nenhuma quebra; nenhuma correção de código necessária.
 
-### Validação local (Postgres 16 descartável, Node 22.23.5) — `f9db09e`
+### Validação local (Postgres 16 descartável, Node 22.23.5) — `c9fc70c`
 | Etapa | Resultado real |
 |---|---|
 | `npm ci` | ✅ 362 pacotes, 0 vulnerabilidades |
 | `npm run typecheck` | ✅ |
 | `npm run lint` | ✅ |
-| `npm run test:unit` | ✅ 256/256 (0 falhas, 0 pulados) — eram 250 na execução 7 (+S4 2c) |
+| `npm run test:unit` | ✅ 260/260 (0 falhas, 0 pulados) — eram 256 na execução 8 (+S4 2d) |
 | `npm run build` | ✅ |
 | `npm run test:db` (26 migrations) | ✅ 23/23 arquivos de teste |
 
-### Migrations (comparação por nome; `list_migrations` em 21/11 ~11:15 UTC) — sem mudança desde a execução 7
+### Migrations (comparação por nome; `list_migrations` em 21/11 ~12:15 UTC) — sem mudança desde a execução 7
 - Repositório (integração): 26 migrations, até `20261121170000_mercado_livre_fk_indexes`.
 - **Staging** (`xoyasrizivadxnpmzzno`): 28 — as 26 do repositório **mais 2 que não estão na integração**:
   `mercado_livre_order_sync_state` (`20261121090433`) e `mercado_livre_order_versioning` (`20261121091235`), que existem
@@ -47,13 +46,13 @@ paginação) e #63 (S4 etapa 2c) — nenhum com migration nova.
 ### Quadro das frentes
 | Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
 |---|---|---|---|---|---|
-| S14 (agentes) | ✅ handoff; correção de timeout/ledger reaplicada | #64 (Draft; substitui #61) | — | #64 | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
+| S14 (agentes) | ✅ handoff; correção de timeout/ledger reaplicada sobre a integração atual | #67 (Draft; substitui #64/#61) | — | #67 | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
 | S15 (CRM/LGPD) | ✅ handoff | — | ✅ | — | — (migration já na produção) |
 | S16 (performance) | ✅ handoff; E2E de paginação mergeado (#62) | — | ✅ | — | Produção de `keyset_pagination_indexes` |
 | S6.1 (CSP/logs) | ✅ handoff | — | ✅ | — | Destino externo de logs (opcional) |
-| S4 (domínio) | Etapas 1–2c mergeadas (#54, #55, #63); 2d (financeiro) em revisão | #65 | em andamento | 2d–2g e handoff | — |
+| S4 (domínio) | Etapas 1–2d mergeadas (#54, #55, #63, #65); 2e (tenancy/convites) em revisão | #68 | em andamento | 2e–2g e handoff | — |
 | S11 (Mercado Livre) | Conector parcial mergeado (#57, #59); paginação histórica em #60 | #60 (Draft) | — | Staging à frente (2 migrations do #60); não operacional | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
-| Integração | Execução 8: CI e validação local verdes | este PR | — | — | — |
+| Integração | Execução 9: CI e validação local verdes | este PR | — | — | — |
 
 Handoffs: ✅ S14, ✅ S15, ✅ S16, ✅ S6.1 · ⏳ S4. Relatório final ao Owner só quando S4 tiver handoff.
 
