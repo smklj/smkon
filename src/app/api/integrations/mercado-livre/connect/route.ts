@@ -6,7 +6,7 @@ import { loadMercadoLivreTokenKeyring } from "@/lib/integrations/mercado-livre/t
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Creates/reuses the pending connection for the authenticated active workspace. */
+/** Creates a pending connection or reuses the active one for safe reauthorization. */
 export async function POST() {
   try {
     const supabase = await createClient();
@@ -39,23 +39,39 @@ export async function POST() {
       }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
 
-    // Validate key format/keyring before creating a pending connection.
     loadMercadoLivreTokenKeyring();
 
-    const { data: existing, error: lookupError } = await supabase
+    // Reauthorize the active connection first; otherwise reuse a pending/error placeholder.
+    const { data: active, error: activeError } = await supabase
       .from("source_connections")
       .select("id,status")
       .eq("organization_id", workspace.organizationId)
       .eq("provider", "mercado_livre")
       .eq("domain", "owned_sales")
-      .is("external_account_id", null)
-      .in("status", ["pending", "error"])
+      .eq("status", "connected")
+      .not("external_account_id", "is", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (lookupError) throw lookupError;
+    if (activeError) throw activeError;
 
-    let connectionId = existing?.id;
+    let connectionId = active?.id;
+    if (!connectionId) {
+      const { data: existing, error: lookupError } = await supabase
+        .from("source_connections")
+        .select("id,status")
+        .eq("organization_id", workspace.organizationId)
+        .eq("provider", "mercado_livre")
+        .eq("domain", "owned_sales")
+        .is("external_account_id", null)
+        .in("status", ["pending", "error"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+      connectionId = existing?.id;
+    }
+
     if (!connectionId) {
       const { data: created, error: insertError } = await supabase
         .from("source_connections")
@@ -76,6 +92,7 @@ export async function POST() {
       organizationId: workspace.organizationId,
       connectionId,
       status: "ready_to_authorize",
+      reauthorizing: Boolean(active?.id),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível preparar a conexão do Mercado Livre." }, { status: 500 });

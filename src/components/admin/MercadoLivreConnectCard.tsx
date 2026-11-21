@@ -106,7 +106,7 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
           </p>
         </div>
         <button className="button button-primary" type="button" onClick={connect} disabled={busy || !canManage}>
-          {busy ? "Preparando…" : connected ? "Reconectar" : "Conectar Mercado Livre"}
+          {busy ? "Preparando…" : connected ? "Renovar autorização" : "Conectar Mercado Livre"}
         </button>
       </div>
       {connected ? (

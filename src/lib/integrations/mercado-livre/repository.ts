@@ -4,7 +4,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createUserClient } from "../../supabase/server";
 import { createServiceClient } from "../../supabase/service";
 import type { MercadoLivreTokenEnvelope } from "./token-crypto";
-import type { MercadoLivreTokenSet } from "./types";
 
 type UntypedServiceClient = SupabaseClient;
 export type MercadoLivreRefreshClaim = {
@@ -41,45 +40,30 @@ export async function assertMercadoLivreManager(organizationId: string): Promise
   }
 }
 
-export async function storeMercadoLivreCredentials(input: {
+/** Atomically activates the source connection and stores the encrypted token envelope. */
+export async function completeMercadoLivreOAuthConnection(input: {
   organizationId: string;
   connectionId: string;
-  tokenSet: MercadoLivreTokenSet;
+  actorUserId: string;
+  externalAccountId: string;
+  displayName: string;
+  grantedScopes: string[];
   encryptedTokens: MercadoLivreTokenEnvelope;
+  tokenExpiresAt: string;
 }): Promise<void> {
   await assertMercadoLivreManager(input.organizationId);
-  const userClient = await createUserClient();
-  const { data: connection, error: connectionError } = await userClient
-    .from("source_connections")
-    .select("id, external_account_id")
-    .eq("id", input.connectionId)
-    .eq("organization_id", input.organizationId)
-    .eq("provider", "mercado_livre")
-    .eq("domain", "owned_sales")
-    .maybeSingle();
-
-  if (
-    connectionError ||
-    !connection ||
-    (connection.external_account_id !== null && String(connection.external_account_id) !== input.tokenSet.userId)
-  ) {
-    throw new Error("Mercado Livre connection does not match the authorized account.");
-  }
-
-  // Insert-only: never overwrite an existing credential or reset its CAS version.
   const client = getAdminClient();
-  const { error } = await client.from("mercado_livre_credentials").insert({
-    connection_id: input.connectionId,
-    organization_id: input.organizationId,
-    domain: "owned_sales",
-    encrypted_tokens: input.encryptedTokens,
-    token_expires_at: input.tokenSet.expiresAt,
-    token_version: 1,
-    refresh_lease_until: null,
-    refresh_lease_id: null,
-    updated_at: new Date().toISOString(),
+  const { error } = await client.rpc("mercado_livre_complete_oauth_connection", {
+    p_connection_id: input.connectionId,
+    p_organization_id: input.organizationId,
+    p_actor_user_id: input.actorUserId,
+    p_external_account_id: input.externalAccountId,
+    p_display_name: input.displayName,
+    p_granted_scopes: input.grantedScopes,
+    p_encrypted_tokens: input.encryptedTokens,
+    p_token_expires_at: input.tokenExpiresAt,
   });
-  if (error) throw new Error("Could not persist Mercado Livre credentials.");
+  if (error) throw new Error("Could not atomically complete Mercado Livre OAuth.");
 }
 
 export async function claimMercadoLivreRefresh(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { assertMercadoLivreManager, storeMercadoLivreCredentials } from "@/lib/integrations/mercado-livre/repository";
+import { completeMercadoLivreOAuthConnection } from "@/lib/integrations/mercado-livre/repository";
 import { consumeMercadoLivreOAuthAttempt } from "@/lib/integrations/mercado-livre/oauth-attempts";
 import { decryptMercadoLivreTokens, encryptMercadoLivreTokens, loadMercadoLivreTokenKeyring } from "@/lib/integrations/mercado-livre/token-crypto.server";
 import { exchangeAuthorizationCode } from "@/lib/integrations/mercado-livre/oauth";
@@ -36,17 +36,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Mercado Livre authorization was declined. You can restart the connection flow." }, { status: 400 });
     }
 
-    await assertMercadoLivreManager(attempt.organizationId);
-    const { data: connection, error: connectionError } = await supabase
-      .from("source_connections")
-      .select("id, external_account_id")
-      .eq("id", attempt.connectionId)
-      .eq("organization_id", attempt.organizationId)
-      .eq("provider", "mercado_livre")
-      .eq("domain", "owned_sales")
-      .maybeSingle();
-    if (connectionError || !connection) return NextResponse.json({ error: "Mercado Livre connection not found." }, { status: 404 });
-
     const context = {
       organizationId: attempt.organizationId,
       provider: "mercado_livre" as const,
@@ -56,13 +45,9 @@ export async function GET(request: Request) {
     const verifier = decryptMercadoLivreTokens(attempt.encryptedVerifier, context, keyring);
     const tokenSet = await exchangeAuthorizationCode({ clientId, clientSecret, redirectUri }, code, verifier);
 
-    // Validate the provider identity before persisting credentials or marking the connection active.
-    const profile = await mercadoLivreGet<{ id: number }>(tokenSet.accessToken, "/users/me");
+    const profile = await mercadoLivreGet<{ id: number; nickname?: string }>(tokenSet.accessToken, "/users/me");
     if (String(profile.id) !== tokenSet.userId) {
       return NextResponse.json({ error: "Authorized Mercado Livre identity could not be verified." }, { status: 409 });
-    }
-    if (connection.external_account_id && String(connection.external_account_id) !== tokenSet.userId) {
-      return NextResponse.json({ error: "Authorized Mercado Livre account does not match this connection." }, { status: 409 });
     }
 
     const tokenContext = {
@@ -71,30 +56,20 @@ export async function GET(request: Request) {
       externalUserId: tokenSet.userId,
     };
     const encryptedTokens = encryptMercadoLivreTokens(JSON.stringify(tokenSet), tokenContext, keyring);
-    await storeMercadoLivreCredentials({
+    const sellerLabel = typeof profile.nickname === "string" && profile.nickname.trim()
+      ? profile.nickname.trim().slice(0, 120)
+      : String(profile.id);
+
+    await completeMercadoLivreOAuthConnection({
       organizationId: attempt.organizationId,
       connectionId: attempt.connectionId,
-      tokenSet,
+      actorUserId: user.id,
+      externalAccountId: tokenSet.userId,
+      displayName: `Mercado Livre · ${sellerLabel}`,
+      grantedScopes: tokenSet.scopes,
       encryptedTokens,
+      tokenExpiresAt: tokenSet.expiresAt,
     });
-
-    const { error: updateError } = await supabase
-      .from("source_connections")
-      .update({
-        external_account_id: tokenSet.userId,
-        display_name: `Mercado Livre · ${profile.id}`,
-        status: "connected",
-        granted_scopes: tokenSet.scopes,
-        last_error_code: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", attempt.connectionId)
-      .eq("organization_id", attempt.organizationId)
-      .eq("provider", "mercado_livre")
-      .eq("domain", "owned_sales");
-    if (updateError) {
-      return NextResponse.json({ error: "Tokens were stored but connection metadata could not be updated. Contact an administrator." }, { status: 500 });
-    }
 
     return NextResponse.redirect(new URL("/admin?mercadoLivre=connected", url.origin), {
       headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
