@@ -272,3 +272,9 @@ Não executar operação paga enquanto faltarem: chave service exclusiva de stag
 
 ### Segurança desta rodada
 Somente consultas read-only a GitHub/Vercel/Supabase e atualização documental em branch isolada. Nenhum merge, alteração de Production, deploy, migration remota, secret, grant, budget ou chamada paga foi executado.
+
+
+### ACL/RLS S14 — rechecagem read-only em 21/11/2026 19:06 BRT
+- Staging e Production: RLS ativo nas seis tabelas auditadas (`agent_runs`, `agent_steps`, `agent_model_usage`, `agent_tool_grants`, `agent_settings`, `content_items`); uma policy em cada tabela S14 e quatro em `content_items`. `FORCE ROW LEVEL SECURITY` está desativado, conforme esperado para o papel de serviço.
+- `anon`: sem grants nas seis tabelas. `authenticated`: SELECT apenas nas cinco tabelas S14; em `content_items`, possui DML sujeito a RLS. `service_role`: SELECT nas cinco tabelas S14, sem DML direto nelas; em `content_items`, possui DML amplo, mas o caminho de rascunho S14 continua usando a RPC dedicada.
+- Nas funções `agent_*`: 0 EXECUTE para anon, 12 para service_role e 6 para authenticated. As funções authenticated são `agent_cancel_run`, `agent_set_kill_switch`, `agent_set_tool`, `agent_start_run`, `agent_update_limits` (todas contêm `agent_require_role`) e `agent_tool_catalog` (catálogo estático de leitura). Resultado idêntico em Staging e Production.
