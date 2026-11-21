@@ -1,128 +1,182 @@
-# SMKON — Status da integração
+# SMKON — Protocolo de coordenação entre agentes
 
-Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
-`feature/smkon-production-readiness`. Correções desta frente usam `fix/integration-*`.
+**Documento vivo de coordenação.** Atualizar sempre que houver auditoria, decisão arquitetural, implementação, bloqueio, alteração de ambiente ou mudança de prioridade.
 
-**Última verificação:** 19/11/2026 ~19:30 UTC (execução 5) · commit `72942c0` (Merge S15, PR #47)
+## Objetivo
 
-## 1. CI da branch de integração (push)
+Manter Samuel, ChatGPT e Claude trabalhando sobre o mesmo estado verificável do SMKON, evitando decisões divergentes, retrabalho, alterações duplicadas e contexto desatualizado.
 
-| Commit | Run | Resultado |
-|---|---|---|
-| `72942c0` Merge S15 audiência/CRM (#47) | [#251](https://github.com/smklj/smkon/actions/runs/44596546028) | ✅ success |
-| `919b5ef` Merge S16 etapas 2b e 4 (#51) | [#248](https://github.com/smklj/smkon/actions/runs/44593980296) | ✅ success |
-| `d96278e` Merge S16 etapas 1–3 e 5 (#49) | [#245](https://github.com/smklj/smkon/actions/runs/44590845115) | ✅ success |
-| `495994a` Merge Integração execução 4 (#50) | [#244](https://github.com/smklj/smkon/actions/runs/44590025633) | ✅ success |
+## Fonte única da verdade
 
-Nenhuma quebra de integração após os merges de S15 e S16; nenhuma correção de código `fix/integration-*` necessária.
+1. **Código e histórico:** repositório GitHub `smklj/smkon`.
+2. **Estado de integração e validações:** `docs/INTEGRATION_STATUS.md`.
+3. **Decisões, prioridades e bloqueios:** este documento, com links para PRs, commits, handoffs e evidências.
+4. **Estado real dos ambientes:** Supabase e Vercel; nunca presumir que documentação ou preview equivalem a produção.
 
-## 2. Validação local (Postgres 16 descartável, Node 22.23.5) — commit `72942c0`
+Não considerar mensagens isoladas de chat como registro oficial de implementação.
 
-| Etapa | Resultado real |
-|---|---|
-| `npm ci` | ✅ 362 pacotes |
-| `npm run typecheck` | ✅ sem erros |
-| `npm run lint` | ✅ sem erros |
-| `npm run test:unit` | ✅ 211/211 (0 falhas, 0 pulados) — eram 180 na execução 4 (+S15 #47, +S16 #49/#51) |
-| `npm run build` | ✅ |
-| `npm run test:db` (21 migrations) | ✅ 19/19 arquivos de teste (inclui `030_audience_consent`, `040_keyset_pagination_indexes`) |
+## Divisão de responsabilidades
 
-## 3. Migrations: repositório × staging × produção (comparação por nome)
+### ChatGPT
+- Auditar arquitetura, código, banco, integrações e documentação.
+- Identificar riscos, inconsistências, dependências e critérios de aceite.
+- Propor planos técnicos e decompor trabalho em tarefas verificáveis.
+- Quando autorizado e tecnicamente possível, executar alterações no repositório ou nos serviços conectados.
+- Registrar no GitHub o que foi analisado, alterado, validado e o que continua pendente.
+- Não declarar uma tarefa concluída sem evidência observável.
 
-Repositório (integração): 21 migrations, de `20261117183000_split_01_revenue_domains` a `20261119120000_keyset_pagination_indexes`.
+### Claude
+- Consultar este protocolo e `docs/INTEGRATION_STATUS.md` antes de iniciar trabalho relacionado.
+- Verificar o estado atual do GitHub e dos ambientes antes de implementar.
+- Executar as tarefas atribuídas, respeitando decisões e critérios de aceite registrados.
+- Atualizar documentação, testes, PRs e handoffs após cada execução.
+- Registrar commits, arquivos alterados, comandos/testes executados, resultados e limitações.
+- Não sobrescrever decisões vigentes sem registrar justificativa e impacto.
 
-| Migration | Integração | Staging `xoyasrizivadxnpmzzno` | Produção `hpplboyysmfcjsnjrdmw` |
-|---|---|---|---|
-| `split_01_revenue_domains` … `agent_claim_queue` (17) | ✅ | ✅ | ✅ |
-| `20261119060000_agent_model_usage` (S14) | ✅ | ✅ (versão `20261119114718`) | ❌ falta 🔐 |
-| `20261119070000_workspace_members` (S5.1) | ✅ | ❌ **falta** | ❌ falta 🔐 |
-| `20261119110000_audience_consent` (S15) | ✅ (#47 mergeado) | ✅ (versão `20261119132522`) | ❌ falta 🔐 |
-| `20261119120000_keyset_pagination_indexes` (S16) | ✅ (#49 mergeado) | ❌ falta (aplicação é da frente S16, também bloqueada por confirmação) | ❌ falta 🔐 |
+### Samuel (Owner)
+- Priorizar objetivos e aprovar decisões que afetem produção, segurança, custos, credenciais ou dados.
+- Autorizar migrations e deploys de produção quando necessários.
+- Resolver conflitos de prioridade ou decisões arquiteturais que exijam escolha de produto.
 
-**Falta no staging:** `workspace_members`, `keyset_pagination_indexes`.
-**Falta na produção (🔐 Owner):** `agent_model_usage`, `workspace_members`, `audience_consent`, `keyset_pagination_indexes`.
-**Desvio resolvido:** `audience_consent` foi aplicada no staging antes do merge; o arquivo mergeado é idêntico ao de
-`aa4b856` (13:15 UTC, anterior à aplicação), conferido com `git diff aa4b856 72942c0` (sem diferenças).
+## Protocolo obrigatório antes de qualquer execução
 
-## 4. Pendências do S5.1 (desta frente)
+1. Ler este arquivo e `docs/INTEGRATION_STATUS.md`.
+2. Consultar branch, PRs, commits recentes e estado atual do deployment.
+3. Verificar migrations e estado do ambiente afetado, quando aplicável.
+4. Conferir se outro agente já iniciou ou concluiu a mesma tarefa.
+5. Trabalhar em branch/PR apropriado; não alterar produção sem autorização explícita.
+6. Executar testes pertinentes e registrar resultados reais.
+7. Atualizar a documentação compartilhada no mesmo PR ou commit da alteração.
+8. Deixar explícito o próximo passo e quem deve executá-lo.
 
-- ⛔ **Aplicar `20261119070000_workspace_members` no staging** (autorizado pelo Owner em 19/11/2026) — **continua bloqueado**.
-  Testes SQL passaram localmente antes da tentativa (19/19). Cinco tentativas (execuções 1, 3, 4 e 5 de 19/11/2026):
-  `apply_migration` do conector Supabase **pede confirmação interativa** e expira em 180 s sem resposta (execução agendada).
-  **Nada foi aplicado** (conferido com `list_migrations` após a tentativa da execução 5). Não usamos `execute_sql` para
-  contornar a confirmação. Para destravar (Owner): aprovar `apply_migration` do Supabase como "sempre permitir" para esta
-  tarefa agendada, ou aplicar manualmente pelo SQL Editor do staging o conteúdo do arquivo (registrando o nome `workspace_members`).
-- ⏳ Depois de aplicada: conferir grants/RLS de `user_active_workspace` e das 4 funções, rodar `get_advisors` (security e
-  performance) e endurecer o E2E de admin (`tests/e2e/admin-finance.spec.mjs`, teste "Membros", que hoje aceita o aviso
-  `20261119070000_workspace_members`) para exigir a lista de membros. Não endurecemos antes da aplicação para não quebrar o
-  "Playwright · Staging" de todas as frentes.
-- 🔐 Decisão do Owner (não alterar): `ensure_workspace` cria workspace vazio para usuário removido de todos os workspaces.
+## Formato obrigatório de atualização
 
-## 5. Quadro das frentes
+Para cada execução, registrar:
 
-| Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
-|---|---|---|---|---|---|
-| S14 (agentes) | ✅ **handoff** (`docs/S14_HANDOFF.md`) | — | ✅ | — | Produção de `agent_model_usage`; `SUPABASE_SECRET_KEY`/OIDC/AI Gateway na Vercel; Vercel Cron; gasto com modelo |
-| S15 (CRM/LGPD) | ✅ **handoff** (`docs/S15_HANDOFF.md`, #47 mergeado) | — | ✅ | Contatos fictícios de E2E no staging (removíveis pela tela) | Produção de `audience_consent` |
-| S16 (performance) | Etapas 1–5 mergeadas (#49, #51); falta 2c (paginação da audiência, agora desbloqueada) e 6 (handoff) | — | ✅ | Staging de `keyset_pagination_indexes` (bloqueado por confirmação); 2c; handoff | Produção de `keyset_pagination_indexes`; `LOAD_COOKIE` de usuário de teste (opcional) |
-| S6.1 (CSP/logs) | ✅ **handoff** (`docs/S6_1_HANDOFF.md`) | — | ✅ | — | Destino externo de logs (serviço/segredo) |
-| S4 (camada de domínio) | Não iniciada (sem branch `feature/s4-*`) | — | — | Tudo | — |
-| S5.1 (membros) | ✅ concluída (#43) | — | ✅ | Staging + E2E (seção 4) | Produção da migration |
-| Integração | Execução 5: CI e validação local verdes | este PR | — | Seção 4 (bloqueada por confirmação) | Liberar `apply_migration` no staging |
+- **Data/hora (UTC):**
+- **Agente:** ChatGPT ou Claude
+- **Objetivo:**
+- **Branch / PR / commit:**
+- **Arquivos alterados:**
+- **Ambiente afetado:** local, staging ou produção
+- **Ações executadas:**
+- **Validações e resultados:** incluir comandos e contagens quando disponíveis
+- **Bloqueios / riscos:**
+- **Decisões que exigem Samuel:**
+- **Próxima ação / responsável:**
 
-Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
+Distinguir sempre:
+- **Implementado:** código/alteração existe.
+- **Validado:** teste ou verificação foi executado e passou.
+- **Publicado:** deployment foi promovido ao ambiente pretendido.
+- **Operacional:** fluxo real foi comprovado de ponta a ponta.
 
-## 6. Autorizações necessárias para produção (acumulado)
+Esses estados não são intercambiáveis.
 
-1. Migrations na produção, em ordem: `20261119060000_agent_model_usage`, `20261119070000_workspace_members`,
-   `20261119110000_audience_consent`, `20261119120000_keyset_pagination_indexes`.
-2. Merge de `feature/smkon-production-readiness` na `main` e promoção do deploy.
-3. Variáveis/segredos (S14): `SUPABASE_SECRET_KEY` por ambiente, credencial OIDC/AI Gateway, `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED`.
-   (S6.1, opcional): `LOG_DRAIN_URL`/`LOG_DRAIN_TOKEN` — destino externo de logs (ver `docs/S6_1_HANDOFF.md`).
-4. Staging (já autorizado, falta só a confirmação da ferramenta): `workspace_members` e `keyset_pagination_indexes`.
+## Estado inicial registrado — 20/11/2026
 
+Auditoria de referência realizada por ChatGPT, consultando GitHub, Vercel e Supabase.
 
-## 7. Auditoria atualizada — 20/11/2026 (consulta Supabase 21/11 UTC)
+### Evidências observadas
+- Repositório: `smklj/smkon`.
+- Branch de integração: `feature/smkon-production-readiness`.
+- Último commit de integração consultado: `d0d83a4cc422b76022738d84a48f6776beb21a18` (`fix/integration-run6`).
+- PR #56 identificado como aberto na auditoria; verificar estado antes de agir.
+- Último preview Vercel consultado: READY, associado ao commit `d0d83a4`. Isso não comprova promoção para Production.
+- Supabase produção: 20 migrations identificadas.
+- Supabase staging: 21 migrations identificadas.
+- Migrations presentes no staging e ausentes na produção: `workspace_members`, `audience_consent`, `keyset_pagination_indexes`.
+- `agent_model_usage` aparece na produção; origem da aplicação precisa ser confirmada.
+- Produção: 32/32 tabelas públicas consultadas com RLS habilitado.
+- Security Advisors: alertas para funções SECURITY DEFINER, `rate_limit_consume` acessível por anon, `rate_limit_buckets` sem política RLS e proteção contra senhas vazadas desabilitada.
+- Performance Advisors: quatro FKs sem índice de cobertura e 67 índices reportados como não utilizados.
+- Registro de integração: 238/238 testes unitários, 19/19 arquivos de testes de banco, typecheck, lint e build aprovados localmente. Confirmar novamente no commit/PR atual antes de release.
+- Lista de Edge Functions consultada no projeto de produção retornou vazia; confirmar se a arquitetura atual realmente depende de Edge Functions ou se foram removidas/substituídas.
 
-> Esta seção substitui os estados antigos das seções 3–5 quando houver divergência. O restante do documento é histórico da execução 5.
+### Prioridades iniciais
+1. **P0 — Segurança:** revisar privilégios das funções SECURITY DEFINER, exposição de `rate_limit_consume`, política da tabela `rate_limit_buckets`, Auth e isolamento multi-tenant.
+2. **P1 — Release:** reconciliar migrations de produção com staging, verificar PR #56, CI e destino do deployment.
+3. **P2 — Produto:** validar persistência e fluxos ponta a ponta de Content Studio, Product Intelligence, Finance Center e mídia.
+4. **P3 — Integrações:** comprovar conexões, OAuth, filas, publicação e conciliação com provedores.
+5. **P4 — Inteligência:** evoluir o Market Opportunity Radar com scoring reproduzível e evidências.
 
-- **Staging:** 21/21 migrations presentes, incluindo `workspace_members`, `audience_consent` e `keyset_pagination_indexes`.
-- **Produção:** 20 migrations presentes. Inclui `agent_model_usage`, `workspace_members` e `audience_consent`; falta somente `20261119120000_keyset_pagination_indexes` do conjunto atual. A origem da aplicação de `agent_model_usage` não foi estabelecida.
-- **S4:** PRs #54 e #55 mergeados (etapas 1–2b). Restam 2c mídia, 2d financeiro, 2e tenancy, 2f audiência, 2g agentes e handoff. Como staging está em dia, a regeneração/comparação de tipos do Supabase pode ser retomada.
-- **S11:** nenhum conector financeiro real ou handoff foi encontrado na árvore do commit consultado. Há placeholders de conexão e módulo de comissões. Não declarar integração operacional.
-- **S14:** código integrado, mas não há evidência de chamada real ao AI Gateway. Migration de consumo `agent_model_usage` agora consta em produção; conferir a configuração efetiva de `SUPABASE_SECRET_KEY`, OIDC/API key, orçamento e cron sem revelar valores.
-- **Segurança produção:** Advisors consultados em 21/11 UTC: 1 SECURITY DEFINER executável por anon (`rate_limit_consume`), 31 executáveis por authenticated, RLS sem política em `rate_limit_buckets` e leaked-password protection desativada. A tabela não mostrou grants diretos a anon/authenticated; função de rate limit tem `search_path=''`, allowlist de scopes e validação de subject. Revisar sem revogação em lote.
-- **PR #56:** aberto; API GitHub retornou `mergeable=false`. Status check Vercel do commit consultado estava success, mas isso não autoriza merge nem prova Production.
-- **Validações:** os números 238/238 unitários e 19/19 SQL vêm do corpo do PR #56; não foram reexecutados nesta auditoria.
-- **Ações protegidas:** nenhuma migration de produção, alteração de Auth/segredos, merge em `main` ou deploy executado.
-- **Plano detalhado:** `docs/RELEASE_AUDIT_S4_S11_S14_SECURITY.md`.
+### Restrições
+- Não aplicar migrations em produção sem autorização explícita do Owner.
+- Não promover deployment para produção sem autorização explícita do Owner.
+- Não alterar, imprimir ou registrar valores de segredos, tokens ou credenciais.
+- Não assumir que RLS habilitado significa isolamento multi-tenant validado.
+- Não assumir que uma função SECURITY DEFINER é vulnerável apenas por aparecer no Advisor; revisar grants e corpo/validações.
+- Não executar alterações destrutivas para resolver divergências sem backup, plano de rollback e aprovação.
 
+## Regra de continuidade
 
-## 8. Decisão e plano S11 — 20/11/2026
-
-- **Provedor inicial:** Mercado Livre.
-- **Ambiente:** staging do SMKON, com usuários/dados de teste do ambiente de desenvolvedor do Mercado Livre quando disponíveis.
-- **Modo inicial:** somente leitura e dry-run; nenhuma ação de escrita no marketplace.
-- **Documento de execução:** [S11_HANDOFF.md](S11_HANDOFF.md).
-- **Estado:** decisão registrada e plano definido; conector ainda não implementado nem operacionalmente validado.
-- **Próxima etapa:** inspeção dos padrões de OAuth, ConnectionsPanel, tenancy e financeiro; adapter tipado + fixtures; testes de OAuth, paginação, idempotência, falhas e isolamento multi-tenant.
-- **Não autorizado nesta decisão:** contas reais, secrets, sincronização recorrente, migrations aplicadas, custos pagos, merge em `main` ou deploy de produção.
-
-
-## 9. S11 — adapter inicial em revisão (21/11/2026 UTC)
-
-- **Branch:** `feature/s11-mercado-livre-adapter`.
-- **PR:** [#57](https://github.com/smklj/smkon/pull/57), Draft, aberto e não mergeado.
-- **Implementado no código:** tipos do provider; helpers state/PKCE S256; builder de URL de autorização; troca server-side de authorization code e refresh token; cliente API GET-only com origem fixa, timeout e limite de resposta; testes unitários iniciais.
-- **Handoff:** `docs/S11_HANDOFF.md` na branch do PR.
-- **Validação pendente:** test:unit, typecheck e lint não foram executados por este agente.
-- **Ainda pendente:** callback OAuth, state persistido e de uso único, secret store/cifragem, armazenamento rotativo de tokens, lock de refresh, mapper de dados financeiros, sync, persistência idempotente e migration.
-- **Segurança:** sem secrets, contas, chamadas externas, migrations ou deploys.
-- **Próxima ação:** aguardar CI/revisão do PR #57 e concluir a decisão técnica de armazenamento seguro antes de implementar callback e persistência.
+Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo e, quando aplicável, `docs/INTEGRATION_STATUS.md`, abrir/atualizar PR e deixar a próxima ação explícita. O próximo agente deve continuar do estado registrado, não recomeçar a análise nem presumir que trabalho não documentado foi concluído.
 
 
-### S11 — validação em andamento (21/11/2026 UTC)
+## Reconstrução histórica S1–S16 — 20/11/2026
 
-- PR #57: primeira CI executou typecheck/lint com sucesso e testes SQL/migrations com sucesso; 1 teste unitário falhou devido a import ESM sem extensão. Os demais 238 passaram.
-- Correção publicada no branch; imports agora usam extensão explícita. A revisão também corrigiu a separação de scopes e validou token type Bearer.
-- Aguardando nova CI para confirmar correção. Sem chamada externa, credenciais, migrations ou deploy.
+- **Agente:** ChatGPT
+- **Objetivo:** reconstruir a linha do tempo dos 16 splits a partir do GitHub, PRs, roadmap, status de integração e handoffs.
+- **Branch:** `feature/smkon-production-readiness`
+- **Documento criado:** `docs/HISTORICO_SPLITS_S1_S16.md`
+- **Commit:** `2b0f6367b7e176047a94e9cf8e577aa91f548d48`
+- **Escopo:** separa os três domínios de receita dos 16 splits de execução; registra PRs #1–#56, status por split, cronologia, diferenças entre implementado/validado/staging/produção e pendências.
+- **Descoberta importante:** S4 não está totalmente pendente: PRs #54 e #55 integraram etapas 1–2b; restam 2c–2g e handoff, conforme a atualização do PR #56. O status antigo do documento de integração dizia “não iniciada” e ficou desatualizado.
+- **Estado consultado:** PR #56 aberto; PR #7 e #3 também aparecem abertos. O PR #56 registra CI e testes locais verdes (238/238 unitários, 19/19 arquivos SQL, typecheck/lint/build) e staging 21/21 migrations; preview READY não significa Production.
+- **Limites:** reconstrução baseada em PRs, roadmap e handoffs; a busca de commits vazia do conector não retornou uma exportação completa de commits. O estado de produção e as pendências de autorização precisam ser revalidados antes de qualquer release.
+- **Ações externas:** nenhuma migration, alteração de segredo, merge em `main` ou promoção de produção executada.
+- **Próxima ação:** usar o histórico como base para fechar S4, revisar PRs abertos e resolver as pendências de segurança/produção com autorização do Owner.
+
+
+## Auditoria S4/S11/S14, segurança e release — 20/11/2026
+
+- **Agente:** ChatGPT · **Documento:** `docs/RELEASE_AUDIT_S4_S11_S14_SECURITY.md`
+- **Commit do relatório:** `d1738d49632b9cfb452f5be727c42e56b2c99356`
+- **Escopo:** inspeção read-only de código/árvore GitHub, PR #56, migrations staging/produção, Security Advisors e grants da tabela de rate limit.
+- **S4:** etapas 1, 2, 2a e 2b concluídas (#54/#55); 2c mídia, 2d financeiro, 2e tenancy, 2f audiência, 2g agentes e handoff pendentes. Staging 21/21 migrations remove o bloqueio anterior para regenerar tipos.
+- **S11:** não foi encontrado conector financeiro real nem handoff S11 no commit; existem placeholders de conexões e módulo de comissões. Provedor inicial e credenciais dependem do Owner.
+- **S14:** executor implementado, mas nenhuma chamada real ao AI Gateway foi comprovada. A migration `agent_model_usage` agora consta na produção, atualizando o handoff antigo; a presença/validade das variáveis e OIDC ainda precisa ser verificada sem expor segredos.
+- **Ambientes:** staging 21/21 migrations; produção 20/21, falta `keyset_pagination_indexes`. PR #56 aberto e GitHub retornou `mergeable=false`. Preview READY não é Production.
+- **Segurança:** `rate_limit_consume` SECURITY DEFINER executável por anon/authenticated; corpo tem `search_path=''`, allowlist de scopes e valida subject de 64 hex. Uso anon parece intencional para login pré-auth, portanto não revogar em lote. `rate_limit_buckets` sem políticas RLS; grants diretos observados somente para postgres/service_role. 31 funções SECURITY DEFINER para authenticated exigem revisão individual; leaked-password protection desligada.
+- **Ações:** nenhuma migration, alteração de segredo/Auth, merge, deploy ou chamada paga executada.
+- **Próximo responsável:** ChatGPT/Claude pode continuar S4 e análise de código; Samuel precisa decidir provedor/credenciais S11, autorizações de Auth/produção e janela de release.
+
+
+## Decisão S11 — 20/11/2026
+
+- **Agente:** ChatGPT, decisão operacional tomada para destravar a frente sem solicitar escolha adicional ao Owner.
+- **Decisão:** Mercado Livre como primeiro provedor; staging do SMKON como primeiro ambiente; usuários/dados de teste do ambiente de desenvolvedor do provedor quando disponíveis.
+- **Modo:** OAuth e ingestão controlada, inicialmente read-only/dry-run; sem ações de escrita no marketplace.
+- **Registro técnico:** `docs/S11_HANDOFF.md`.
+- **Justificativa:** é uma das opções já previstas no roadmap; limitar o primeiro adapter reduz escopo e permite validar OAuth, paginação, idempotência, conciliação e isolamento antes de adicionar Amazon.
+- **Limites:** não conecta conta real, não cria secrets, não habilita sync recorrente, não aplica migrations, não gera custo pago, não faz merge nem deploy de produção.
+- **Próxima ação:** inspecionar os padrões reais de OAuth/connections/tenancy/finance; implementar adapter e fixtures sem credenciais; submeter qualquer migration como diff revisável antes de aplicação.
+
+
+## S11 — primeira implementação em revisão — 21/11/2026 UTC
+
+- **Agente:** ChatGPT
+- **Branch:** `feature/s11-mercado-livre-adapter`
+- **PR:** [#57 — adapter server-side Mercado Livre](https://github.com/smklj/smkon/pull/57) (Draft; aberto; não mergeado).
+- **Handoff:** `docs/S11_HANDOFF.md` atualizado na branch do PR.
+- **Implementado:** tipos, helpers puros de state/PKCE S256/expiração, URL de autorização Brasil, troca server-side de code/refresh e cliente GET-only com host fixo/timeout/limite de resposta; testes unitários iniciais.
+- **Não implementado:** callback/rotas, armazenamento one-time de state, secret store/criptografia, persistência de tokens, refresh lock, mapper financeiro, sync, repository e migration.
+- **Validação:** testes, typecheck e lint ainda não executados; PR permanece Draft.
+- **Ambientes:** nenhuma chamada ao Mercado Livre; nenhuma conta ou credencial; nenhuma migration ou alteração em staging/produção.
+- **Próxima ação:** CI e revisão do PR; depois desenhar state one-time e armazenamento seguro com base em capacidade real do ambiente, antes de callbacks OAuth.
+
+
+### S11 — correção após CI inicial (21/11/2026 UTC)
+
+- Primeira execução CI do PR #57: typecheck/lint OK; testes SQL/migrations OK; unit tests 238/239 (um arquivo falhou ao resolver imports ESM sem extensão); build foi pulado por falha anterior.
+- Corrigido import dos testes com extensão explícita `.ts`, conforme padrão existente; corrigida normalização de scopes OAuth e validação de `token_type=bearer`.
+- Último commit de código: `63eee98244f57772bd1e08f8a0e46fdf39495d52`.
+- Nova execução CI ainda não confirmada. PR continua Draft, sem merge/deploy.
+
+
+### S11 — CI verde (21/11/2026 UTC)
+
+- PR #57: typecheck, lint, unit tests, build e SQL/migration tests passaram no CI pull_request e push.
+- E2E acionado por deployment_status foi cancelado; não representa falha no pipeline CI principal.
+- Vercel Preview verificado sem descriptografar secrets; não existem variáveis de configuração do Mercado Livre, logo não há conta/app OAuth configurado.
+- Implementação de storage seguro ainda pendente; PR #57 permanece Draft e não foi mesclado nem implantado.
