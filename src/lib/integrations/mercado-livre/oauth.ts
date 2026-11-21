@@ -3,20 +3,7 @@ import "server-only";
 import type { MercadoLivreOAuthConfig, MercadoLivreTokenResponse, MercadoLivreTokenSet } from "./types";
 
 const TOKEN_ENDPOINT = "https://api.mercadolibre.com/oauth/token";
-const DEFAULT_AUTHORIZATION_URL = "https://auth.mercadolivre.com.br/authorization";
 const MAX_RESPONSE_BYTES = 64 * 1024;
-
-
-export function buildAuthorizationUrl(config: Pick<MercadoLivreOAuthConfig, "clientId" | "redirectUri" | "authorizationBaseUrl">, state: string, challenge: string): string {
-  const url = new URL(config.authorizationBaseUrl ?? DEFAULT_AUTHORIZATION_URL);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("client_id", config.clientId);
-  url.searchParams.set("redirect_uri", config.redirectUri);
-  url.searchParams.set("state", state);
-  url.searchParams.set("code_challenge", challenge);
-  url.searchParams.set("code_challenge_method", "S256");
-  return url.toString();
-}
 
 async function requestToken(body: URLSearchParams, fetchImpl: typeof fetch = fetch): Promise<MercadoLivreTokenResponse> {
   const response = await fetchImpl(TOKEN_ENDPOINT, {
@@ -35,6 +22,7 @@ async function requestToken(body: URLSearchParams, fetchImpl: typeof fetch = fet
   const token = value as Partial<MercadoLivreTokenResponse>;
   if (
     typeof token.access_token !== "string" || !token.access_token ||
+    typeof token.token_type !== "string" || token.token_type.toLowerCase() !== "bearer" ||
     typeof token.refresh_token !== "string" || !token.refresh_token ||
     typeof token.expires_in !== "number" || !Number.isFinite(token.expires_in) || token.expires_in <= 0 ||
     typeof token.user_id !== "number" || !Number.isSafeInteger(token.user_id)
