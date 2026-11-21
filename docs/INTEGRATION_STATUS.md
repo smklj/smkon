@@ -236,3 +236,17 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
 
 A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
+
+
+## Proteção contra snapshot fora de ordem — 21/11/2026
+
+- A migration 20261121200000_mercado_livre_order_versioning adiciona external_events.source_updated_at e substitui a RPC mercado_livre_persist_order_snapshots.
+- O normalizer agora usa Mercado Livre date_last_updated como watermark (normalization_version 2). Se o provedor omitir o campo, usa date_created como fallback.
+- A RPC só atualiza o evento/pedido quando o watermark recebido é igual ou mais recente que o já persistido; snapshots antigos são ignorados e não podem regredir order_status/valores. A persistência da página e o checkpoint continuam atômicos.
+- CI #475 passou nos dois jobs no head 2014df15e749be97adb29a5809edf2dff815a7c0: typecheck, lint, unit tests, build, migration e SQL tests.
+- Migration aplicada somente no Staging, registrada pelo Supabase como versão 20261121091235. Staging agora tem 28 migrations. Cinco testes SQL S11 executados em rollback-only sem exceções, incluindo regressão de snapshot antigo.
+- O Security Advisor não apontou novo WARN para S11; permanecem quatro INFO de RLS enabled/no policy em tabelas server-side, 31 WARNs de SECURITY DEFINER authenticated preexistentes, um WARN de rate_limit_consume para anon e um WARN de proteção de senha vazada. Performance Advisor: quatro FKs de S10/S15 e índices não utilizados INFO; sem FK S11 pendente.
+- Staging continua sem conexão, credenciais, OAuth attempts, pedidos, eventos ou checkpoints reais.
+- Produção continua com 20 migrations e sem objetos S11. Nenhuma migration/deploy de produção foi executado.
+- Preview do head continua bloqueado por HTTP 402 api-deployments-free-per-day; o Preview READY mais recente é do commit intermediário 5809300, anterior à rota/UI do checkpoint. Credenciais Mercado Livre e SUPABASE_SECRET_KEY continuam ausentes.
+- Pendências: dividir automaticamente janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, conciliação financeira e backup/restauração comprováveis.
