@@ -93,6 +93,7 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 | #47–#53 | S15, integrações, S16 | Mergeados |
 | #54–#55 | S4 etapas 1–2b | Mergeados |
 | #56 | Integração execução 6 | Aberto no levantamento |
+| #57 | S11 Mercado Livre — OAuth server-side e snapshots idempotentes | Mergeado por squash em `feature/smkon-production-readiness`; não promovido a `main` |
 
 ## 5. Divergências e limites documentais
 
