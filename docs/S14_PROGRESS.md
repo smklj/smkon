@@ -437,3 +437,15 @@ Não executar operations_review real enquanto faltarem: (1) SUPABASE_SECRET_KEY 
 
 ### Segurança
 Nenhum merge, alteração em main/Production, migration remota, alteração de secret, concessão de grant, criação de budget compartilhado ou chamada paga ao modelo foi executada nesta rodada.
+
+## Checkpoint S14 — 21/11/2026 17:55 BRT (run 11)
+
+- Release #87 já está em `main`; PR #82 foi incorporada à integração. O HEAD atual de `main` é `69c57beb` (PR #94). A PR #88 documental está divergida (9 ahead / 8 behind); esta atualização foi reaplicada em branch nova baseada no HEAD atual.
+- Production Vercel READY em `dpl_CgbrQ8jM7pzDCeWzCNbAQco5sUEZ`, SHA `d30c42a`; compare confirma descendência do release #87. Build inclui `/api/agents/worker`. Main está 3 commits à frente do deployment.
+- Cron `17 11 * * *` (08:17 BRT) está no `vercel.json` da main. Não há logs do worker nos últimos 30 min; a janela de 1h excede retenção Hobby. Próxima execução programada após o deployment: 22/11/2026 08:17 BRT.
+- Inventário Vercel sem decrypt: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive em Preview/Production sem validação do tamanho; `AGENT_EXECUTOR_ENABLED=true` nos dois; OIDC/Gateway/modelo e teto interno US$ 5 configurados. Sem chave, o handler falha fechado em `service_not_configured` antes do claim, se os gates anteriores passarem.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets e rules externos inexistentes. Staging: 121 runs, todas killed; 0 steps/usage/grants. Production: zero objetos/uso. `agent_model_usage` zerado e consistente com o agregado do Gateway, sem prova de chamada real.
+- Schema/constraints/policies/RLS/ACL/definições das funções auditadas têm assinaturas idênticas entre Staging e Production; IDs de migration S14 ainda diferem. Não executar repair/db push sem plano e backup.
+- CI S14 #44933511061: 288/288; E2E #44933605001: 36/36 no SHA Preview exato. CI integração #44943940164: 350/350 em SHA anterior à Frente E. HEAD atual #94 tem Vercel check build-rate-limit e nenhuma workflow run PR associada.
+- Bloqueios: service key Staging ausente, zero tool grants, budget externo ausente, CRON_SECRET/OIDC não validados em runtime e sem E2E do deployment de Production. Não executar teste real até fechar todos os gates.
+- Nenhuma alteração em Production, merge, migration, secret, grant, budget ou chamada paga nesta rodada.
