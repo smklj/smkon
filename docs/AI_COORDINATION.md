@@ -191,3 +191,14 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - CI no head `9961b9cf5197e3ba72962e6fd32170d85903efba` estava pendente ao registrar; não declarar verde antes de consultar Actions.
 - Próxima prioridade: validar CI; depois revisar schema real e desenhar repository/migration de conexões com RLS/grants mínimos e membership check server-side. Refresh rotativo exige serialização/CAS antes de ser integrado.
 - Não criar/configurar chave real, conectar contas, aplicar migration em ambientes compartilhados, fazer merge em main ou deploy sem autorização explícita.
+
+
+### Persistência server-side e refresh serializado — 21/11/2026 UTC
+
+- Migration preparada: `supabase/migrations/20261121130000_mercado_livre_credentials.sql`.
+- A migration cria `mercado_livre_credentials`, vinculada por FK composta a `source_connections(id, organization_id)`; guarda apenas envelope cifrado JSONB, expiração e versão do token. RLS habilitado; sem grants para anon/authenticated; acesso de tabela somente service_role.
+- RPCs service_role-only: `mercado_livre_claim_refresh` (lease transacional para impedir refresh simultâneo), `mercado_livre_save_refreshed_tokens` (CAS por versão e lease ativo) e `mercado_livre_release_refresh`.
+- Repository server-only adicionado. Escrita de credenciais exige sessão autenticada, papel owner/admin e validação da conexão no mesmo organization_id, provider Mercado Livre e domínio owned_sales antes do uso do service role.
+- Limites atuais: o repository ainda não orquestra o refresh end-to-end nem implementa callback OAuth; o caminho de claim deve ser integrado a uma operação que descriptografe, faça refresh, cifre o novo par e salve via CAS, liberando lease em falha. O save retorna false se a lease/version não corresponder.
+- CI precisa ser verificado no head mais recente após estes commits. Migration é apenas arquivo versionado; **não foi aplicada** em Supabase local, staging ou produção.
+- Nenhuma chave real, token ou conta conectada; nenhum deploy ou merge.
