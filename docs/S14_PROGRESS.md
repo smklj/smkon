@@ -410,3 +410,11 @@ Nenhum merge, alteração em `main`/Production, migration remota, secret, grant 
 ## Rebase adicional — 21/11/2026 14:15 BRT
 
 A integração recebeu mais cinco commits depois de `79ff06be`, avançando para `2455806c`. A comparação `79ff06be...feature/smkon-production-readiness` mostra apenas alterações de S4/audiência (10 arquivos), sem sobreposição com os quatro arquivos de código/testes S14. Para evitar outra PR divergente, as correções foram reaplicadas em `fix/s14-timeout-ledger-rebased-20261121-1415`, criada diretamente de `2455806c`. CI/Preview/E2E desta nova branch ainda precisam ser executados; evidências anteriores continuam vinculadas aos SHAs indicados na seção anterior.
+
+
+## Handoff da PR substituta — 21/11/2026 14:16 BRT
+
+- PR #78 aberta em Draft: https://github.com/smklj/smkon/pull/78
+- Branch `fix/s14-timeout-ledger-rebased-20261121-1415`, head documental `a5de790d`, base declarada `feature/smkon-production-readiness` no SHA `2455806c`; comparação pré-abertura 7 ahead/0 behind.
+- PR #76 encerrada sem merge e com comentário apontando para #78. Não houve merge de código.
+- A nova PR precisa de CI no próprio head, Preview e E2E específicos; evidências dos SHAs anteriores não substituem esses gates.
