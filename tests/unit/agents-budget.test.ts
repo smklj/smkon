@@ -114,6 +114,25 @@ test("body stream failure em resposta 2xx registra custo conservador antes de fa
   assert.equal(usage[0].outputTokens, DEFAULT_PLAN_MAX_TOKENS);
 });
 
+test("abort durante body stream 2xx preserva o erro de timeout após registrar o pior caso", async () => {
+  const usage: ModelUsage[] = [];
+  const controller = new AbortController();
+  const aborted = new Error("aborted");
+  const fetch: FetchLike = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => {
+      controller.abort();
+      throw aborted;
+    },
+  });
+  const model = createGatewayModel({ apiKey: OIDC, model: MODEL, fetch, onUsage: async (u) => void usage.push(u) });
+
+  await assert.rejects(model.plan(planInput, controller.signal), (error) => error === aborted);
+  assert.equal(usage.length, 1);
+  assert.equal(usage[0].outputTokens, DEFAULT_PLAN_MAX_TOKENS);
+});
+
 test("falha ao gravar o consumo derruba a chamada; modelo sem preço não aceita registro de consumo", async () => {
   const { impl } = fakeFetch([completion('{"steps":[]}')]);
   const model = createGatewayModel({ apiKey: OIDC, model: MODEL, fetch: impl, onUsage: async () => { throw new Error("db down"); } });
