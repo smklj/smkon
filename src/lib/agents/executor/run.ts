@@ -149,8 +149,8 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
     if (maxCalls < 1) return await failStep({ phase: "plan", tool: null, input: planInput }, "invalid_plan");
 
     let rawPlan: unknown;
+    const planTimeout = stepBudget();
     try {
-      const planTimeout = stepBudget();
       rawPlan = await withTimeout(planTimeout.ms, (signal) =>
         model.plan({ goal: ctx.goal, agent: ctx.agent, tools: ctx.grantedTools, maxCalls }, signal),
       );
@@ -197,8 +197,8 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
       }
 
       let output: JsonObject;
+      const toolTimeout = stepBudget();
       try {
-        const toolTimeout = stepBudget();
         output = await withTimeout(toolTimeout.ms, (signal) => handler(ctx, call.input, signal));
       } catch (error) {
         if (error instanceof Halt) throw error;
@@ -219,8 +219,8 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
     await ensureActive();
     const verifyInput: JsonObject = { observed: observations.map(({ seq, tool, status }) => ({ seq, tool, status })) };
     let rawSummary: unknown;
+    const summaryTimeout = stepBudget();
     try {
-      const summaryTimeout = stepBudget();
       rawSummary = await withTimeout(summaryTimeout.ms, (signal) =>
         model.summarize({ goal: ctx.goal, agent: ctx.agent, observations }, signal),
       );
