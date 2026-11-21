@@ -93,3 +93,6 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 - Query read-only em Produção confirmou ausência das tabelas `mercado_livre_credentials`, `mercado_livre_oauth_attempts` e das funções `mercado_livre_*` (zero funções). Nenhuma parte do S11 foi aplicada em produção.
 - Query read-only em Staging confirmou seis RPCs S11: todas `SECURITY DEFINER`, `search_path=''`, sem EXECUTE para `anon`/`authenticated`, com EXECUTE somente para `service_role`.
 - A migration de índices FK foi aplicada em Staging; Advisor não aponta mais as quatro FKs S11 sem cobertura. Nenhuma alteração de produção foi feita.
+
+
+- Segurança adicional de paginação: offsets maiores que zero exigem que o cliente reenvie a mesma janela explícita; o servidor rejeita offset sem `createdFrom`/`createdTo`, evitando que a janela móvel mude entre páginas.
