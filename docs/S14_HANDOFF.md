@@ -60,7 +60,7 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 |---|---|---|
 | `20261119040000_agent_draft_content` | ✅ | ✅ |
 | `20261119050000_agent_claim_queue` | ✅ | ✅ |
-| `20261119060000_agent_model_usage` | ✅ | ⏳ pendente (precisa de autorização) |
+| `20261119060000_agent_model_usage` | ✅ | ✅ |
 
 ## Pendências e autorizações do Owner
 
@@ -68,8 +68,7 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
    (staging em Preview, produção em Production). Sem ela o worker responde `503 service_not_configured` e nada executa.
 2. 🔐 **Crédito e orçamento no AI Gateway** — conferir crédito do time (sem crédito: 402 → `model_error`) e criar o
    orçamento do projeto `smkon` (US$ 5/mês) como segunda barreira, independente do teto no código.
-3. 🔐 **Migration `20261119060000_agent_model_usage` na produção** — sem ela a consulta do gasto falha em produção e o
-   disparo não executa nenhuma execução (falha fechada); o detalhe mostra "migration pendente" no consumo.
+3. ✅ **Migration `20261119060000_agent_model_usage` na produção** — list_migrations confirmou a migration nos dois projetos em 21/11/2026; o bloqueio de consumo agora é operacional (credencial do worker, budget externo e grants), não DDL.
 4. 🔐 **Merge da integração na `main`** — o worker e o cron só existem em produção depois dele. Crons da Vercel não
    rodam em Preview; no plano Hobby o cron é no máximo diário.
 5. Primeiro uso real: no staging, com orçamento baixo, acompanhando `/agentes/[id]` (passos e consumo).
@@ -126,3 +125,40 @@ e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com e
 - **Não operacional:** faltam `SUPABASE_SECRET_KEY` de staging no Preview, budget externo do AI Gateway, confirmação do comprimento de `CRON_SECRET` e grants de ferramentas no workspace. Nenhuma chamada real foi feita; consumo permanece zero.
 - Antes do smoke test: Owner deve cadastrar a secret de staging como sensitive em Preview, criar budget externo baixo para o projeto, validar `CRON_SECRET` (32+ caracteres) sem compartilhar o valor e conceder somente as ferramentas necessárias a `operations_review`. Depois executar uma única run e conferir resposta do Gateway, passos, status final e registros de consumo (plan/verify) em `agent_model_usage`.
 - Não houve merge em `main`, alteração de secrets, mudança de configuração Production, migration remota ou escrita de dados. Manter Production sem release S14 até concluir os gates.
+
+
+## Auditoria operacional complementar — 21/11/2026, 06:01 BRT
+
+### GitHub, PRs e validação
+
+- PR #61 (fix/s14-deadline-timeout-sync-20261121) permanece aberto/Draft, mergeable=true, 4 commits à frente e 0 atrás da base feature/smkon-production-readiness (base SHA 7ab9b864). Head após a correção de contabilização: d9ff3869f84970684a043ca6c530e0e13ed3a5ed.
+- PR #58 permanece aberto/Draft e divergido (19 commits à frente, 10 atrás); é substituído pelo patch limpo #61, mas fica como fallback até o novo CI/E2E do head #61.
+- CI #44883123910: success nos dois jobs (audit de dependências, typecheck, lint, unit tests, build, migrations e SQL). E2E #44883164342: Playwright success em staging isolado no commit de código anterior e0faaa29. Esses resultados não cobrem os dois commits mais recentes de contabilização; novo CI/E2E do head d9ff3869 ainda pendente.
+- Preview READY anterior para o commit documental 5ed2e23a: https://smkon-mwkvooege-smkon.vercel.app. Preview READY anterior para o commit de código e0faaa29: https://smkon-pgxv2rqbn-smkon.vercel.app. O Preview do head novo d9ff3869 ainda precisa ser confirmado.
+
+### Correção adicional de contabilização
+
+- model-gateway.ts: se uma resposta HTTP 2xx chega, mas a leitura do body stream falha, o adaptador agora registra o custo conservador de pior caso (tokens de entrada estimados + teto de saída) antes de falhar com gateway_body_read_failed.
+- tests/unit/agents-budget.test.ts: teste sem rede garante que a falha de leitura de body em 2xx tenta registrar uso conservador.
+- Commits: 3f2a9bbef6abc0a732bf6a6230c03015d88427bc (código) e d9ff3869f84970684a043ca6c530e0e13ed3a5ed (teste).
+- Limite residual: se a chamada ao Gateway for cobrada e a RPC Supabase de registro estiver indisponível, não há reservation/outbox durável para reconciliar automaticamente esse custo. A chamada falha fechada, mas o ledger pode ficar incompleto; não declarar contabilização financeira perfeita até implementar reconciliação/reserva.
+
+### Vercel e AI Gateway
+
+- Variáveis não secretas em Preview e Production: AGENT_MODEL_PROVIDER=vercel-ai-gateway, AGENT_MODEL_AUTH=oidc, AGENT_MODEL=anthropic/claude-haiku-5.5, AGENT_MONTHLY_BUDGET_USD=5, AGENT_EXECUTOR_ENABLED=true.
+- CRON_SECRET existe como sensitive em Preview e Production. O valor não foi exposto; validação interna confirmou pelo menos 32 caracteres e ausência de espaços nas pontas em ambos os ambientes.
+- SUPABASE_SECRET_KEY não existe no inventário de variáveis do projeto; AI_GATEWAY_API_KEY ausente é esperado no modo OIDC.
+- AI Gateway: nenhum budget de projeto/time/default cadastrado; uso agregado dos últimos 7 dias sem requests, tokens ou custo. Portanto não há chamada real comprovada ao modelo.
+- vercel.json agenda o worker diariamente às 11:17 UTC, mas src/app/api/agents/worker/route.ts e vercel.json não existem na branch main; o Cron S14 não está publicado/ativo em Production. Não foi feita alteração de Production.
+
+### Supabase — leitura somente
+
+- Staging xoyasrizivadxnpmzzno: 26 migrations; 88 agent_runs, todas killed; 0 agent_steps, 0 agent_model_usage, 0 rascunhos vinculados a agente e 0 agent_tool_grants. agent_settings: kill_switch=false, 500 execuções/dia e 12 passos/execução.
+- Production hpplboyysmfcjsnjrdmw: 20 migrations; 0 runs, steps, usage, rascunhos ou grants; nenhuma linha em agent_settings.
+- As três migrations S14 (agent_draft_content, agent_claim_queue, agent_model_usage) constam em ambos os históricos de migrations. Nenhuma migration remota foi aplicada nesta rodada.
+
+### Bloqueios e decisão
+
+- Teste real de operations_review continua bloqueado: falta SUPABASE_SECRET_KEY em Preview e não há budget externo; além disso, o workspace de staging auditado não tem grants para ferramentas de leitura/rascunho.
+- Não executar chamada paga, não conceder grants automaticamente e não habilitar worker real sem esses controles.
+- Nenhuma escrita em Supabase, alteração de secret/configuração Vercel, merge em main ou mudança de Production nesta rodada.
