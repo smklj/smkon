@@ -12,9 +12,9 @@ type ConnectResponse = {
 
 export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);\n\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search);\n    if (params.get("mercadoLivre") === "connected") {\n      setMessage("Conta Mercado Livre conectada com sucesso.");\n      window.history.replaceState({}, "", window.location.pathname);\n    }\n  }, []);
+  const [message, setMessage] = useState<string | null>(null);\n  const [preview, setPreview] = useState<string | null>(null);\n\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search);\n    if (params.get("mercadoLivre") === "connected") {\n      setMessage("Conta Mercado Livre conectada com sucesso.");\n      window.history.replaceState({}, "", window.location.pathname);\n    }\n  }, []);
 
-  async function connect() {
+  async function runPreview() {\n    setBusy(true);\n    setMessage(null);\n    setPreview(null);\n    try {\n      const response = await fetch("/api/integrations/mercado-livre/sync/preview", { method: "POST", cache: "no-store" });\n      const result = await response.json() as { error?: string; pageSize?: number; providerTotal?: number | null; currencies?: Array<{ currency: string; orders: number; gross: number; fees: number }>; message?: string };\n      if (!response.ok) throw new Error(result.error ?? "Não foi possível validar a leitura.");\n      const currencySummary = (result.currencies ?? []).map((item) => `${item.currency}: ${item.orders} pedidos · bruto ${item.gross.toFixed(2)} · tarifas estimadas ${item.fees.toFixed(2)}`).join(" | ");\n      setPreview(`Dry-run: ${result.pageSize ?? 0} pedidos nesta página; total informado pelo provedor: ${result.providerTotal ?? "indisponível"}. ${currencySummary}. Nenhum dado foi gravado.`);\n    } catch (error) {\n      setMessage(error instanceof Error ? error.message : "Falha na validação.");\n    } finally {\n      setBusy(false);\n    }\n  }\n\n  async function connect() {
     setBusy(true);
     setMessage(null);
     try {
@@ -64,7 +64,7 @@ export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
           {busy ? "Preparando…" : connected ? "Reconectar" : "Conectar Mercado Livre"}
         </button>
       </div>
-      {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}
+      {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}\n      {preview ? <p className="feedback" role="status">{preview}</p> : null}
       <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. A leitura de vendas será liberada após a validação da conexão.</p>
     </div>
   );
