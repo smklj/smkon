@@ -15,7 +15,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2d | Financeiro (comissões) | ✅ feito | #65 |
 | 2e | Tenancy (workspace, membros, convites) | ✅ feito | #68 |
 | 2f | Audiência / CRM | ⏳ | — |
-| 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ✅ feito | (PR a abrir) |
+| 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ✅ feito | #75 |
 | 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ⏳ | — |
 
 ## 1. Padrão por módulo
