@@ -74,7 +74,7 @@ export type RevenueProviderInfo = {
 
 export const REVENUE_PROVIDERS: readonly RevenueProviderInfo[] = [
   { provider: "mercado_livre", label: "Mercado Livre", domains: ["owned_sales"], phase: "active", summary: "Pedidos por OAuth, somente leitura." },
-  { provider: "hotmart", label: "Hotmart", domains: ["owned_sales", "affiliate"], phase: "next", summary: "Vendas de produtor e comissões de afiliado por webhook (S18)." },
+  { provider: "hotmart", label: "Hotmart", domains: ["owned_sales", "affiliate"], phase: "active", summary: "Vendas de produtor e comissões de afiliado por webhook (S18)." },
   { provider: "shopify", label: "Shopify", domains: ["owned_sales"], phase: "planned", summary: "Pedidos e produtos da loja própria." },
   { provider: "stripe", label: "Stripe", domains: ["owned_sales"], phase: "planned", summary: "Pagamentos e assinaturas próprios." },
   { provider: "meta_ads", label: "Meta Ads", domains: ["paid_media"], phase: "planned", summary: "Custo de mídia paga." },
