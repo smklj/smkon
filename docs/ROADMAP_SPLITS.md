@@ -46,7 +46,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 |---|---|
 | **S9** · ✅ em produção (`docs/S9_HANDOFF.md`); falta coleta automática | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
 | **S10** · calendário, fila em dry-run, mídia no Storage e licenças implementados e testados (`docs/S10_HANDOFF.md`) | Assets (Storage), registro de licenças e direitos, calendário editorial e fila de publicação em dry-run |
-| **S11** · 🟡 backend OAuth + snapshots PII-free idempotentes mergeados na integração; CI #412/E2E #193 verdes; índices FK aplicados e validados em staging via PR #59/CI #422; pendente: OAuth real, backfill/paginação e conciliação financeira; não operacional | Primeiro conector financeiro real (Mercado Livre ou Amazon), com ingestão e conciliação comprovadas 🔐 (contas/escopos) |
+| **S11** · 🟡 backend OAuth + snapshots PII-free idempotentes mergeados; paginação manual, cursor durável com lease e guarda de snapshot fora de ordem no PR #60 (Draft); CI #475 verde, cinco testes SQL revalidados e migrations S11 em Staging (28/28); Preview do head atual bloqueado por quota Vercel; pendente: OAuth real, divisão automática de janelas, sync incremental e conciliação financeira; não operacional | Primeiro conector financeiro real (Mercado Livre ou Amazon), com ingestão e conciliação comprovadas 🔐 (contas/escopos) |
 | **S12** · ✅ em produção (`docs/S12_HANDOFF.md`); migration `20261119010000` aplicada no staging e na produção | Dashboard com dados reais substituindo constantes |
 
 ## P3 — IA e automações
@@ -80,3 +80,21 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - Supabase de staging `xoyasrizivadxnpmzzno` para todos os Previews e Development; Production segue em `hpplboyysmfcjsnjrdmw`.
 - Testes de navegador (Playwright) rodam no Preview de cada commit (`docs/E2E_STAGING.md`).
 - Toda migration nova é aplicada também no staging, antes do Preview que depende dela.
+
+
+---
+
+## Atualização de fechamento S11 — 21/11/2026
+
+Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
+
+- PR #57: fechado e mergeado por squash em `feature/smkon-production-readiness`, merge commit `8c73cbc`. Não repetir.
+- PR #60: aberto, Draft, base `feature/smkon-production-readiness`; head documental atual `6099b174402836c2474014db67327d4fa14ffdf5`. Head de código validado pelo CI #546: `36e135cb2ac757125bb543ea9319fe9f9e7ff869`.
+- Comparação PR #60/base: 89 commits à frente, 18 atrás. Divergência exige reconciliação por arquivo; não rebasear/mergear automaticamente.
+- CI #546: ambos os jobs (Quality e Database/SQL) passaram no head de código `36e135c`. O commit documental posterior ainda não tem execução CI identificada.
+- Staging: projeto `xoyasrizivadxnpmzzno`, ACTIVE_HEALTHY, 29 migrations. Produção: `hpplboyysmfcjsnjrdmw`, ACTIVE_HEALTHY, 20 migrations.
+- Preview para os SHAs `36e135c` e `6099b17`: nenhum deployment encontrado. E2E do head atual não comprovado.
+- A validação fail-closed da resposta `GET /orders/search`, persistência idempotente e checkpoint durável estão no código. O limite de offset 10.000 permanece; divisão automática de janelas e sync incremental continuam pendentes.
+- ACL/RLS S11 foi verificado anteriormente em Staging; a consulta desta rodada confirmou estado/migrations, não repetiu a auditoria de grants.
+- Produção permanece sem alterações. Não executar migration repair, `db push`, deploy ou promoção da branch de integração enquanto a divergência, Preview/E2E, backup e plano de release isolado não forem resolvidos.
+- A homologação com conta real/OAuth será feita pelo Owner posteriormente; não é critério para a implementação técnica desta rodada.
