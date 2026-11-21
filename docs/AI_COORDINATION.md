@@ -202,3 +202,16 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - Limites atuais: o repository ainda não orquestra o refresh end-to-end nem implementa callback OAuth; o caminho de claim deve ser integrado a uma operação que descriptografe, faça refresh, cifre o novo par e salve via CAS, liberando lease em falha. O save retorna false se a lease/version não corresponder.
 - CI precisa ser verificado no head mais recente após estes commits. Migration é apenas arquivo versionado; **não foi aplicada** em Supabase local, staging ou produção.
 - Nenhuma chave real, token ou conta conectada; nenhum deploy ou merge.
+
+## Continuidade S11 — conexão Mercado Livre planejada para etapa futura (21/11/2026 UTC)
+
+- **Agente:** ChatGPT
+- **Branch/PR:** `feature/s11-mercado-livre-adapter` / [PR #57](https://github.com/smklj/smkon/pull/57), Draft e não mergeado.
+- **Decisão de produto:** manter a conexão da conta do Mercado Livre como etapa explícita do fluxo S11, sem exigir configuração imediata do Owner e sem bloquear o restante do SMKON.
+- **Fluxo futuro:** (1) configurar app no DevCenter; (2) cadastrar variáveis exclusivamente em Vercel Preview; (3) validar redirect URI exata; (4) executar OAuth Authorization Code com state one-time e PKCE; (5) validar identidade/escopo da conta e callback; (6) verificar persistência cifrada e refresh serializado; (7) só então iniciar ingestão read-only/dry-run e reconciliação.
+- **UX esperada:** disponibilizar ação “Conectar Mercado Livre” na área de integrações, com estados desconectado, aguardando autorização, conectado, erro/expiração e desconectar; nunca exibir tokens ou segredos. A ação deve informar claramente o workspace e a conta autorizada.
+- **Dependências do Owner:** criar/selecionar app no DevCenter, cadastrar Client ID/Secret e chave AES-256-GCM nos secrets de Preview sem compartilhá-los no chat, e autorizar uma conta de teste quando chegar a hora.
+- **Critérios de aceite:** OAuth real concluído em Preview; state inválido/expirado/reutilizado rejeitado; conta externa vinculada ao workspace correto; tokens cifrados server-side; refresh concorrente serializado; logs/respostas sem credenciais; desconexão/reconexão testadas.
+- **Limites de segurança:** nenhuma conta conectada nesta atualização; nenhuma variável ou secret criada; nenhuma migration hospedada aplicada; nenhuma sincronização recorrente ou mutação no marketplace habilitada; nenhum merge ou deploy de produção autorizado.
+- **Estado:** planejamento e handoff documentados. O adapter, callback, persistência e refresh têm implementação no PR #57; OAuth real e operação ponta a ponta continuam pendentes. Não declarar integração operacional.
+- **Próxima ação:** quando o Owner estiver pronto, configurar o aplicativo e os secrets em Preview e executar a validação OAuth com conta de teste. Até lá, seguir com tarefas SMKON independentes da conexão externa.
