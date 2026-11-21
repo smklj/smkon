@@ -259,3 +259,15 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - **Limitações/validação pendente:** CI ainda não foi confirmado para o head mais recente; testes concorrentes com fixtures reais de duas conexões e execução end-to-end OAuth em conta de teste ainda não foram realizados. O callback não foi exercitado contra o Mercado Livre. A migration continua sem aplicação em qualquer Supabase hospedado.
 - **Atenção operacional:** callback requer que a conexão `source_connections` exista previamente e que a sessão Supabase do usuário seja preservada durante o redirecionamento do provedor. O app deve cadastrar exatamente o mesmo redirect URI em DevCenter e Vercel antes de qualquer teste.
 - PR #57 permanece Draft. Nenhum merge, deploy, secret, conta real ou chamada OAuth foi executado.
+
+
+### Revisão de robustez pós-CI — 21/11/2026 UTC
+
+- CI do head anterior `c09635d5e3bccd5721d461cdf0b796a569ec132a`: **sucesso confirmado**. Jobs concluídos: Typecheck/lint/unit tests/build e migrations/SQL tests em banco descartável.
+- O teste SQL atual é estrutural (RLS, grants, FK composta, SECURITY DEFINER, search_path e privilégios). Ele **não comprova ainda concorrência real** entre workers nem CAS com fixtures persistidas; esses cenários continuam pendentes.
+- Callback OAuth ajustado para verificar configuração server-side antes de consumir o state e para consumir/inutilizar state também em caso de recusa explícita do provedor.
+- Refresh ajustado para não executar cleanup redundante após CAS bem-sucedido e para não mascarar a falha primária caso a liberação do lease falhe.
+- Commits de correção: `ecf101193a3c795bc3a518bd3d70290eacea7281` (callback) e `212fc3170609fbc3e53ee297472554ab1045d3fd` (refresh). Ambos estão presentes na branch consultada.
+- **CI das correções:** ainda sem workflow associado retornado na consulta; status Vercel estava pending no momento da checagem. Não declarar as correções validadas até o novo CI terminar.
+- Próximo teste de banco: fixture isolada com usuário, organização e source_connection; adquirir lease uma vez, confirmar segunda aquisição vazia, rejeitar save com lease/version incorretos, aceitar save com lease correto e confirmar incremento de versão/limpeza do lease. Executar somente no banco descartável do pipeline.
+- Nenhuma migration aplicada em Supabase hospedado; nenhuma credencial ou segredo criado; nenhuma conta Mercado Livre conectada; nenhum merge ou deploy de produção.
