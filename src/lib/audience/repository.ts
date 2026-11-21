@@ -1,11 +1,19 @@
-import { decodeCursor, toPage, type Page } from "@/lib/pagination/keyset";
-import type { createClient } from "@/lib/supabase/server";
-import { CONTACTS_KEYSET, CONTACT_PAGE_SIZE, contactsListQuery } from "./contacts-page";
-import type { ConsentEventRow, ConsentStateRow, ContactRow, RequestRow } from "./types";
-import type { ConsentEventInput, ContactInput, ContactUpdateInput, RequestInput } from "./validation";
-import { sanitizeSearch } from "./validation";
+/**
+ * Audiência / CRM · repository: acesso a dados (S4).
+ * Leituras com filtro organization_id em toda consulta (além da RLS); escritas só
+ * pelas RPCs do banco, que checam papel, registram auditoria e mantêm o histórico
+ * de consentimento imutável.
+ *
+ * Imports relativos com `.ts` (e o cliente só como tipo): carregável em `node --test`.
+ */
+import { decodeCursor, toPage, type Page } from "../pagination/keyset.ts";
+import type { createClient } from "../supabase/server.ts";
+import { CONTACTS_KEYSET, CONTACT_PAGE_SIZE, contactsListQuery } from "./contacts-page.ts";
+import type { ConsentEventInput, ContactInput, ContactUpdateInput, RequestInput } from "./schema.ts";
+import { sanitizeSearch } from "./schema.ts";
+import type { ConsentEventRow, ConsentStateRow, ContactRow, RequestRow } from "./types.ts";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export const CONTACT_COLUMNS =
   "id,display_name,email,phone,source,source_detail,purpose,legal_basis,created_at,updated_at,last_activity_at,anonymized_at";
@@ -13,11 +21,6 @@ export const CONSENT_COLUMNS = "id,contact_id,action,purpose,channel,evidence_ty
 export const REQUEST_COLUMNS = "id,contact_id,kind,received_via,details,received_at,due_at,status,resolution_note,resolved_at";
 
 export { CONTACT_PAGE_SIZE };
-
-/** Só owner e admin alteram cadastro, consentimento e pedidos; os demais papéis leem. */
-export function canManageAudience(role: string): boolean {
-  return role === "owner" || role === "admin";
-}
 
 export async function listContacts(
   supabase: SupabaseClient,
