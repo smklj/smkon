@@ -351,3 +351,16 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
 - AI Gateway sem budgets (incluindo defaults) e sem requests/tokens/custo em 24h/7d. agent_model_usage vazio; nenhuma chamada real comprovada. O deployment da PR #71 não registrou requests ao worker nos últimos 15 minutos.
 - Próximo gate: chave de serviço exclusiva de staging, budget externo sem efeito em Production, validação segura do Cron secret, grants mínimos, E2E atual e uma única execução controlada.
 - Sem alterações remotas, secrets, grants, Production ou merge.
+
+
+## 21/11/2026 13:16 BRT — PR #76 e validação atual
+
+- PR #71 fechada sem merge (24 ahead/8 behind); PR #76 é a substituta limpa, 2 ahead/0 behind, mergeable=true, Draft.
+- Head PR #76: 41ee45e2. CI #44923342292 success; 278/278 unit tests, typecheck, lint, build, dependency audit, migrations e SQL tests aprovados.
+- E2E #44922532633: 36/36 Playwright passaram no Preview da integração SHA 99a9ac8616e07f85417f51772c175cc11a023712, incluindo agents.spec. Não foi executado no head PR #76.
+- Preview do head PR #76 não foi criado: Vercel recusou o deployment por api-deployments-free-per-day. Não usar Preview anterior como evidência deste SHA.
+- Supabase: staging 108 runs killed, 0 steps/usage/grants/agent-linked content; produção zero dados S14. Migrations S14 em ambos; RLS ativo. Staging kill_switch=false, 500 runs/dia, 12 steps/run.
+- OIDC/modelo/provider configurados; orçamento interno US$ 5; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive presente mas comprimento não validado; AGENT_EXECUTOR_ENABLED=true em Preview e Production.
+- AI Gateway sem budgets nem requests/tokens/custo em 24h/7d; agent_model_usage vazio. Não há chamada real comprovada.
+- Budget interno é soft; consulta antes do claim, sem reserva atômica por chamada. Falta outbox/reservation durável para reconciliação pós-cobrança se a RPC falhar.
+- main não contém vercel.json nem a rota do worker; Cron S14 não ativo em Production. Nenhuma alteração de produção ou chamada paga.

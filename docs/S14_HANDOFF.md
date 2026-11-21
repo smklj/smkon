@@ -130,3 +130,18 @@ Esta seção supersede contagens e estados operacionais anteriores quando diverg
 
 ### Segurança
 Nenhum merge, alteração em main/Production, migration remota, alteração de secrets, concessão de grants ou chamada paga foi executada nesta rodada.
+
+
+## Rebase limpa e validação — PR #76 — 21/11/2026 13:16 BRT
+
+- PR #71 foi encerrada sem merge depois de confirmar divergência real (24 commits à frente / 8 atrás). A correção foi reaplicada em uma branch limpa, baseada no head atual da integração.
+- PR #76: fix/s14-timeout-ledger-clean-20261121-1310; head 41ee45e2fb80dd05613fc4bae0d1f3a129824b78; 2 commits à frente / 0 atrás; mergeable=true; permanece Draft.
+- CI #44923342292 passou integralmente: audit, typecheck, lint, unit tests 278/278, build, migrations e SQL tests.
+- E2E #44922532633 passou 36/36 testes Playwright, incluindo agents.spec, no Preview da branch de integração (SHA 99a9ac8616e07f85417f51772c175cc11a023712). Não é E2E do head da PR #76.
+- O deployment Preview da PR #76 foi bloqueado por api-deployments-free-per-day; não há Preview próprio nem E2E para o head 41ee45e2. O Preview antigo da PR #71 não deve ser atribuído à PR #76.
+- Staging: 108 agent_runs, todas killed; 0 agent_steps, 0 agent_model_usage, 0 agent_tool_grants e 0 content_items vinculados a agent_run_id. Produção: zero dados S14. Migrations S14 registradas nos dois bancos.
+- RLS ativo nas tabelas de agentes auditadas. Settings de staging: kill_switch=false, 500 runs/dia, 12 steps/run.
+- Vercel: OIDC/provider/modelo configurados, teto interno US$ 5; AGENT_EXECUTOR_ENABLED=true em Preview e Production; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive presente, mas tamanho não validado.
+- AI Gateway sem budgets e sem uso em 24h/7d; agent_model_usage vazio; nenhuma chamada real comprovada.
+- O teto interno é suave e consultado antes de cada claim; não existe reserva atômica por chamada nem outbox durável para reconciliar uma cobrança se o registro de uso falhar após a resposta.
+- Nenhum merge, alteração em main/Production, migration remota, secret, grant ou chamada paga foi executada.

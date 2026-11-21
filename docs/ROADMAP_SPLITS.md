@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 implementação integrada na branch de preparação; correção timeout/ledger em revisão isolada. PR #71 Draft está divergida (24 ahead/8 behind; mergeable=false), CI #44917422154 success e Preview READY no SHA a834292; E2E atual não comprovado. Staging: 108 runs killed, 0 steps/usage/grants/rascunhos vinculados; produção: 0 dados S14. As três migrations estão nos dois bancos. OIDC/modelo configurados; sem SUPABASE_SECRET_KEY, sem budget externo, CRON_SECRET sensitive sem validação de tamanho; nenhuma chamada real comprovada. Cron e worker ausentes em main. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 implementação integrada na preparação; correções de timeout/ledger em PR #76 Draft (2 ahead/0 behind, mergeable=true). CI #44923342292 success: 278/278 unit + typecheck/lint/build/SQL. E2E #44922532633 36/36 no Preview da integração SHA 99a9ac (não é o head da PR). Preview da PR #76 bloqueado pela quota Vercel. Staging: 108 runs killed, 0 steps/usage/grants/rascunhos vinculados; produção: zero dados S14. Migrations S14 nos dois bancos; OIDC/modelo configurados, sem SUPABASE_SECRET_KEY, sem budget externo, CRON_SECRET sensitive sem validação; nenhuma chamada real comprovada. Cron/worker ausentes em main. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -90,3 +90,15 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - Staging: 108 runs killed, 0 steps/usage/grants/conteúdo vinculado. Produção: zero dados S14. Migrations S14 presentes nos dois bancos; RLS ativo nas tabelas auditadas.
 - OIDC/provider/modelo e teto interno US$ 5 configurados; sem SUPABASE_SECRET_KEY, sem budget externo; CRON_SECRET sensitive presente mas não validado em comprimento. Gateway e ledger sem consumo; nenhuma chamada real comprovada.
 - main não contém vercel.json nem a rota do worker; Cron S14 não ativo em Production.
+
+
+## Atualização S14 — 21/11/2026 13:16 BRT
+
+- PR #71 fechada sem merge por divergência (24 ahead/8 behind); PR #76 substitui com branch limpa (2 ahead/0 behind, mergeable=true, Draft).
+- CI #44923342292 success: 278/278 testes unitários, typecheck, lint, build, audit e SQL.
+- E2E #44922532633: 36/36 Playwright no Preview da integração SHA 99a9ac8616e07f85417f51772c175cc11a023712; não é execução do head da PR #76.
+- Vercel bloqueou Preview do head 41ee45e2 por api-deployments-free-per-day.
+- Staging 108 runs killed, sem steps/usage/grants/rascunhos ligados; produção zero dados S14. Migrations S14 nos dois ambientes; RLS ativo.
+- OIDC/provider/modelo configurados, budget interno US$ 5, sem budget externo; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive sem validação de tamanho; AGENT_EXECUTOR_ENABLED=true em Preview e Production.
+- AI Gateway e ledger sem consumo, nenhuma chamada real comprovada; teto interno soft e sem reservation/outbox durável.
+- main não contém vercel.json nem worker; Cron S14 não ativo em Production.
