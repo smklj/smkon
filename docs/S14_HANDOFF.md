@@ -146,7 +146,7 @@ e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com e
 ### Vercel e AI Gateway
 
 - Variáveis não secretas em Preview e Production: AGENT_MODEL_PROVIDER=vercel-ai-gateway, AGENT_MODEL_AUTH=oidc, AGENT_MODEL=anthropic/claude-haiku-5.5, AGENT_MONTHLY_BUDGET_USD=5, AGENT_EXECUTOR_ENABLED=true.
-- CRON_SECRET existe como sensitive em Preview e Production. O valor não foi exposto; validação interna confirmou pelo menos 32 caracteres e ausência de espaços nas pontas em ambos os ambientes.
+- CRON_SECRET existe como sensitive em Preview e Production. O valor permaneceu redacted; comprimento e whitespace não foram revalidados nesta auditoria.
 - SUPABASE_SECRET_KEY não existe no inventário de variáveis do projeto; AI_GATEWAY_API_KEY ausente é esperado no modo OIDC.
 - AI Gateway: nenhum budget de projeto/time/default cadastrado; uso agregado dos últimos 7 dias sem requests, tokens ou custo. Portanto não há chamada real comprovada ao modelo.
 - vercel.json agenda o worker diariamente às 11:17 UTC, mas src/app/api/agents/worker/route.ts e vercel.json não existem na branch main; o Cron S14 não está publicado/ativo em Production. Não foi feita alteração de Production.
@@ -162,3 +162,31 @@ e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com e
 - Teste real de operations_review continua bloqueado: falta SUPABASE_SECRET_KEY em Preview e não há budget externo; além disso, o workspace de staging auditado não tem grants para ferramentas de leitura/rascunho.
 - Não executar chamada paga, não conceder grants automaticamente e não habilitar worker real sem esses controles.
 - Nenhuma escrita em Supabase, alteração de secret/configuração Vercel, merge em main ou mudança de Production nesta rodada.
+
+
+## Reconciliação operacional — 21/11/2026 07:04 BRT
+
+Esta seção supersede as contagens e conclusões operacionais anteriores quando houver divergência.
+
+### GitHub, CI, Preview e E2E
+- PR #61 permanece aberta em Draft. A comparação atual confirma 14 commits à frente e 0 atrás de `feature/smkon-production-readiness`; base SHA `7ab9b864336b822cb6b86892a6b96f109b9b715d`. Não há reviews nem threads inline registrados. PR #58 permanece fechada como superseded.
+- Head auditado: `790da1a25c51c7e0c1d07f84de209d592afa0a1b` (`test(S14): preserve timeout on aborted gateway body stream`). CI #44888214340 terminou success nos dois jobs: dependency audit, typecheck, lint, unit tests, build, migrations e SQL.
+- E2E #44883164342 passou no SHA anterior `e0faaa29`; não há E2E comprovado para o head `790da1a`. A consulta ao run #44883242115 não retornou jobs.
+- Vercel: há deployments READY apenas para `5ed2e23a` (documentação) e `e0faaa29` (patch de código anterior). Não há Preview do head `790da1a`; o check Vercel desse head está em failure por `api-deployments-free-per-day`/build-rate-limit, não por falha de compilação.
+
+### Supabase — consultas somente de leitura
+- Staging `xoyasrizivadxnpmzzno`: 28 migrations; 89 `agent_runs`, todas `killed` com `error_code=kill_switch`; 0 `agent_steps`, 0 `agent_model_usage`, 0 grants e 0 conteúdos com `content_items.agent_run_id` preenchido. Há uma linha de `agent_settings`: kill switch atualmente false, limite 500 runs/dia e 12 passos/run.
+- Production `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, steps, usage, grants, conteúdos vinculados a agente e linhas de settings.
+- Nos dois bancos foram confirmados `agent_runs.claimed_at`, `content_items.agent_run_id`, a tabela `agent_model_usage` com RLS e a policy de SELECT para `authenticated`. Também existem as RPCs `agent_claim_next_run()`, `agent_draft_content(uuid,jsonb)`, `agent_record_model_usage(...)` e `agent_model_spend_since(timestamptz)`. Os nomes das migrations `agent_draft_content` e `agent_claim_queue` representam função/colunas, não tabelas independentes.
+
+### Vercel e AI Gateway
+- Metadados de ambiente confirmam `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5` e `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `CRON_SECRET` existe como variável sensitive separada em Preview e Production. Seu valor não foi descriptografado; portanto, nesta auditoria foi confirmada apenas a presença, não o comprimento mínimo nem whitespace. Esta nota corrige a afirmação anterior de validação de 32+ caracteres.
+- `SUPABASE_SECRET_KEY` não consta no inventário de variáveis do projeto. Não foi lido nem exposto nenhum valor secreto.
+- AI Gateway: nenhum budget de time/projeto/membro/API key e nenhum default; uso do projeto nos últimos sete dias (14/11 10:06Z a 21/11 10:06Z) retornou zero requests, tokens e custo. Nenhuma chamada real está comprovada.
+- `vercel.json` e a rota `/api/agents/worker` existem na branch de integração; ambos estão ausentes em `main`. O cron declarado é diário às 11:17 UTC e não está ativo em Production enquanto a rota/configuração não forem publicadas.
+
+### Decisão e próximos gates
+- Não executar smoke test pago: faltam `SUPABASE_SECRET_KEY` em Preview, budget externo e tool grants no workspace de staging.
+- Antes do teste: cadastrar a service key de staging como sensitive em Preview; configurar budget externo limitado; validar `CRON_SECRET` sem revelar o valor; conceder somente os grants mínimos para `operations_review`; publicar Preview do head atual e repetir E2E. Depois, executar uma única run controlada e reconciliar resposta, etapas, estado e duas linhas esperadas (plan/verify) em `agent_model_usage`.
+- Não houve merge, alteração de secrets, concessão de grants, escrita no Supabase, migration remota ou alteração de Production. Manter o executor de Production desabilitado antes de qualquer release; a flag atualmente cadastrada como true deve ser revisada antes de publicar a rota.
