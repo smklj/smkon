@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 nove etapas implementadas na integração, ainda não operacional. PR #67 divergida (2 à frente/8 atrás); PR #71 é reaplicação limpa (3 à frente/0 atrás, Draft/mergeable), CI #44906510584 em execução. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. As três migrations S14 estão nos dois ambientes. OIDC configurado; sem budget externo e sem requests nos últimos 7 dias; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive presente, comprimento não validado. `vercel.json` e rota existem na integração, não em `main`; Cron não ativo em produção. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas implementadas na integração, ainda não operacional. PR #67 divergida (2 à frente/8 atrás); PR #71 reaplicação limpa (7 à frente/0 atrás, Draft/mergeable), head `c2454be`; CI anterior #44906510584 falhou no typecheck por escopo de variáveis de timeout, corrigido em `c2454be` e aguardando CI próprio. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. Três migrations S14 nos dois ambientes. OIDC configurado; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Preview/E2E bloqueados pela quota Vercel. Cron não ativo em produção: rota e `vercel.json` ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -91,3 +91,12 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - AI Gateway sem budget do projeto/default e sem uso nos últimos 7 dias. Nenhuma chamada real comprovada; `agent_model_usage` segue vazio.
 - Cron `crons` declarado na integração, mas a rota e `vercel.json` não existem em `main`; não ativo em produção.
 - Sem merge, alteração de secrets/grants, migration remota ou mudança de Production. Primeiro teste real permanece bloqueado pelas autorizações/configurações de staging listadas no handoff.
+
+
+## Atualização de CI e branch — 21/11/2026, 10:00 BRT
+
+- PR #71 agora está 7 commits à frente e 0 atrás da head de integração `16bd6b009a64884fadccbfa5afc47d40ccb11eae`; comparação `ahead`, Draft e mergeable. Head atual: `c2454be94a6f221502f768ed917f636c73cdbaaf`.
+- O primeiro CI disparado na PR (#44906510584, synthetic merge da head anterior) falhou no typecheck: `planTimeout`, `toolTimeout` e `summaryTimeout` estavam declarados dentro dos blocos `try`, mas usados nos respectivos `catch`. O job de migrations/SQL passou.
+- Corrigi o escopo no commit `c2454be`, declarando cada budget antes do `try`. Esse commit ainda aguarda uma execução CI própria; não atribuir a ele o resultado do run anterior.
+- O check Vercel segue falhando por `api-deployments-free-per-day`; o inventário de deployments da branch #71 continua vazio (nenhum Preview criado). E2E do head atual não executado.
+- PR #67 continua aberta em Draft, mas a comparação atual é divergente (2 commits à frente/8 atrás, mergeable=false). Mantida como fallback até o CI atual da #71 concluir.
