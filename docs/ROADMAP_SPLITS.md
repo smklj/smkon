@@ -127,3 +127,13 @@ A integração avançou cinco commits de `79ff06be` para `2455806c` por alteraç
 - PR #78 aberta em Draft, mergeable=true, head `ba99b2c7`, 10 commits à frente/0 atrás da base `feature/smkon-production-readiness` em `2455806c`.
 - PR #76 encerrada sem merge e substituída pela #78.
 - Nenhuma execução GitHub Actions identificada para o head `ba99b2c7`; status combinado contém apenas Vercel failure `build-rate-limit`. Nenhum Preview foi criado para a branch; E2E específico pendente.
+
+
+## CI do head da PR #78 — 21/11/2026 14:19 BRT
+
+- GitHub Actions [CI #44928370010](https://github.com/smklj/smkon/actions/runs/44928370010) concluiu com sucesso nos dois jobs no SHA `90e9cc6b` (head antes desta atualização documental).
+- Job de qualidade: dependency audit, typecheck, lint, testes unitários e build concluídos com sucesso. O resumo do job não expõe a contagem de testes; a execução anterior #44923342292 havia mostrado 278/278 no SHA de código `41ee45e2`.
+- Job de banco: migrations e testes SQL no Postgres descartável concluídos com sucesso.
+- E2E #44922532633 (36/36) continua restrito ao Preview da base `99a9ac8`; não é E2E desta PR.
+- O status Vercel do head `90e9cc6b` permanece failure por `build-rate-limit`; `open_deployments` não encontrou Preview para a branch. E2E do Preview exato continua pendente.
+- A PR #78 está Draft e mergeable=true; não fazer merge antes do E2E e dos gates operacionais.
