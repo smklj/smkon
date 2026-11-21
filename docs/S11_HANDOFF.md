@@ -271,3 +271,13 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - **CI das correções:** ainda sem workflow associado retornado na consulta; status Vercel estava pending no momento da checagem. Não declarar as correções validadas até o novo CI terminar.
 - Próximo teste de banco: fixture isolada com usuário, organização e source_connection; adquirir lease uma vez, confirmar segunda aquisição vazia, rejeitar save com lease/version incorretos, aceitar save com lease correto e confirmar incremento de versão/limpeza do lease. Executar somente no banco descartável do pipeline.
 - Nenhuma migration aplicada em Supabase hospedado; nenhuma credencial ou segredo criado; nenhuma conta Mercado Livre conectada; nenhum merge ou deploy de produção.
+
+
+### Teste comportamental de lease e CAS — 21/11/2026 UTC
+
+- Acrescentado fixture transacional ao teste SQL S11 usando usuário, organização, membership owner, source_connection Mercado Livre e credencial fictícia no banco descartável.
+- O teste comprova: primeiro worker adquire lease; segundo worker não adquire enquanto ativo; save com lease incorreto falha; save com lease/versão corretos incrementa token_version e limpa lease; worker seguinte recebe novo lease; cleanup com lease antigo não libera lease novo; segundo CAS correto é aceito.
+- Commit do teste: `f6dc0a8878fca6b429dc6a1695afc1a5b44b5bbd`.
+- O teste é executado somente por `npm run test:db` no banco descartável criado pelo pipeline. Não foi executado contra qualquer banco hospedado.
+- CI das correções anteriores: run #356, **sucesso** nos dois jobs (typecheck/lint/unit/build e migrations/SQL tests). O run #354 foi cancelado por novo push e não é evidência de falha de código.
+- CI para o novo teste comportamental: aguardar run do commit atual antes de declarar aprovado.
