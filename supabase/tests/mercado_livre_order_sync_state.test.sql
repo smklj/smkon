@@ -83,6 +83,7 @@ declare
   v_status text;
   v_next_offset integer;
   v_error_code text;
+  v_lease_id uuid;
   v_rejected boolean := false;
 begin
   insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
@@ -226,10 +227,10 @@ begin
   end if;
 
   select s.status, s.lease_id, s.last_error_code
-    into v_status, v_claim.lease_id, v_error_code
+    into v_status, v_lease_id, v_error_code
   from public.mercado_livre_order_sync_state s
   where s.connection_id = v_connection and s.organization_id = v_org;
-  if v_status <> 'ready' or v_claim.lease_id is not null or v_error_code <> 'test_failure' then
+  if v_status <> 'ready' or v_lease_id is not null or v_error_code <> 'test_failure' then
     raise exception 'release must leave a resumable cursor with a sanitized error code';
   end if;
 
