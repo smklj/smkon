@@ -1,10 +1,11 @@
 import { contactExportResponse } from "@/lib/audience/export";
-import { canManageAudience, exportContactData } from "@/lib/audience/server";
-import { isUuid } from "@/lib/content/server";
+import { exportContactData } from "@/lib/audience/repository";
+import { canManageAudience } from "@/lib/audience/service";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { isUuid } from "@/lib/validation/fields";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 /** Exportação (JSON) de tudo o que o workspace guarda sobre um titular. Só owner/admin; registrada no audit_log. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {

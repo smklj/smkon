@@ -2,30 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { ANONYMIZE_CONFIRMATION, missingDeletionConfirmation } from "@/lib/audience/schema";
 import {
-  anonymizeContact,
   canManageAudience,
-  createContact,
-  recordConsent,
-  registerRequest,
-  resolveRequest,
-  revokeAllConsents,
-  updateContact,
-} from "@/lib/audience/server";
-import {
-  ANONYMIZE_CONFIRMATION,
-  parseAnonymizeInput,
-  parseConsentEvent,
-  parseContactInput,
-  parseContactUpdate,
-  parseRequestInput,
-  parseResolveInput,
-  parseRevokeAll,
-} from "@/lib/audience/validation";
+  correctContact,
+  eraseContact,
+  recordConsentEvent,
+  registerContact,
+  registerSubjectRequest,
+  resolveSubjectRequest,
+  revokeAll,
+} from "@/lib/audience/service";
 import { dbErrorMessage } from "@/lib/http/errors";
 import { errorFields, log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { formDataToRaw as fields } from "@/lib/validation/fields";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 export type AudienceState = { error?: string; ok?: string; at?: number } | null;
 
@@ -39,16 +31,12 @@ async function manager() {
   return { supabase, workspace: workspace && canManageAudience(workspace.role) ? workspace : null };
 }
 
-function fields(formData: FormData): Record<string, unknown> {
-  return Object.fromEntries(Array.from(formData.entries()).filter(([, value]) => typeof value === "string"));
-}
-
 export async function createContactAction(_prev: AudienceState, formData: FormData): Promise<AudienceState> {
   const { supabase, workspace } = await manager();
   if (!workspace) return FORBIDDEN;
   let id: string;
   try {
-    id = await createContact(supabase, workspace.organizationId, parseContactInput(fields(formData)));
+    id = await registerContact(supabase, workspace.organizationId, fields(formData));
   } catch (error) {
     log("warn", "audience.contact.create", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível cadastrar o contato.") };
@@ -61,7 +49,7 @@ export async function updateContactAction(_prev: AudienceState, formData: FormDa
   const { supabase, workspace } = await manager();
   if (!workspace) return FORBIDDEN;
   try {
-    await updateContact(supabase, parseContactUpdate(fields(formData)));
+    await correctContact(supabase, fields(formData));
   } catch (error) {
     log("warn", "audience.contact.update", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível corrigir o contato.") };
@@ -75,9 +63,7 @@ export async function recordConsentAction(_prev: AudienceState, formData: FormDa
   if (!workspace) return FORBIDDEN;
   let action: "opt_in" | "opt_out";
   try {
-    const input = parseConsentEvent(fields(formData));
-    action = input.action;
-    await recordConsent(supabase, input);
+    action = await recordConsentEvent(supabase, fields(formData));
   } catch (error) {
     log("warn", "audience.consent.record", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível registrar o consentimento.") };
@@ -91,7 +77,7 @@ export async function revokeAllAction(_prev: AudienceState, formData: FormData):
   if (!workspace) return FORBIDDEN;
   let count: number;
   try {
-    count = await revokeAllConsents(supabase, parseRevokeAll(fields(formData)));
+    count = await revokeAll(supabase, fields(formData));
   } catch (error) {
     log("warn", "audience.consent.revoke_all", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível revogar os consentimentos.") };
@@ -107,7 +93,7 @@ export async function registerRequestAction(_prev: AudienceState, formData: Form
   const { supabase, workspace } = await manager();
   if (!workspace) return FORBIDDEN;
   try {
-    await registerRequest(supabase, parseRequestInput(fields(formData)));
+    await registerSubjectRequest(supabase, fields(formData));
   } catch (error) {
     log("warn", "audience.request.register", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível registrar o pedido.") };
@@ -122,13 +108,11 @@ export async function resolveRequestAction(_prev: AudienceState, formData: FormD
   let status: "completed" | "rejected";
   const raw = fields(formData);
   // Concluir uma exclusão anonimiza o contato: exige a mesma confirmação da exclusão direta.
-  if (raw.kind === "deletion" && raw.status === "completed" && raw.confirmation !== ANONYMIZE_CONFIRMATION) {
+  if (missingDeletionConfirmation(raw)) {
     return { error: `Digite ${ANONYMIZE_CONFIRMATION} para concluir a exclusão.` };
   }
   try {
-    const input = parseResolveInput(raw);
-    status = input.status;
-    await resolveRequest(supabase, input);
+    status = await resolveSubjectRequest(supabase, raw);
   } catch (error) {
     log("warn", "audience.request.resolve", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível resolver o pedido.") };
@@ -141,7 +125,7 @@ export async function anonymizeContactAction(_prev: AudienceState, formData: For
   const { supabase, workspace } = await manager();
   if (!workspace) return FORBIDDEN;
   try {
-    await anonymizeContact(supabase, parseAnonymizeInput(fields(formData)));
+    await eraseContact(supabase, fields(formData));
   } catch (error) {
     log("warn", "audience.contact.anonymize", errorFields(error));
     return { error: dbErrorMessage(error, "Não foi possível excluir os dados do contato.") };

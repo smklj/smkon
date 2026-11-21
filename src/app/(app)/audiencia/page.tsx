@@ -11,14 +11,8 @@ import {
   ResolveRequestForm,
   RevokeAllForm,
 } from "@/components/audience/AudienceForms";
-import {
-  canManageAudience,
-  getContact,
-  listConsentEvents,
-  listConsentState,
-  listContacts,
-  listRequests,
-} from "@/lib/audience/server";
+import { getContact, listConsentEvents, listConsentState, listContacts, listRequests } from "@/lib/audience/repository";
+import { canManageAudience } from "@/lib/audience/service";
 import {
   CHANNEL_LABEL,
   EVIDENCE_LABEL,
@@ -36,13 +30,13 @@ import {
   type DeadlineStatus,
   type RequestRow,
 } from "@/lib/audience/types";
-import { sanitizeSearch } from "@/lib/audience/validation";
-import { isUuid } from "@/lib/content/server";
+import { sanitizeSearch } from "@/lib/audience/schema";
 import { todayInBrazil } from "@/lib/media/types";
 import { errorFields, log } from "@/lib/observability/log";
 import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { findWorkspace, type Workspace } from "@/lib/tenancy/service";
+import { isUuid } from "@/lib/validation/fields";
 
 export const metadata: Metadata = { title: "Audiência e CRM" };
 
