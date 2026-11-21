@@ -27,6 +27,10 @@ import {
   type ViralHook,
   type WatermarkConfig,
 } from "@/lib/media/video-composition";
+import {
+  generateAutonomousDraft,
+  type ContentPresetType,
+} from "@/lib/content/autonomous-generator";
 
 type Filter = "Todos" | ContentStatusLabel;
 
@@ -78,6 +82,30 @@ export default function StudioClient() {
       return { ...prev, script: newScript };
     });
     setNotice("Gancho viral injetado no roteiro!");
+  }, []);
+
+  const handleGenerateAutonomous = useCallback((preset: ContentPresetType) => {
+    const defaultNames: Record<ContentPresetType, string> = {
+      "shopee-viral": "Mini Aspirador Portátil Sem Fio",
+      "shein-fashion": "Conjunto Alfaiataria Elegance",
+      "digital-infoproduct": "Manual dos Achadinhos Virais",
+      "hotmart-course": "Método Viral 10x",
+    };
+    const generated = generateAutonomousDraft(preset, defaultNames[preset]);
+    setDraft((prev) => ({
+      ...prev,
+      title: generated.title,
+      product: generated.product,
+      assetUrl: generated.assetUrl || prev.assetUrl,
+      script: generated.script,
+      caption: generated.caption,
+      cta: generated.cta,
+      hashtags: generated.hashtags,
+      channels: generated.channels,
+    }));
+    setViralHook(generated.hook);
+    if (generated.promoCode) setPromoCode(generated.promoCode);
+    setNotice(`Conteúdo autônomo gerado com sucesso! Revise no player 9:16 e clique em "Aprovar esta versão".`);
   }, []);
 
   // O filtro vale para todas as recargas (salvar, aprovar, excluir) sem recriar loadItems.
@@ -385,6 +413,30 @@ export default function StudioClient() {
         actions={
           <>
             <Link className="link" href="/calendario">Calendário</Link>
+            <button
+              className="button button-secondary"
+              onClick={() => handleGenerateAutonomous("shopee-viral")}
+              disabled={saving}
+              title="Gerar rascunho de Achadinho Shopee com gancho e link"
+            >
+              ⚡ Gerar Shopee
+            </button>
+            <button
+              className="button button-secondary"
+              onClick={() => handleGenerateAutonomous("shein-fashion")}
+              disabled={saving}
+              title="Gerar rascunho de Moda Shein com cupom e link"
+            >
+              👗 Gerar Shein
+            </button>
+            <button
+              className="button button-secondary"
+              onClick={() => handleGenerateAutonomous("digital-infoproduct")}
+              disabled={saving}
+              title="Gerar rascunho de Infoproduto Digital Kiwify"
+            >
+              📚 Gerar Infoproduto
+            </button>
             <button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>
           </>
         }
