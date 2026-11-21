@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · ✅ executor integrado (`docs/S14_HANDOFF.md`); migrations `20261119040000`/`050000` no staging e na produção, `060000` só no staging; falta `SUPABASE_SECRET_KEY`, crédito no AI Gateway e merge na `main` 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 PR #82 Draft em branch limpa fix/s14-timeout-ledger-rebased-20261121-1500, baseada no head atual da integração 9dbf6cb9; PR #78 fechada sem merge após compare real 16 ahead/2 behind. CI #44928561395 passou apenas no head antigo 7fd5dfb0; CI próprio da #82, Preview e E2E pendentes. Staging: 113 runs killed, 0 steps/usage/grants/drafts vinculados; produção: zero dados S14. Migrations S14 existem nos dois bancos, mas version IDs divergem. OIDC/modelo configurados; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive sem validação; AGENT_EXECUTOR_ENABLED=true em Preview/Production; nenhum budget externo nem chamada real comprovada; agent_model_usage vazio e coerente com uso agregado zero. Worker/Cron ausentes de main; Cron não ativo em Production. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
