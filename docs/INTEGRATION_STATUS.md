@@ -131,3 +131,16 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - **Conclusão:** validação automatizada do banco descartável e quality gate do CI fechados com sucesso no commit acima. Os runs #358, #360 e #362 foram cancelados por pushes subsequentes e não são considerados falhas de teste; #364 é a evidência final válida.
 - Escopo não coberto por esse CI: OAuth real com conta de teste Mercado Livre, configuração de secrets, migrations em Supabase hospedado, sincronização e reconciliação financeira.
 - Estado protegido: PR #57 continua Draft; nenhum merge, migration hospedada ou deploy de produção foi realizado.
+
+
+## 10. S11 Mercado Livre — persistência e validação em staging (21/11/2026 UTC)
+
+- **Branch/PR:** `feature/s11-mercado-livre-adapter`, PR #57 Draft, base `feature/smkon-production-readiness`. A base foi integrada ao branch S11 por merge commit `c3c5f0a`; o head atual no registro é `af27230`.
+- **Implementação:** conexão one-click, OAuth Authorization Code/state one-time/PKCE, AES-256-GCM, refresh lease/CAS, callback validado com `GET /users/me`, conclusão OAuth atômica e reautorização da conexão existente.
+- **Importação:** manual e limitada aos 50 pedidos recentes; snapshots normalizados sem PII; upsert transacional idempotente de `external_events` + `sales_orders`; nenhum ledger ou `settled_at` inferido.
+- **CI:** PR run #408 [passou nos dois jobs](https://github.com/smklj/smkon/actions/runs/44869249003) no head `af272309d3dade2cd333c9bec73723fb4a1590a4`: typecheck/lint/unit/build e migrations/SQL tests. O push run #407 ainda estava em execução no momento deste registro; o PR check #408 é a evidência concluída.
+- **Preview:** deployment Vercel `dpl_zpPfhaJoadYfNz63YdfnP1drMQJw` READY em [smkon-obl46ubjj-smkon.vercel.app](https://smkon-obl46ubjj-smkon.vercel.app). E2E do Preview mais recente ainda pendente; não declarar E2E verde no head atual.
+- **Staging:** 25 migrations aplicadas, incluindo as quatro S11: credentials, OAuth attempts, order snapshots e OAuth atomic completion. Testes rollback-only executados no projeto `smkon-staging` (`xoyasrizivadxnpmzzno`) para lease/CAS, state one-time, RLS/grants, idempotência, isolamento, PII, valores inválidos, atomicidade de OAuth e rollback quando existe refresh lease ativo; sem exceções.
+- **Produção:** 20 migrations registradas; falta `20261119232441_keyset_pagination_indexes` e as quatro S11. Não há evidência verificável de backup/restauração no conector. O PR #57 tem como base a branch de integração, não `main`; a branch de integração está divergente de `main` (92 commits à frente e 6 atrás). Nenhuma migration/deploy de produção ou merge em `main` foi executado.
+- **Configuração:** Vercel não tem `SUPABASE_SECRET_KEY` nem as variáveis de OAuth/criptografia Mercado Livre. OAuth real e importação de dados reais continuam bloqueados.
+- **Classificação:** S11 parcialmente implementado e validado em staging; não está operacional como conector financeiro completo.

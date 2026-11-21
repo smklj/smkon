@@ -376,3 +376,14 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Preview não tem `SUPABASE_SECRET_KEY` nem variáveis de app Mercado Livre. OAuth real e importação real continuam bloqueados até o Owner configurar as credenciais no Vercel/DevCenter.
 - Produção: histórico de migrations ainda não está alinhado (falta `20261119232441_keyset_pagination_indexes`); não há evidência verificável de backup/restauração pelo conector. Nenhuma migration ou deploy de produção foi executado.
 - Limite funcional: importação manual de primeira página (até 50), sem paginação histórica, cursor de cobertura, reconciliação de pagamentos/estornos/provisões ou agendamento. Não declarar operação financeira completa.
+
+
+## Fechamento da atomicidade OAuth e status do split — 21/11/2026 UTC
+
+- Identificada e corrigida a janela de falha em que o callback poderia gravar o token cifrado e falhar ao atualizar `source_connections`. A nova RPC `mercado_livre_complete_oauth_connection` persiste credenciais e ativa a conexão na mesma transação.
+- Reautorização reutiliza a conexão existente (`connected` ou `error` com conta externa), evita placeholders duplicados e bloqueia substituição durante lease de refresh.
+- Teste de atomicidade em staging passou: sucesso inicial, rollback total quando refresh lease está ativo, nova autorização com incremento de versão, rejeição de viewer e rejeição de conta externa diferente.
+- CI PR #408 passou no head `af272309d3dade2cd333c9bec73723fb4a1590a4`; Preview correspondente está READY. E2E do Preview mais recente ainda não concluído.
+- **Status do split:** implementação e persistência de snapshots validadas em staging; OAuth real, backfill, paginação histórica, reconciliação financeira e operação recorrente permanecem pendentes. S11 não deve ser marcado como concluído.
+- **Produção preservada:** PR #57 aponta para a branch de integração, não `main`; a integração diverge de `main` em 92 commits à frente/6 atrás. Produção está com 20 migrations, sem a keyset migration e sem as quatro migrations S11; não há backup/restauração verificável pelo conector. Nenhuma alteração de produção foi executada.
+- **Credenciais:** Vercel não possui `SUPABASE_SECRET_KEY` nem as variáveis Mercado Livre; nenhuma conta real/de teste foi conectada.

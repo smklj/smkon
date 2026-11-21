@@ -49,3 +49,13 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 - No Vercel não estão configuradas `SUPABASE_SECRET_KEY`, `MERCADO_LIVRE_CLIENT_ID`, `MERCADO_LIVRE_CLIENT_SECRET`, `MERCADO_LIVRE_REDIRECT_URI` nem `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY`. Há apenas URL/chave pública do Supabase para Preview/Production; não é suficiente para acessar credenciais server-side nem para OAuth.
 - Não foi possível comprovar backup/restauração de produção pelo conector disponível. O histórico de migrations de produção também está atrás: falta `20261119232441_keyset_pagination_indexes`; as três migrations S11 ainda não foram aplicadas em produção.
 - Portanto, nenhuma migration ou deploy de produção foi executado. Não houve OAuth real, pedidos reais importados nem validação ponta a ponta com conta Mercado Livre.
+
+
+## OAuth completion atomicity — 21/11/2026 UTC
+
+- A migration `20261121160000_mercado_livre_oauth_atomic_completion.sql` adiciona `mercado_livre_complete_oauth_connection`.
+- O callback não grava mais credencial e metadados em duas operações separadas. Uma única RPC verifica Owner/Admin, organização, conexão/provider/domain/status, identidade externa, scopes, expiração e envelope cifrado; atualiza `source_connections` e faz upsert de `mercado_livre_credentials` na mesma transação.
+- Reautorização usa a conexão `connected`/erro existente em vez de criar placeholder duplicado. Um refresh lease ativo impede substituição dos tokens; qualquer falha faz rollback também dos metadados.
+- A RPC é `SECURITY DEFINER`, `search_path=''`, sem execução para anon/authenticated e com execução apenas para service_role.
+- O teste `supabase/tests/mercado_livre_oauth_completion.test.sql` valida atomicidade, incremento de versão, bloqueio por lease, rollback de metadados, rejeição de papel não administrador e de conta externa diferente.
+- Migration aplicada no staging e teste rollback-only executado sem exceções em 21/11/2026 UTC.
