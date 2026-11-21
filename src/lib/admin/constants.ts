@@ -33,21 +33,3 @@ export const REVENUE_DOMAINS: RevenueDomain[] = [
   { id: "R2", name: "Vendas próprias", type: "RECEITA DE OPERAÇÃO", description: "Pedidos em que a SMKON é a vendedora, com taxas, frete, reembolsos e liquidação.", sources: ["Mercado Livre", "TikTok Shop Seller", "Shopify"], metric: "Pedidos · líquido · margem" },
   { id: "R3", name: "Afiliados e comissões", type: "RECEITA DE PARCERIA", description: "Cliques, conversões atribuídas e comissões pendentes, aprovadas, revertidas e pagas.", sources: ["Shopee", "Amazon Associados", "TikTok Shop Affiliate"], metric: "Cliques · conversão · comissão · EPC" },
 ];
-
-export const INTEGRATION_PLACEHOLDERS = [
-  {
-    name: "Metricool",
-    detail: "Placeholder — publicação e analytics. Ainda não validado. Nenhum conteúdo será publicado daqui. OAuth real pendente.",
-    state: "PLACEHOLDER",
-  },
-  {
-    name: "Instagram",
-    detail: "Placeholder — métricas orgânicas e insights. Autenticação parcial via Supermetrics; leitura não operacional. Sem OAuth direto ainda.",
-    state: "PLACEHOLDER",
-  },
-  {
-    name: "TikTok",
-    detail: "Placeholder — TikTok Organic e Shop. Escopos não totalmente validados. Sem publicação. OAuth real pendente.",
-    state: "PLACEHOLDER",
-  },
-];

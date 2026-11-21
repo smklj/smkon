@@ -102,6 +102,9 @@ export const PROVIDER_LABEL: Record<string, string> = {
   tiktok_shop_seller: "TikTok Shop (vendedor)",
   tiktok_shop_affiliate: "TikTok Shop (afiliado)",
   amazon_associates: "Amazon Associados",
+  hotmart: "Hotmart",
+  shopify: "Shopify",
+  stripe: "Stripe",
 };
 
 type Obj = Record<string, unknown>;
