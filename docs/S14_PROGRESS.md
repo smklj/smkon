@@ -339,3 +339,14 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
     restrito a owner/admin em execução ativa. Ações revalidam `/agentes` como layout (inclui o detalhe).
 - **19/11/2026 — etapa 9.** `docs/S14_HANDOFF.md` e linha do S14 no `docs/ROADMAP_SPLITS.md`. Frente concluída no código;
   pendências do Owner no handoff.
+
+
+## Auditoria operacional — 21/11/2026
+
+- **Código:** etapas 1–9 integradas em `feature/smkon-production-readiness` pelos PRs #35–#46. Preview da head `011accdb` está READY. S14 não está na `main`; Production permanece no commit S7.2 C.
+- **Banco:** migrations lógicas `agent_draft_content`, `agent_claim_queue` e `agent_model_usage` presentes em staging e produção. `agent_model_usage` tem 0 linhas nos dois ambientes.
+- **Uso real:** staging tem 78 execuções encerradas com `kill_switch`, sem `agent_steps`; produção tem 0 execuções. Nenhuma chamada real ao AI Gateway foi comprovada.
+- **Vercel:** provider, modelo Haiku 5.5, modo OIDC, flag do executor e teto interno de US$ 5 estão presentes em Preview e Production. `CRON_SECRET` está cadastrado como sensitive, mas seu comprimento não foi validado. `SUPABASE_SECRET_KEY` está ausente. Não foi encontrado budget externo do AI Gateway para o projeto.
+- **Segurança do consumo:** RLS habilitado; anon não lê nem executa RPCs; membros leem sob policy; gravação e agregação de consumo são exclusivas de `service_role`. INSERT direto na tabela permanece revogado.
+- **CI atual:** no commit de integração `011accdb`, typecheck/lint e banco passaram; um teste unitário temporal falhou ao classificar `step_timeout` em vez de `worker_timeout`. E2E Browser Tests passou. A correção determinística foi proposta em `fix/s14-deadline-timeout-classification`, commit `28dc192d9481d739ab65c7c283ce3e8852390203`; aguarda CI.
+- **Próxima ação:** Owner cadastra `SUPABASE_SECRET_KEY` em Preview, confirma `CRON_SECRET` e o budget externo; depois executar uma única `operations_review` no staging e conferir chamada OIDC + registro de consumo. Sem merge em `main` ou alterações de produção nesta etapa.
