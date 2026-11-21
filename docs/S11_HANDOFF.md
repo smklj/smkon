@@ -472,3 +472,17 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Novo teste SQL mercado_livre_order_sync_state.test.sql cobre claim concorrente, avanço atômico, retomada, replay com lease consumida, conclusão, reinício, liberação e isolamento por organização. Testes unitários cobrem as ações aceitas e rejeição de cursor enviado pelo cliente.
 - Validação pendente: executar CI no head atualizado do PR #60; não aplicar esta migration em Supabase hospedado até CI verde e revisão do histórico de migrations. Preview final ainda precisa corresponder ao head do PR; o deployment READY conhecido é de commit anterior.
 - Limite conhecido: offset máximo 10.000 continua bloqueando janelas muito densas; divisão automática em sub-janelas e sync incremental por date_last_updated ainda não foram implementados. OAuth real e conciliação financeira continuam pendentes.
+
+
+## Validação do cursor durável em Staging — 21/11/2026
+
+- CI #456 passou nos dois jobs no head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e: dependency audit, typecheck, lint, unit tests, build, migrations e SQL tests.
+- A migration 20261121180000_mercado_livre_order_sync_state foi aplicada no projeto smkon-staging. O Supabase registrou a versão 20261121090433 com o nome mercado_livre_order_sync_state; não houve edição manual do histórico de migrations.
+- Os quatro testes SQL S11 foram executados diretamente no Staging em transações rollback-only: credentials, OAuth atomic completion, order snapshots e durable sync state. Todos terminaram sem exceções.
+- Verificação read-only: RLS ativo na tabela de checkpoint; SELECT negado a anon/authenticated e permitido a service_role; três RPCs novas SECURITY DEFINER com search_path vazio e EXECUTE somente para service_role; zero linhas de checkpoint após os testes.
+- Security Advisor adicionou somente INFO de RLS enabled/no policy para a tabela de checkpoint, intencional por acesso exclusivamente server-side. Permanecem avisos preexistentes de funções SECURITY DEFINER e proteção de senha vazada; Performance Advisor ainda aponta quatro FKs de S15/S10, sem FKs S11 pendentes.
+- Staging registra 27 migrations. Produção permanece com 20; consulta read-only confirmou zero tabelas e zero funções S11. Nenhuma migration ou deploy de produção foi executado.
+- Vercel: o único Preview READY conhecido continua no commit intermediário 98ca20c; não há deployment do head b898c5c. A quota api-deployments-free-per-day continua impedindo novo Preview.
+- Variáveis de Mercado Livre e SUPABASE_SECRET_KEY não estão configuradas no Vercel. OAuth real e leitura de pedidos reais continuam bloqueados.
+- PR #60 segue Draft, aberto contra feature/smkon-production-readiness; não foi mergeado. A branch de integração não foi promovida para main.
+- Limites restantes: divisão automática de janelas após offset 10.000, sync incremental por date_last_updated, OAuth real, reconciliação financeira e backup/restauração verificáveis antes de qualquer release.
