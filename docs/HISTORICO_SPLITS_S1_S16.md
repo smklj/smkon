@@ -210,3 +210,12 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - CI #475 passou no código; CI #477 passou também no head documental 4476c432f09bb1621a1a1648b221647822651aff.
 - PR #60 continua Draft. Preview READY mais recente é do commit intermediário 5809300, não do head. Deploy do head bloqueado por quota Vercel.
 - Produção permanece intacta: 20 migrations, sem objetos S11; backup/restauração não comprovados e OAuth real bloqueado por ausência de credenciais.
+
+
+### S11 — validação de consistência do GET /orders/search — 21/11/2026
+
+- Corrigido o risco de truncamento: `results` ausente/não-array, mais de 50 itens, registros malformados, `paging.total` inválido ou página curta/vazia antes do total são rejeitados antes da persistência.
+- A rota libera a lease pelo fluxo de falha e não chama a RPC que grava snapshots/avança o checkpoint quando a resposta do provedor é inconsistente.
+- Testes unitários adicionados para respostas ausentes/malformadas, total inválido, página vazia antecipada, página parcial com mais pedidos, página final curta consistente e continuação sem total. Teste SQL reforça que liberar lease mantém `next_offset`.
+- Código no PR #60, head `86714917f814df7ada36d5c21a5aa04526d2c19c`; CI #499 aprovado nos dois jobs. O Preview exato não existe e o E2E aguarda um deployment Preview autorizado.
+- PR #57 permanece mergeado em `feature/smkon-production-readiness`; PR #60 continua Draft e não foi mergeado. Produção permanece sem migrations/deploy S11.
