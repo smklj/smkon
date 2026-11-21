@@ -29,7 +29,7 @@ function oneYearBefore(value: Date): Date {
 }
 
 function parseDate(value: unknown): Date | null {
-  if (typeof value !== "string" || value.length > 64) return null;
+  if (typeof value !== "string" || value.length > 64 || !/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(value)) return null;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? floorToHour(parsed) : null;
 }
