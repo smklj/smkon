@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 PR #82 Draft, branch limpa 1 ahead/0 behind sobre 9dbf6cb9; PR #78 fechada sem merge. CI #44933511061 aprovado no SHA 46a6d1f5 (288/288 unitários, audit/typecheck/lint/build/SQL); Preview READY no mesmo SHA; E2E #44933605001 em execução, configuração QA passou, sem resultado final. Staging: 114 runs killed, 0 steps/usage/grants/drafts vinculados; kill switch desligado e limites 500/12. Produção sem dados S14. Migrations S14 têm version IDs diferentes entre ambientes. OIDC/modelo configurados; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive sem validação; AGENT_EXECUTOR_ENABLED=true em Preview/Production; nenhum budget externo nem chamada real comprovada; agent_model_usage vazio e uso Gateway zero. Worker/Cron ausentes de main; Cron não ativo em Production. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 Código incorporado a main via PR #82/#87; deployment Production ainda não comprovado (Vercel build-rate-limit). CI S14 288/288; E2E 36/36 no Preview; CI integração #44943940164 aprovado. Staging: 119 runs killed, 0 steps/usage/grants; kill switch false, limites 500/12. Gateway 7d: 0 requests/tokens/custo; ledger vazio. Bloqueios: SUPABASE_SECRET_KEY ausente, grants zero, sem budget externo, CRON_SECRET/OIDC runtime não validados. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -165,3 +165,12 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - ACL/RLS S11 foi verificado anteriormente em Staging; a consulta desta rodada confirmou estado/migrations, não repetiu a auditoria de grants.
 - Produção permanece sem alterações. Não executar migration repair, `db push`, deploy ou promoção da branch de integração enquanto a divergência, Preview/E2E, backup e plano de release isolado não forem resolvidos.
 - A homologação com conta real/OAuth será feita pelo Owner posteriormente; não é critério para a implementação técnica desta rodada.
+
+
+## S14 — reconciliação pós-release #87 (21/11/2026 17:03 BRT)
+- PR #82 merged em feature (#merge `aa275791`); PR #87 merged em main (`efbfb56`) com as Frentes A/B/C, incluindo S14. Merges observados no GitHub; não executados por esta automação.
+- Código S14 está em main, mas o deployment Production continua no SHA `01677bad` de 19/11; check Vercel do merge #87 falhou por build-rate-limit. Sem deployment Production de S14 comprovado.
+- CI S14: 288/288 unitários no SHA `46a6d1f5`; E2E 36/36 no Preview exato. CI de integração #44943940164: 2 jobs success no SHA `419694eb`.
+- Preview S14 e Preview de integração estão READY. Nenhum é produção.
+- Bloqueios operacionais: `SUPABASE_SECRET_KEY` ausente; tool grants zero; budget externo inexistente; comprimento do `CRON_SECRET` e OIDC runtime não validados. AI Gateway 7d = 0 requests/tokens/custo; `agent_model_usage` = 0.
+- `vercel.json` e rota do worker existem em main, Cron `17 11 * * *`; não há invocação autenticada nem deployment Production atual que comprove o Cron ativo.
