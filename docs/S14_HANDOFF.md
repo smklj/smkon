@@ -180,3 +180,52 @@ As três migrations lógicas do S14 (`agent_draft_content`, `agent_claim_queue`,
 - **Não executar smoke test real ainda:** falta `SUPABASE_SECRET_KEY` em Preview; não existe budget externo do AI Gateway. A ausência de `AI_GATEWAY_API_KEY` não é bloqueio isolado porque OIDC está selecionado, mas ainda não há chamada OIDC real comprovada.
 - **Não liberar Production:** `AGENT_EXECUTOR_ENABLED=true` está configurado em Production, porém a rota S14 não está em `main`. Antes de qualquer release, o Owner deve desligar a flag em Production e só reabilitá-la após secret, budget externo e smoke test controlado. Nenhum deploy de produção foi feito.
 - Cron declarado no repositório: `GET /api/agents/worker` diariamente às 11:17 UTC. Cron não executa em Preview; não há evidência de disparo em Production porque S14 não está na `main`.
+
+
+## Revalidação operacional — 21/11/2026 (rodada 3)
+
+### GitHub, branch, CI e Preview
+
+- Head da branch S14: `28c47b8588a634d960bf100b86769882a6c2436b`; base de integração: `bbfb0eccc7d295eeca0297e894156acc60a0bd30`.
+- Comparação atual: **17 commits à frente e 5 atrás**; estado `diverged`. A API do PR #58 retorna `mergeable=true`, porém `mergeable_state=unstable`; não considerar pronto para merge enquanto a branch não for sincronizada e os checks ficarem estáveis.
+- PR [#58](https://github.com/smklj/smkon/pull/58) permanece aberto e Draft. O código da correção de timeout está no histórico; os commits mais recentes deste head são documentais.
+- CI do head `28c47b8`: [run #44873721401](https://github.com/smklj/smkon/actions/runs/44873721401) **success** nos dois jobs: typecheck/lint/unit/build e migrations/SQL.
+- O status combinado ainda mostra falha no check Vercel por limite de deployments do plano gratuito (`api-deployments-free-per-day`); não é falha de compilação.
+- Não existe deployment Vercel para o SHA exato `28c47b8`. O Preview READY mais recente consultado para a branch está no commit `8735b2064b5ee8f2e22919598f5bf80a373a32fd`: [Preview](https://smkon-git-fix-s14-deadline-timeout-classification-smkon.vercel.app). Portanto, READY não deve ser atribuído ao head atual.
+- O E2E [run #44868983047](https://github.com/smklj/smkon/actions/runs/44868983047) passou no job Playwright contra staging isolado; ele é evidência do run testado, não de chamada real ao modelo.
+- `main` permanece em `01677bad697ed412bffe58d6b8dd7eabec8d6183`; o deployment Production READY consultado usa esse SHA. S14 continua fora de `main`.
+
+### AI Gateway, OIDC e configuração
+
+- O catálogo atual do AI Gateway confirma o modelo `anthropic/claude-haiku-5.5`. O preço base publicado (input `0.0000001`, output `0.0000005` USD/token) coincide com `model-pricing.ts`; a estimativa local aplica margem de 10%.
+- Não há budget do time, do projeto nem default aplicável; `defaultCoveredCounts` retornou zero. O uso agregado do projeto nos últimos 7 dias não retornou requests, tokens ou custo.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, modelo e teto interno `AGENT_MONTHLY_BUDGET_USD=5` estão configurados em Preview e Production. A ausência de `AI_GATEWAY_API_KEY` é coerente com OIDC.
+- O código lê `x-vercel-oidc-token`; a documentação oficial da Vercel confirma esse header para Functions. Isso valida o mecanismo documentado, não uma autenticação OIDC real: nenhuma chamada ao Gateway foi comprovada.
+- `SUPABASE_SECRET_KEY` continua ausente da lista de variáveis da Vercel.
+- `CRON_SECRET` tem entradas sensitive em Preview e Production, mas o conector não disponibilizou o valor nem para validação interna; o comprimento mínimo de 32 caracteres continua **não verificado**. Nenhum segredo foi incluído neste handoff.
+- `AGENT_EXECUTOR_ENABLED=true` está configurado nos dois ambientes. Em Production a flag é latente enquanto a rota não estiver em `main`; mantê-la desligada antes de qualquer release e só reabilitar depois dos gates e do smoke test.
+
+### Vercel Cron
+
+- `vercel.json` na branch declara `GET /api/agents/worker` diariamente às 11:17 UTC.
+- A documentação oficial da Vercel define Cron Jobs para deployments de Production; Preview não executa esse cron. Como `main` ainda está no release S7.2 C e não contém a rota S14, não há evidência de Cron S14 ativo em Production.
+
+### Supabase e consumo
+
+| Ambiente | Migrations registradas | `agent_runs` | `agent_steps` | `agent_model_usage` | Custo registrado |
+|---|---:|---:|---:|---:|---:|
+| Staging | 25 | 83 (todas `killed/kill_switch`) | 0 | 0 | US$ 0 |
+| Production | 20 | 0 | 0 | 0 | US$ 0 |
+
+- As três migrations lógicas S14 (`agent_draft_content`, `agent_claim_queue`, `agent_model_usage`) constam nos dois ambientes; nenhuma migration foi aplicada nesta rodada.
+- `agent_model_usage`: RLS habilitado nos dois bancos; anon sem SELECT; authenticated com SELECT sob policy; INSERT direto de `service_role` revogado.
+- RPCs `agent_record_model_usage` e `agent_model_spend_since`: EXECUTE negado para anon/authenticated e permitido somente para `service_role`.
+- As 83 execuções de staging não comprovam trabalho do modelo: todas terminaram por `kill_switch`, sem etapas nem consumo.
+
+### Decisão e pendências
+
+- **Não executar smoke test real:** falta `SUPABASE_SECRET_KEY` no Preview e não existe budget externo do AI Gateway. O modelo estar no catálogo e OIDC estar selecionado não comprovam chamada real.
+- Sincronizar a branch do PR #58 com a base atual (5 commits atrás) e resolver qualquer conflito; depois repetir CI e obter um Preview do SHA exato.
+- Owner deve cadastrar a secret key do projeto Supabase de staging como sensitive em Preview, confirmar o comprimento de `CRON_SECRET` sem compartilhar o valor e configurar budget externo baixo para o projeto.
+- Só então executar uma única `operations_review` controlada em staging e conferir request OIDC, resposta do Gateway, dois registros de uso (plan/verify, quando ambos concluírem) e o detalhe da execução.
+- Nenhum merge, migration remota, alteração de secrets ou mudança de Production foi executado nesta rodada.
