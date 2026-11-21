@@ -351,3 +351,42 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - AI Gateway 7d: 0 requests/tokens/custo; budgets/rules externos ausentes. Staging 121 runs killed, sem steps/grants/usage; Production sem runs/usage. Ledger consistente com agregado zero, sem chamada real.
 - Assinaturas de colunas, constraints, policies, RLS/ACL e funções selecionadas coincidem nos dois Supabase; versões de migration S14 ainda diferem. Nenhum repair executado.
 - A flag Production não foi alterada. Recomendação: manter executor desabilitado até credenciais, grants, budget e OIDC/CRON homologados em Staging.
+
+
+## Reconciliação operacional S14 — 21/11/2026 19:01 BRT (run 11)
+
+### GitHub e release
+- HEAD de `main`: `e17d16f799dc32e22b0f189fbdbd5f33161c7fc9` (merge da PR #97). Os nove splits S14 (#35–#42 e #46) continuam integrados; não há split original pendente.
+- PR #101 (`chore/release-engineering`) está aberta, não Draft, base `e17d16f`, head `6ca14097`, mergeable. Ela introduz Playwright Build local para reduzir dependência da quota Vercel, Dependabot, remove o workflow de commits vazios de deploy e adiciona `docs/SEGREDOS.md`. Não foi mergeada nesta rodada.
+- CI #44953753232 da PR #101: dois jobs success; typecheck, lint, audit, build e SQL tests aprovados; log de unit tests registra 406 pass.
+- E2E #44953753229 da PR #101: job Build local falhou com 35 pass / 1 fail. Falha isolada em `tests/e2e/csp.spec.mjs`, página `/studio`, linha 68: existe um elemento `<style>` cujo nonce é vazio/diferente do nonce da resposta. O job Playwright · Staging foi skipped porque o evento foi `pull_request`; ainda não há E2E de Preview para esse SHA.
+- Preview da PR #101 READY: `dpl_yYG7QwPUu8mquGR9MhQcMrWKfPt2`, URL https://smkon-9by4wpptn-smkon.vercel.app, SHA `6ca14097`. O check Vercel da PR está success.
+- O check Vercel do HEAD de `main` está failure `build-rate-limit`; não há deployment correspondente aos oito commits mais recentes da main.
+
+### Produção e Cron
+- Deployment Production mais recente: READY `dpl_5U4DbwZF2PUNHXWxFoVe5cudCN9s`, SHA `5973b230bfa8278497201bb0b75004075f8c1343`, criado em 21/11/2026 às 18:28 BRT. É ancestral de `main`; a comparação retorna 8 commits à frente na main e 0 atrás.
+- A revisão implantada contém `vercel.json` com `/api/agents/worker` em `17 11 * * *` (08:17 BRT) e a rota do worker. O deploy foi criado depois do horário diário de 21/11; a próxima execução programada é 22/11/2026 às 08:17 BRT.
+- Runtime logs do deployment nos últimos 50 minutos: nenhum registro. Runtime errors agregados da rota em 24h: nenhum. A ausência de logs não comprova invocação nem sucesso do Cron.
+- Não há evidência de execução autenticada do worker. Com a chave de serviço ausente, o handler falha fechado em `503 service_not_configured` antes de claim, após validar flag, CRON_SECRET, Bearer, modelo/OIDC e budget.
+
+### Variáveis, OIDC e orçamento (inventário sem decrypt)
+- `SUPABASE_SECRET_KEY`: ausente no projeto Vercel, tanto Preview quanto Production.
+- `CRON_SECRET`: sensitive presente separadamente em Preview e Production; valor não foi lido. Comprimento mínimo de 32 caracteres e ausência de whitespace não foram comprovados.
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; não alterado. Recomendação ao Owner: manter Production desligado até homologação controlada.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5`.
+- O handler lê `x-vercel-oidc-token`; a documentação atual da Vercel confirma que o token OIDC de runtime é exposto nesse header. Isso valida a escolha do mecanismo no código, mas não comprova autenticação real em runtime.
+- AI Gateway últimos 7 dias: 0 requests, 0 input/output tokens, US$ 0. Budgets de team, project e defaults: nenhum. Regras de roteamento: nenhuma.
+- O teto interno de US$ 5 permanece soft, sem reserva atômica por chamada e sem outbox durável para reconciliação de uma cobrança após falha da RPC.
+
+### Supabase — estado consultado
+- Staging `xoyasrizivadxnpmzzno`: 31 migrations; 125 `agent_runs`, todas `killed`; 0 `agent_steps`; 0 `agent_tool_grants`; 0 `agent_model_usage`; 1 `agent_settings`. Configuração: `kill_switch=false`, 500 runs/dia, 12 steps/run.
+- Production `hpplboyysmfcjsnjrdmw`: 31 migrations; 0 runs, steps, grants, usage e settings.
+- Os nomes das 31 migrations coincidem entre ambientes; os version IDs continuam diferentes. A PR #101 documenta paridade em 534 objetos, mas esta rodada confirmou contagens/nome das migrations e objetos S14, não repetiu a comparação integral dos 534 objetos.
+- `agent_model_usage` usa as colunas `input_tokens`, `output_tokens` e `cost_usd`. Staging e Production: 0 linhas, 0 tokens e US$ 0. Consistente com o agregado zero do AI Gateway; não prova reconciliação após uma chamada cobrada.
+- Workspace de staging continua sem tool grants. Nenhum `operations_review` real pode ser executado com segurança.
+
+### Gate para teste real controlado
+Não executar operação paga enquanto faltarem: chave service exclusiva de staging; grants mínimos e explicitamente aprovados; budget externo isolado de Production; validação segura do CRON_SECRET; autenticação OIDC observada em runtime; Preview/E2E do SHA de homologação sem falha. Nenhuma chamada real ao AI Gateway foi comprovada.
+
+### Segurança desta rodada
+Somente consultas read-only a GitHub/Vercel/Supabase e atualização documental em branch isolada. Nenhum merge, alteração de Production, deploy, migration remota, secret, grant, budget ou chamada paga foi executado.
