@@ -180,3 +180,13 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - E2E acionado por deployment_status foi cancelado; não representa falha no pipeline CI principal.
 - Vercel Preview verificado sem descriptografar secrets; não existem variáveis de configuração do Mercado Livre, logo não há conta/app OAuth configurado.
 - Implementação de storage seguro ainda pendente; PR #57 permanece Draft e não foi mesclado nem implantado.
+
+
+## S11 — Mercado Livre (atualização 21/11/2026 UTC)
+
+- Adapter OAuth/API GET-only e helpers PKCE/state já estão na branch isolada.
+- Núcleo de criptografia AES-256-GCM adicionado; envelope versionado e AAD vinculado à organização/provedor/conta. Entry point server-only separado. Testes unitários adicionados.
+- Ainda **não operacional**: sem persistência/repository, tabela, callback OAuth, refresh lock, sync ou conta conectada.
+- CI do head `9961b9cf5197e3ba72962e6fd32170d85903efba` pendente na última consulta; revalidar antes de atualizar para aprovado.
+- Sem secrets Mercado Livre configurados, sem migration aplicada, sem staging/prod alterados e sem deploy.
+- PR #57 permanece Draft.
