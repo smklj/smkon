@@ -114,7 +114,13 @@ export function parseMercadoLivreOrderSearchPage(
   if (!isRecord(input)) {
     return { ok: false, error: "Mercado Livre returned an invalid order search page." };
   }
-  if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(pageSize) || pageSize < 1) {
+  if (
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    !Number.isSafeInteger(pageSize) ||
+    pageSize < 1 ||
+    pageSize > MERCADO_LIVRE_ORDER_PAGE_SIZE
+  ) {
     return { ok: false, error: "Mercado Livre order search pagination parameters are invalid." };
   }
   if (!Array.isArray(input.results)) {
@@ -158,7 +164,12 @@ export function parseMercadoLivreOrderSearchPage(
       return { ok: false, error: "Mercado Livre returned a partial page before the provider total was reached." };
     }
   } else {
-    hasMore = orders.length === pageSize;
+    // Without a provider total, a short page cannot prove that the history is complete.
+    // Fail closed so the caller releases the lease instead of advancing the checkpoint.
+    if (orders.length < pageSize) {
+      return { ok: false, error: "Mercado Livre returned a short page without a trustworthy provider total." };
+    }
+    hasMore = true;
   }
 
   return {

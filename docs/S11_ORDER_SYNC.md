@@ -162,3 +162,7 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - Implementação no PR #60: helper, rota e testes nos commits `e4dc8e9`, `c947900`, `b3ae136`, `b3a27ee`, `c8ddc0f`, `01d04d8` e `8671491`. CI #499 passou nos dois jobs no head `86714917f814df7ada36d5c21a5aa04526d2c19c`.
 - O Preview do head exato ainda não existe; a listagem da Vercel retorna zero deployments para esse SHA. E2E Playwright não foi disparado, pois o workflow depende de um Preview concluído ou de dispatch manual, e não há autorização de deploy nem ação de dispatch disponível nesta conexão.
 - Nenhuma migration, merge do PR #60, deploy ou alteração em produção foi executada. PR #57 não foi reaberto nem mergeado novamente.
+
+## Fail-closed em páginas sem total verificável
+
+A resposta de `GET /orders/search` é validada antes de normalizar ou persistir pedidos. Quando `paging.total` está presente, ele precisa ser um inteiro seguro não negativo e a página não pode ultrapassar esse total. Uma página curta só é terminal quando `offset + results.length` alcança exatamente o total informado. Se o provedor omitir o total, páginas completas de 50 itens podem continuar; páginas vazias ou parciais são rejeitadas porque não comprovam o fim do histórico. A rota libera a lease pelo fluxo de erro e não chama a RPC que persiste snapshots/avança o checkpoint. O parser também impõe o teto absoluto de 50 itens por página.

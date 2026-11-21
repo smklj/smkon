@@ -148,3 +148,17 @@ test("preserves full-page continuation when the provider omits paging.total", ()
   assert.equal(parsed.value.providerTotal, null);
   assert.equal(parsed.value.hasMore, true);
 });
+
+test("rejects empty or partial pages when the provider omits total because completion cannot be proven", () => {
+  const partial = Array.from({ length: 17 }, (_, index) => providerOrder(index + 1));
+  for (const results of [[], partial, Array.from({ length: 49 }, (_, index) => providerOrder(index + 1))]) {
+    assert.equal(parseMercadoLivreOrderSearchPage({ results }, 0).ok, false);
+    assert.equal(parseMercadoLivreOrderSearchPage({ results, paging: {} }, 0).ok, false);
+  }
+});
+
+test("never allows a caller to raise the provider page-size cap above 50", () => {
+  const results = Array.from({ length: 51 }, (_, index) => providerOrder(index + 1));
+  assert.equal(parseMercadoLivreOrderSearchPage({ results }, 0, 51).ok, false);
+  assert.equal(parseMercadoLivreOrderSearchPage({ results: [] }, 0, 0).ok, false);
+});
