@@ -192,3 +192,10 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 - Produção segue com 20 migrations, sem tabelas ou funções S11. Não houve migration, merge em main ou deploy de produção.
 - Preview final ainda não existe: o READY conhecido corresponde ao commit intermediário 98ca20c; Vercel bloqueia novo deployment pela quota diária. PR #60 permanece Draft.
 - Sem credenciais Mercado Livre/SUPABASE_SECRET_KEY no Vercel, sem OAuth real, sem pedidos reais. Ainda faltam divisão automática de janelas, sync incremental e conciliação financeira.
+
+
+## Inventário Vercel — correção do Preview intermediário (21/11/2026)
+
+A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
+
+A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
