@@ -107,3 +107,15 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - **Estado:** decisão registrada e plano definido; conector ainda não implementado nem operacionalmente validado.
 - **Próxima etapa:** inspeção dos padrões de OAuth, ConnectionsPanel, tenancy e financeiro; adapter tipado + fixtures; testes de OAuth, paginação, idempotência, falhas e isolamento multi-tenant.
 - **Não autorizado nesta decisão:** contas reais, secrets, sincronização recorrente, migrations aplicadas, custos pagos, merge em `main` ou deploy de produção.
+
+
+## 9. S11 — adapter inicial em revisão (21/11/2026 UTC)
+
+- **Branch:** `feature/s11-mercado-livre-adapter`.
+- **PR:** [#57](https://github.com/smklj/smkon/pull/57), Draft, aberto e não mergeado.
+- **Implementado no código:** tipos do provider; helpers state/PKCE S256; builder de URL de autorização; troca server-side de authorization code e refresh token; cliente API GET-only com origem fixa, timeout e limite de resposta; testes unitários iniciais.
+- **Handoff:** `docs/S11_HANDOFF.md` na branch do PR.
+- **Validação pendente:** test:unit, typecheck e lint não foram executados por este agente.
+- **Ainda pendente:** callback OAuth, state persistido e de uso único, secret store/cifragem, armazenamento rotativo de tokens, lock de refresh, mapper de dados financeiros, sync, persistência idempotente e migration.
+- **Segurança:** sem secrets, contas, chamadas externas, migrations ou deploys.
+- **Próxima ação:** aguardar CI/revisão do PR #57 e concluir a decisão técnica de armazenamento seguro antes de implementar callback e persistência.
