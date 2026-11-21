@@ -191,3 +191,11 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - A documentação oficial do Mercado Livre indica retenção de pedidos de até 12 meses, filtros por data e que a busca por vendedor pode filtrar pedidos cancelados. O backfill, portanto, não é um extrato financeiro completo.
 - Teste unitário novo: `tests/unit/mercado-livre-order-sync-window.test.ts` cobre janela de 12 meses, hora UTC, timezone explícito, offset e rejeição de janelas inválidas.
 - Não houve chamada real ao Mercado Livre, OAuth ou gravação de pedidos reais; CI/Preview desta alteração ainda pendentes.
+
+
+### Validação da paginação — 21/11/2026 04:16 BRT
+
+- PR #60 aberto como Draft contra `feature/smkon-production-readiness`.
+- CI #428 passou nos dois jobs: Quality (audit, typecheck, lint, unit tests e build) e Database migrations/SQL tests.
+- O check Vercel está failure por `api-deployments-free-per-day`; não há Preview para o código de paginação. O Preview anterior `af27230` continua READY, mas não contém esta alteração.
+- O PR permanece Draft até haver Preview verificável; não houve merge desta alteração nem deploy de produção.
