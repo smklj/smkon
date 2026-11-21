@@ -44,5 +44,5 @@ test("offset is bounded and must align to a 50-order page", () => {
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: -50 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 51 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: MERCADO_LIVRE_ORDER_MAX_OFFSET + 50 }, now).ok, false);
-  assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 100 }, now).ok, true);
+  assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 100, createdFrom: "2025-11-21T04:00:00Z", createdTo: "2026-11-21T04:00:00Z" }, now).ok, true);
 });
