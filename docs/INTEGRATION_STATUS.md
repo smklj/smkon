@@ -201,3 +201,15 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - Limites atuais: o repository ainda não orquestra o refresh end-to-end nem implementa callback OAuth; o caminho de claim deve ser integrado a uma operação que descriptografe, faça refresh, cifre o novo par e salve via CAS, liberando lease em falha. O save retorna false se a lease/version não corresponder.
 - CI precisa ser verificado no head mais recente após estes commits. Migration é apenas arquivo versionado; **não foi aplicada** em Supabase local, staging ou produção.
 - Nenhuma chave real, token ou conta conectada; nenhum deploy ou merge.
+
+
+## S11 — jornada futura de conexão Mercado Livre — 21/11/2026 UTC
+
+- **Decisão de produto:** conexão Mercado Livre será uma etapa explícita e futura do SMKON; não é necessário configurar o DevCenter agora e ela não bloqueia outras frentes.
+- **Fluxo previsto:** estado desconectado → configuração do app/redirect URI e secrets no Preview pelo Owner → autorização OAuth iniciada pelo usuário → validação callback/state/PKCE/identidade/permissão → confirmação de tokens cifrados → leitura manual/dry-run → reconciliação → eventual sync persistente/recorrente sob aprovação separada.
+- **Experiência exigida:** estados não configurado, desconectado, aguardando autorização, conectado/validado, atenção/reautorização, falha e desconectando; ações conectar, reconectar e desconectar; identificação da conta e último status sem revelar tokens.
+- **Backend:** adapter, OAuth server-side, state one-time, PKCE, persistência cifrada e refresh serializado implementados na frente S11; testes automatizados de lease/CAS e quality gate aprovados no CI #364 (ver fechamento de validação S11 nesta documentação e `docs/S11_HANDOFF.md`).
+- **Ainda não operacional:** UI/jornada completa não comprovada; OAuth real não executado; nenhuma conta conectada; nenhuma chamada real ao Mercado Livre; ingestão/dry-run financeiro, mapper, reconciliação e sync recorrente não comprovados.
+- **Bloqueios externos:** app e credenciais do DevCenter; configuração segura das variáveis no Vercel Preview; conta de teste para autorização real. Não enviar segredos pelo chat.
+- **Próxima ação técnica:** revisar/implementar UI de conexão e estados de conexão no PR #57; depois executar OAuth real em Preview com conta de teste.
+- **Limites:** nenhuma migration hospedada, secret, conta real, sync recorrente, escrita financeira, merge ou deploy de produção realizada nesta atualização.
