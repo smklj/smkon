@@ -507,3 +507,39 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - Produção continua com 20 migrations e sem objetos S11. Nenhuma migration/deploy de produção foi executado.
 - Preview do head continua bloqueado por HTTP 402 api-deployments-free-per-day; o Preview READY mais recente é do commit intermediário 5809300, anterior à rota/UI do checkpoint. Credenciais Mercado Livre e SUPABASE_SECRET_KEY continuam ausentes.
 - Pendências: dividir automaticamente janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, conciliação financeira e backup/restauração comprováveis.
+
+
+---
+
+## Estado operacional consolidado — 21/11/2026 (consulta direta)
+
+Esta seção prevalece sobre inventários anteriores deste documento quando houver divergência de contagens, SHA ou estado de ambiente.
+
+### GitHub
+- PR #57 permanece fechado e mergeado por squash na branch `feature/smkon-production-readiness`; merge commit `8c73cbc`. Não repetir merge.
+- PR #60 permanece aberto, Draft e não mergeado; head consultado: `36e135cb2ac757125bb543ea9319fe9f9e7ff869`; base: `feature/smkon-production-readiness`.
+- Comparação atual PR #60 → base: 88 commits à frente e 18 atrás. O merge-base é `7ab9b864336b822cb6b86892a6b96f109b9b715d`. Não fazer rebase/merge automático: há alterações concorrentes em documentação e arquivos de runtime; revisar por arquivo antes de reconciliar.
+- CI associado ao head `36e135c`: run #546 concluído com sucesso. Jobs Quality e Database/SQL Tests concluídos com sucesso. Isso não substitui E2E no Preview.
+
+### Implementação confirmada no head
+- Persistência transacional/idempotente de snapshots e checkpoint durável via RPC; RLS server-side e lease.
+- Validação fail-closed de `GET /orders/search`: `results` obrigatório, array limitado a 50 objetos; validação de `paging.total` (incluindo limite int4); rejeição de página parcial/vazia sem prova de conclusão; erro antes da RPC de persistência e tentativa de liberar lease.
+- Watermark de atualização do provedor para impedir regressão por snapshots antigos.
+- Limite atual de offset é 10.000. A divisão automática em sub-janelas e a sincronização incremental por `date_last_updated` ainda não estão implementadas; estado `blocked` exige tratamento operacional/manual. Não declarar backfill completo além desse limite.
+
+### Supabase — consulta direta
+- Staging `xoyasrizivadxnpmzzno`: `ACTIVE_HEALTHY`, 29 migrations registradas. Inclui keyset, migrations S11 e `integration_hub`.
+- Produção `hpplboyysmfcjsnjrdmw`: `ACTIVE_HEALTHY`, 20 migrations registradas; keyset e migrations S11 ausentes.
+- Os identificadores/versões remotos de migrations não correspondem aos prefixos Git. Não executar migration repair manual nem `db push` antes de reconciliação suportada.
+- ACL/RLS descritos nas seções anteriores foram verificados em Staging; esta consulta de inventário não reexecutou a auditoria completa de grants/Advisor.
+
+### Vercel, E2E e credenciais
+- Consulta de deployments por SHA `36e135cb2ac757125bb543ea9319fe9f9e7ff869`: zero deployments. Portanto não há Preview do head exato.
+- Preview intermediário não valida este head. E2E Playwright do head atual não comprovado.
+- Não foram configuradas credenciais OAuth nesta rodada e não foi executado OAuth real; o Owner fará a homologação com conta real posteriormente.
+- Backup/restauração de produção não comprovados.
+
+### Segurança de release
+- Nenhuma migration, deploy ou alteração de dados em produção foi executada.
+- PR #60 continua Draft e não deve ser mergeado sem aprovação específica.
+- Não promover a branch de integração inteira para `main`; preparar release isolado após reconciliação, Preview/E2E e backup verificável.
