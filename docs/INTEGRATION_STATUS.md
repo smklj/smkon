@@ -3,9 +3,9 @@
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
 `feature/smkon-production-readiness`. Correções desta frente usam `fix/integration-*`.
 
-**Última verificação:** 21/11/2026 ~19:45 UTC (execução 13) · commit `96580f3` (Frente B, push direto)
+**Última verificação:** 21/11/2026 ~19:25 UTC (execução 13) · commit `96580f3` (Frente B, push direto)
 
-## 0. Quadro atual — execução 13 (21/11/2026 ~19:45 UTC)
+## 0. Quadro atual — execução 13 (21/11/2026 ~19:25 UTC)
 
 > Esta seção é o estado vigente. As seções 1–6 são o histórico da execução 5; as seções 7+ são auditorias S11 de 20–21/11.
 
@@ -46,7 +46,7 @@ order_versioning → integration_hub → hotmart_webhook → metricool_credentia
 houver versões duplicadas** (guarda testada com um arquivo duplicado temporário: sai com código 1).
 ⚠️ Frentes S11/S19: ao continuar nesses arquivos, usem os nomes novos.
 
-### Migrations (comparação por nome; `list_migrations` em 21/11 ~19:35 UTC)
+### Migrations (comparação por nome; `list_migrations` em 21/11 ~19:20 UTC)
 - Repositório (integração): **31** migrations, até `20261121200000_metricool_credentials`.
 - **Staging** (`xoyasrizivadxnpmzzno`): **31** — idêntico por nome ao repositório. ✅ Desvio da execução 12 resolvido
   (#60 e #70 mergeados). `hotmart_webhook` (`20261121184427`) e `metricool_credentials` (`20261121185150`) foram aplicadas
@@ -82,7 +82,7 @@ houver versões duplicadas** (guarda testada com um arquivo duplicado temporári
 | S11 (Mercado Livre) | #60 mergeado; Frente B (`96580f3`) adicionou reconciliação/desconexão/ledger sync | — | ✅ | Migrations renomeadas nesta execução; `96580f3` entrou sem PR/revisão | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
 | S17/S18/S19 (hub, Hotmart, Metricool) | Mergeados (#70, #83, #84) | — | ✅ | Prefixo de teste `040_` duplicado (cosmético) | Produção de `integration_hub`, `hotmart_webhook`, `metricool_credentials`; credenciais Hotmart/Metricool/redes |
 | Docs (governança) | PR #79 contra `main` (Draft) — só documentação | #79 | — | Fora da integração | Merge na `main` |
-| Integração | Execução 13: CI e validação local verdes; versões duplicadas corrigidas | este PR | — | — | — |
+| Integração | Execução 13: CI e validação local verdes; versões duplicadas corrigidas | #85 | — | Preview Vercel bloqueado por cota diária (externo) | — |
 
 Handoffs: ✅ S14, ✅ S15, ✅ S16, ✅ S6.1 · ⏳ S4. Relatório final ao Owner só quando S4 tiver handoff.
 
