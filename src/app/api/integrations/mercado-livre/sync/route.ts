@@ -10,14 +10,13 @@ import { normalizeMercadoLivreOrder, type MercadoLivreOrderInput } from "@/lib/i
 import {
   MERCADO_LIVRE_ORDER_MAX_OFFSET,
   MERCADO_LIVRE_ORDER_PAGE_SIZE,
+  parseMercadoLivreOrderSearchPage,
   parseMercadoLivreOrderSyncAction,
 } from "@/lib/integrations/mercado-livre/order-sync-window";
 import type { MercadoLivreTokenSet } from "@/lib/integrations/mercado-livre/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-type OrderSearch = { paging?: { total?: number }; results?: MercadoLivreOrderInput[] };
 
 type ClaimedSyncState = {
   sync_id: string;
@@ -211,7 +210,7 @@ export async function POST(request: Request) {
       throw new Error("Provider identity check failed.");
     }
 
-    const page = await mercadoLivreGet<OrderSearch>(tokens.accessToken, "/orders/search", {
+    const page = await mercadoLivreGet<unknown>(tokens.accessToken, "/orders/search", {
       seller: connection.external_account_id,
       limit: MERCADO_LIVRE_ORDER_PAGE_SIZE,
       offset,
@@ -219,16 +218,10 @@ export async function POST(request: Request) {
       "order.date_created.from": createdFrom,
       "order.date_created.to": createdTo,
     });
-    const orders = Array.isArray(page.results) ? page.results : [];
+    const validatedPage = parseMercadoLivreOrderSearchPage(page, offset);
+    if (!validatedPage.ok) throw new Error(validatedPage.error);
+    const { orders, providerTotal, hasMore, nextOffset: candidateNextOffset } = validatedPage.value;
     const snapshots = orders.map(normalizeMercadoLivreOrder);
-
-    const providerTotal = typeof page.paging?.total === "number" &&
-      Number.isSafeInteger(page.paging.total) && page.paging.total >= 0
-      ? page.paging.total
-      : null;
-    const candidateNextOffset = offset + orders.length;
-    const hasMore = orders.length === MERCADO_LIVRE_ORDER_PAGE_SIZE &&
-      (providerTotal === null || candidateNextOffset < providerTotal);
     const paginationLimitReached = hasMore && candidateNextOffset > MERCADO_LIVRE_ORDER_MAX_OFFSET;
 
     const { data: processed, error: persistError } = await service.rpc("mercado_livre_persist_order_sync_page", {
