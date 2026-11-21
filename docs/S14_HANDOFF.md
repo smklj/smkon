@@ -197,7 +197,7 @@ Esta seção supersede snapshots anteriores sobre o estado de merge, Cron e prod
 - A branch de integração consultada estava em `419694eb0df4499f6cec8f1701a2b687bc11b516`. A PR #82 não está mais aberta: está fechada e merged. Não criar outra PR de código S14 sem revisar o estado atual.
 
 ### CI, Preview e produção
-- CI #44943940164 no head de integração `419694eb`: sucesso nos dois jobs (typecheck/lint/build/unit tests e migrations/SQL tests).
+- CI #44943940164 no head de integração `419694eb`: sucesso nos dois jobs; logs confirmam 350 testes, 350 pass, 0 fail (typecheck/lint/build/unit tests e migrations/SQL tests).
 - CI específico do código S14 #44933511061: sucesso nos dois jobs no SHA `46a6d1f5`, com 288/288 testes unitários, audit, typecheck, lint, build e SQL.
 - E2E Playwright #44933605001: sucesso, 36/36 testes no Preview/SHA exato `46a6d1f5`; valida UI, fila e kill switch, não chama o modelo nem comprova uma execução de IA.
 - Preview isolado S14 READY: https://smkon-biemu0r7c-smkon.vercel.app (deployment `dpl_AWf8HaAnCGR4FotuTT6qfRtWnWK1`, SHA `46a6d1f5`). Preview atual da integração READY: https://smkon-qzoa87ig9-smkon.vercel.app (deployment `dpl_58rvG6hdtw6fDWojnBifv7qYFrdb`, SHA `419694eb`). Ambos são Preview, não produção.
