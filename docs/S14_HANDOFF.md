@@ -102,7 +102,8 @@ As versões diferem por ambiente, mas os três nomes lógicos estão presentes n
   `prazo total: chamada lenta perto do fim do prazo falha com worker_timeout` (esperado `worker_timeout`, observado `step_timeout`).
 - O E2E Browser Tests `44867496055` terminou com sucesso.
 - O rerun do CI `44867365527` (attempt 2) terminou **success**, confirmando que a falha inicial foi transitória/flaky. A correção determinística está proposta na branch `fix/s14-deadline-timeout-classification`, PR #58, commit `28dc192d9481d739ab65c7c283ce3e8852390203`: o executor classifica pelo limite que efetivamente reduziu o timeout, sem depender da precisão de `Date.now()` no instante do timer.
-- CI do PR #58 (`44868749870`) ainda estava em andamento nesta auditoria; o Preview do commit `3e52508` está READY. O E2E específico do PR foi cancelado por supersessão de deployment; o E2E da integração (`44867496055`) passou.
+- CI do PR #58 (`44868819971`, attempt 3) terminou **success**: typecheck, lint, unit tests, build e migrations/SQL passaram. O run executou no commit `576c932`; os commits posteriores até `d4055dae` alteraram apenas documentação, sem mudanças no código testado.
+- Preview do head atual `d4055dae` está READY: https://smkon-rfqq1r07k-smkon.vercel.app. O E2E Browser Tests desse Preview (`44868983047`) está em andamento; o E2E da integração (`44867496055`) passou.
 
 ### Vercel e AI Gateway
 
