@@ -151,3 +151,16 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - **Justificativa:** é uma das opções já previstas no roadmap; limitar o primeiro adapter reduz escopo e permite validar OAuth, paginação, idempotência, conciliação e isolamento antes de adicionar Amazon.
 - **Limites:** não conecta conta real, não cria secrets, não habilita sync recorrente, não aplica migrations, não gera custo pago, não faz merge nem deploy de produção.
 - **Próxima ação:** inspecionar os padrões reais de OAuth/connections/tenancy/finance; implementar adapter e fixtures sem credenciais; submeter qualquer migration como diff revisável antes de aplicação.
+
+
+## S11 — primeira implementação em revisão — 21/11/2026 UTC
+
+- **Agente:** ChatGPT
+- **Branch:** `feature/s11-mercado-livre-adapter`
+- **PR:** [#57 — adapter server-side Mercado Livre](https://github.com/smklj/smkon/pull/57) (Draft; aberto; não mergeado).
+- **Handoff:** `docs/S11_HANDOFF.md` atualizado na branch do PR.
+- **Implementado:** tipos, helpers puros de state/PKCE S256/expiração, URL de autorização Brasil, troca server-side de code/refresh e cliente GET-only com host fixo/timeout/limite de resposta; testes unitários iniciais.
+- **Não implementado:** callback/rotas, armazenamento one-time de state, secret store/criptografia, persistência de tokens, refresh lock, mapper financeiro, sync, repository e migration.
+- **Validação:** testes, typecheck e lint ainda não executados; PR permanece Draft.
+- **Ambientes:** nenhuma chamada ao Mercado Livre; nenhuma conta ou credencial; nenhuma migration ou alteração em staging/produção.
+- **Próxima ação:** CI e revisão do PR; depois desenhar state one-time e armazenamento seguro com base em capacidade real do ambiente, antes de callbacks OAuth.
