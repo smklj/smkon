@@ -132,9 +132,9 @@ e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com e
 ### GitHub, PRs e validação
 
 - PR #61 (fix/s14-deadline-timeout-sync-20261121) permanece aberto/Draft, mergeable=true, 4 commits à frente e 0 atrás da base feature/smkon-production-readiness (base SHA 7ab9b864). Head após a correção de contabilização: d9ff3869f84970684a043ca6c530e0e13ed3a5ed.
-- PR #58 permanece aberto/Draft e divergido (19 commits à frente, 10 atrás); é substituído pelo patch limpo #61, mas fica como fallback até o novo CI/E2E do head #61.
-- CI #44883123910: success nos dois jobs (audit de dependências, typecheck, lint, unit tests, build, migrations e SQL). E2E #44883164342: Playwright success em staging isolado no commit de código anterior e0faaa29. Esses resultados não cobrem os dois commits mais recentes de contabilização; novo CI/E2E do head d9ff3869 ainda pendente.
-- Preview READY anterior para o commit documental 5ed2e23a: https://smkon-mwkvooege-smkon.vercel.app. Preview READY anterior para o commit de código e0faaa29: https://smkon-pgxv2rqbn-smkon.vercel.app. O Preview do head novo d9ff3869 ainda precisa ser confirmado.
+- PR #58 foi fechado sem merge como superseded pelo PR #61; o patch necessário e as atualizações de handoff/progresso/roadmap estão na branch limpa.
+- CI #44887809941 no commit de código d9ff3869: success nos dois jobs (dependency audit, typecheck, lint, unit tests, build, migrations e SQL). E2E #44883164342 passou em staging isolado no commit anterior e0faaa29; não foi repetido no patch mais recente. CI #44883123910 também passou no head anterior.
+- Preview READY anterior para o commit documental 5ed2e23a: https://smkon-mwkvooege-smkon.vercel.app. Preview READY anterior para o commit de código e0faaa29: https://smkon-pgxv2rqbn-smkon.vercel.app. O check Vercel do commit de código d9ff3869 falhou por build-rate-limit; não há Preview do patch de contabilização nem do head documental atual. Não é falha de build do código.
 
 ### Correção adicional de contabilização
 
