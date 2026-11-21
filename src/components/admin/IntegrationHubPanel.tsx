@@ -79,12 +79,12 @@ export async function IntegrationHubPanel() {
   return (
     <div>
       {data.state === "not-migrated" ? (
-        <p className="feedback" role="status">
+        <p className="feedback">
           O banco deste ambiente ainda não tem as tabelas do hub. Aplique a migration do S17 para ver as contas conectadas.
         </p>
       ) : null}
       {data.state === "ok" && data.pendingActions > 0 ? (
-        <p className="feedback" role="status">
+        <p className="feedback">
           {data.pendingActions === 1
             ? "1 ação externa aguarda aprovação."
             : `${data.pendingActions} ações externas aguardam aprovação.`}
