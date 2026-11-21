@@ -3,30 +3,37 @@
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
 `feature/smkon-production-readiness`. Correções desta frente usam `fix/integration-*`.
 
-**Última verificação:** 21/11/2026 ~16:25 UTC (execução 11) · commit `99a9ac8` (Merge #68, S4 etapa 2e)
+**Última verificação:** 21/11/2026 ~17:35 UTC (execução 12) · commit `2455806` (Merge #72, S4 etapa 2f)
 
-## 0. Quadro atual — execução 11 (21/11/2026 ~16:25 UTC)
+## 0. Quadro atual — execução 12 (21/11/2026 ~17:35 UTC)
 
 > Esta seção é o estado vigente. As seções 1–6 são o histórico da execução 5; as seções 7+ são auditorias S11 de 20–21/11.
 
-**Base verificada:** `99a9ac8`. Desde a execução 10 entraram #74 (Integração, só docs) e #68 (S4 etapa 2e — camada de
-domínio de tenancy e convites; 35 arquivos, sem migrations novas).
+**Base verificada:** `2455806`. Desde a execução 11 entraram #77 (Integração, só docs) e #72 (S4 etapa 2f — camada de
+domínio de audiência/CRM; 11 arquivos, sem migrations novas).
 
 ### CI da integração (push)
-- Último run: [CI #561](https://github.com/smklj/smkon/actions/runs/44922494795) em `99a9ac8` — ✅ success.
-  Anterior: [#558](https://github.com/smklj/smkon/actions/runs/44919988482) (`6420608`) ✅. Nenhuma quebra; nenhuma correção de código necessária.
+- Último run: [CI #576](https://github.com/smklj/smkon/actions/runs/44927975873) em `2455806` — ✅ success.
+  Anterior: [#573](https://github.com/smklj/smkon/actions/runs/44925401272) (`79ff06b`) ✅. Nenhuma quebra; nenhuma correção de código necessária.
 
-### Validação local (Postgres 16 descartável, Node 22.23.5) — `99a9ac8`
+### Validação local (Postgres 16 descartável) — `2455806`
 | Etapa | Resultado real |
 |---|---|
 | `npm ci` | ✅ |
 | `npm run typecheck` | ✅ |
 | `npm run lint` | ✅ |
-| `npm run test:unit` | ✅ 275/275 (0 falhas, 0 pulados) — eram 260 (+15 de tenancy/convites do #68) |
+| `npm run test:unit` | ⚠️ 1ª execução: 284 ok / **1 falha**; 5 execuções seguintes: ✅ 285/285 (0 pulados). Eram 275 (+10 de audiência do #72) |
 | `npm run build` | ✅ |
 | `npm run test:db` (26 migrations) | ✅ 23/23 arquivos de teste |
 
-### Migrations (comparação por nome; `list_migrations` em 21/11 ~16:20 UTC) — sem mudança desde a execução 10
+**Teste intermitente (S14):** `agents-model.test.ts` → "prazo total: chamada lenta perto do fim do prazo falha com
+worker_timeout (não step_timeout)" devolveu `step_timeout` uma vez em 6 execuções. Causa raiz: `timeoutCode` em
+`src/lib/agents/executor/run.ts` decide entre `worker_timeout`/`step_timeout` comparando `now() >= deadline` com o relógio
+real após o disparo do timer (30 ms), o que depende da precisão do timer. A correção já está no PR #78 da frente S14
+(`stepBudget()` passa a informar se o passo foi limitado pelo prazo total). Não corrigido aqui (escopo S14); o CI
+ainda não falhou por isso, mas pode falhar esporadicamente até o merge do #78.
+
+### Migrations (comparação por nome; `list_migrations` em 21/11 ~17:30 UTC) — sem mudança desde a execução 10
 - Repositório (integração): 26 migrations, até `20261121170000_mercado_livre_fk_indexes`.
 - **Staging** (`xoyasrizivadxnpmzzno`): **29** — as 26 do repositório **mais 3 que não estão na integração**:
   - `mercado_livre_order_sync_state` (`20261121090433`) e `mercado_livre_order_versioning` (`20261121091235`) — só no PR #60 (S11, Draft).
@@ -38,6 +45,7 @@ domínio de tenancy e convites; 35 arquivos, sem migrations novas).
   `20261121130000_mercado_livre_credentials`, `20261121140000_mercado_livre_oauth_attempts`,
   `20261121150000_mercado_livre_order_sync`, `20261121160000_mercado_livre_oauth_atomic_completion`,
   `20261121170000_mercado_livre_fk_indexes` (+ as 2 do #60 e `integration_hub` do #70 quando mergeadas).
+- Observação: version IDs diferem entre staging e produção para as mesmas migrations (nomes iguais); não usar `db push`/repair sem reconciliação.
 
 ### S5.1 (desta frente) — ✅ concluído
 - `workspace_members` aplicada no staging (`20261119232430`); grants/RLS/advisors conferidos (execução 6).
@@ -47,14 +55,15 @@ domínio de tenancy e convites; 35 arquivos, sem migrations novas).
 ### Quadro das frentes
 | Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
 |---|---|---|---|---|---|
-| S14 (agentes) | ✅ handoff; correção de timeout/ledger em PR limpo (#76 substitui #71) | #76 (Draft) | em andamento | merge do #76 | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
+| S14 (agentes) | ✅ handoff; correção de timeout/ledger em #78 (substitui #76, fechado sem merge) | #78 (Draft) | ✅ CI #44928370010; E2E do Preview pendente (quota Vercel) | merge do #78 (resolve o teste intermitente acima) | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
 | S15 (CRM/LGPD) | ✅ handoff | — | ✅ | — | — (migration já na produção) |
 | S16 (performance) | ✅ handoff | — | ✅ | — | Produção de `keyset_pagination_indexes` |
 | S6.1 (CSP/logs) | ✅ handoff | — | ✅ | — | Destino externo de logs (opcional) |
-| S4 (domínio) | Etapas 1–2e mergeadas (2e = #68); 2f (audiência/CRM) em revisão; 2g (agentes) em Draft | #72, #75 (Draft) | em revisão | 2f–2g e handoff | — |
+| S4 (domínio) | Etapas 1–2f mergeadas (2f = #72); 2g (agentes) em revisão | #75 | em revisão | 2g e handoff | — |
 | S11 (Mercado Livre) | Conector parcial mergeado (#57, #59); paginação histórica em #60 | #60 (Draft) | — | Staging à frente (2 migrations); não operacional | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
 | S17 (hub de conectores) | Hub de contas sociais/ações externas aprovadas por hash | #70 | — | Migration já no staging antes do merge; prefixo de teste `040_` duplicado | Produção de `integration_hub`; credenciais das redes |
-| Integração | Execução 11: CI e validação local verdes | este PR | — | — | — |
+| Docs (governança) | PR #79 contra `main` (Draft) — só documentação | #79 | — | Fora da integração; decisão do Owner | Merge na `main` |
+| Integração | Execução 12: CI verde; validação local verde exceto 1 intermitência S14 | este PR | — | — | — |
 
 Handoffs: ✅ S14, ✅ S15, ✅ S16, ✅ S6.1 · ⏳ S4. Relatório final ao Owner só quando S4 tiver handoff.
 
