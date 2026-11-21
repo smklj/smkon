@@ -46,7 +46,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 |---|---|
 | **S9** · ✅ em produção (`docs/S9_HANDOFF.md`); falta coleta automática | Product Intelligence persistente com evidências verificáveis e scoring baseado em evidência |
 | **S10** · calendário, fila em dry-run, mídia no Storage e licenças implementados e testados (`docs/S10_HANDOFF.md`) | Assets (Storage), registro de licenças e direitos, calendário editorial e fila de publicação em dry-run |
-| **S11** | Primeiro conector financeiro real (Mercado Livre ou Amazon) com idempotência e conciliação 🔐 (contas e escopos) |
+| **S11** · 🟡 adapter Mercado Livre, OAuth server-side e snapshots idempotentes validados em staging; faltam OAuth real, backfill/paginação histórica e conciliação financeira | Primeiro conector financeiro real (Mercado Livre ou Amazon) com idempotência e conciliação 🔐 (contas e escopos) |
 | **S12** · ✅ em produção (`docs/S12_HANDOFF.md`); migration `20261119010000` aplicada no staging e na produção | Dashboard com dados reais substituindo constantes |
 
 ## P3 — IA e automações

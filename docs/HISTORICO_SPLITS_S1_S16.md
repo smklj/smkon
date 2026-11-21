@@ -67,7 +67,7 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 | S8 | Ciclo de comissões | Handoff em produção; ingestão real/conciliação dependem do S11 |
 | S9 | Product Intelligence | Handoff em produção; coleta automática pendente |
 | S10 | Mídia, licenças e calendário | Implementado/testado; fila em dry-run, sem prova de publicação real |
-| S11 | Conector financeiro real | Não aparece como concluído; depende de contas/escopos e autorização |
+| S11 | Conector financeiro real | Parcial: adapter/OAuth server-side e snapshots idempotentes em staging; sem OAuth real, backfill ou conciliação financeira; não operacional |
 | S12 | Dashboard com dados reais | Handoff em produção; migration aplicada em staging e produção |
 | S13 | Infraestrutura de agentes | Handoff em produção |
 | S14 | Executor real de agentes | Código/handoff integrados; primeira execução real e credenciais/orçamento/cron ainda dependentes de Owner |
