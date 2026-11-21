@@ -296,3 +296,43 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - **Fora do escopo aprovado/validado:** OAuth real contra conta de teste do Mercado Livre, secrets, migration em Supabase hospedado, sync, dry-run financeiro e reconciliação. Não declarar S11 operacional.
 - PR #57 continua Draft. Nenhum merge, migration hospedada, credencial real ou deploy de produção.
 - Status compartilhado atualizado em `docs/INTEGRATION_STATUS.md`.
+
+## Continuidade — conexão da conta Mercado Livre como etapa futura (21/11/2026 UTC)
+
+**Decisão:** a conexão da conta Mercado Livre permanece planejada como etapa futura do S11. Não é pré-requisito para continuar desenvolvendo outras frentes do SMKON e não deve ser iniciada até o Owner preparar o aplicativo e as credenciais de staging.
+
+### Sequência de execução quando houver disponibilidade
+
+1. Criar/selecionar o aplicativo SMKON no DevCenter do Mercado Livre e conferir os produtos/permissões necessários.
+2. Definir a URL pública do callback no Preview e cadastrá-la exatamente no DevCenter.
+3. Configurar no ambiente **Preview** da Vercel, sem copiar valores para o chat:
+   - `MERCADO_LIVRE_CLIENT_ID`
+   - `MERCADO_LIVRE_CLIENT_SECRET`
+   - `MERCADO_LIVRE_REDIRECT_URI`
+   - `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` (Base64 de 32 bytes)
+   - `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY_ID` (opcional)
+4. Reimplantar Preview se a configuração de ambiente exigir.
+5. Na interface SMKON, iniciar “Conectar Mercado Livre”; autenticar e consentir na conta de teste.
+6. Validar callback, state one-time, PKCE S256, usuário/workspace iniciador, papel owner/admin, external account id e scopes.
+7. Verificar que tokens são persistidos somente cifrados e que refresh usa lease/CAS; conferir logs sem tokens/segredos.
+8. Testar desconectar/reconectar e executar ingestão limitada read-only/dry-run, com reconciliação manual antes de qualquer persistência financeira.
+
+### Critérios de aceite
+
+- OAuth completo em Preview com conta de teste, sem redirecionamento indevido.
+- State inválido, expirado e replay rejeitados.
+- Isolamento entre workspaces comprovado.
+- Token access/refresh nunca exposto ao browser, logs ou respostas.
+- Refresh concorrente serializado e recuperação de falha documentada.
+- Dados importados com origem, timestamps, moeda e estados explícitos; sem inferir liquidação a partir de pedido concluído.
+- Sync manual/dry-run validado antes de qualquer agendamento.
+
+### Bloqueios e limites atuais
+
+- O Owner ainda precisa configurar o app no DevCenter e cadastrar secrets no Preview.
+- Nenhuma conta real ou de teste foi conectada; OAuth real não foi executado.
+- Nenhum secret foi criado/alterado; nenhuma migration hospedada foi aplicada nesta etapa.
+- Nenhuma sync recorrente, mutação no marketplace, merge do PR #57 ou deploy de produção está autorizado.
+- O PR #57 contém implementação do fluxo server-side e persistência/refresh, mas isso não equivale a conexão real ou operação ponta a ponta. Existe risco documentado de credencial persistida sem metadata se a atualização de `source_connections` falhar; esse caso precisa de reconciliação/atomicidade antes de declarar robustez operacional.
+
+**Próxima ação / responsável:** ChatGPT/Claude continua as frentes independentes. Quando Samuel estiver pronto, ele configura o app e secrets de Preview; em seguida ChatGPT/Claude executa o checklist OAuth e registra evidências. 
