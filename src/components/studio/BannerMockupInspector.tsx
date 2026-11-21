@@ -20,6 +20,7 @@ import {
   type InfoproductBlueprint,
 } from "@/lib/infoproducts";
 import { SMKONBannerCanvas } from "./SMKONBannerCanvas";
+import { PostCarouselStudio } from "./PostCarouselStudio";
 import {
   OFFICIAL_SMKON_PRESETS,
   inferSmartBannerConfig,
@@ -32,7 +33,7 @@ import {
   type MascotExpression,
 } from "@/lib/media/brand-system";
 
-type StudioViewTab = "smkon-brand" | "mockup-3d" | "banner-promo" | "infoproduct-factory";
+type StudioViewTab = "smkon-brand" | "post-carousel" | "mockup-3d" | "banner-promo" | "infoproduct-factory";
 
 interface BannerMockupInspectorProps {
   draftTitle?: string;
@@ -136,6 +137,13 @@ export function BannerMockupInspector({
             onClick={() => setActiveTab("smkon-brand")}
           >
             🎨 Banners SMKON Oficial (IA)
+          </button>
+          <button
+            type="button"
+            className={activeTab === "post-carousel" ? "active" : ""}
+            onClick={() => setActiveTab("post-carousel")}
+          >
+            🎠 Posts &amp; Carrosséis (IA)
           </button>
           <button
             type="button"
@@ -412,7 +420,15 @@ export function BannerMockupInspector({
         </div>
       )}
 
-      {/* ABA 2: Mockup 3D (Photoshop REA) */}
+      {/* ABA 2: Posts de Feed & Carrosséis Inteligentes (IA) */}
+      {activeTab === "post-carousel" && (
+        <PostCarouselStudio
+          draftTitle={draftTitle}
+          draftProduct={draftProduct}
+        />
+      )}
+
+      {/* ABA 3: Mockup 3D (Photoshop REA) */}
       {activeTab === "mockup-3d" && (
         <div className="mockup-studio-grid">
           <div className="mockup-preview-stage" style={{ perspective: transforms3D.containerPerspective }}>
