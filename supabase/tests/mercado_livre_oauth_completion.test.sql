@@ -46,7 +46,7 @@ begin
   insert into public.organizations (id, name, slug, created_by)
   values (v_org, 'S11 OAuth Completion', 's11-oauth-completion', v_user);
   insert into public.organization_members (organization_id, user_id, role)
-  values (v_org, v_user, 'owner'), (v_org, v_non_admin, 'member');
+  values (v_org, v_user, 'owner'), (v_org, v_non_admin, 'viewer');
   insert into public.source_connections (id, organization_id, domain, provider, display_name, status)
   values (v_connection, v_org, 'owned_sales', 'mercado_livre', 'Mercado Livre', 'pending');
 

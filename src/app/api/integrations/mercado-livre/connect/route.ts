@@ -48,7 +48,7 @@ export async function POST() {
       .eq("organization_id", workspace.organizationId)
       .eq("provider", "mercado_livre")
       .eq("domain", "owned_sales")
-      .eq("status", "connected")
+      .in("status", ["connected", "error"])
       .not("external_account_id", "is", null)
       .order("created_at", { ascending: false })
       .limit(1)
