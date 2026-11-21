@@ -437,3 +437,15 @@ Não executar operations_review real enquanto faltarem: (1) SUPABASE_SECRET_KEY 
 
 ### Segurança
 Nenhum merge, alteração em main/Production, migration remota, alteração de secret, concessão de grant, criação de budget compartilhado ou chamada paga ao modelo foi executada nesta rodada.
+
+## Reconciliação pós-release #87 — 21/11/2026 17:03 BRT
+
+- PR #82 está **merged** em `feature/smkon-production-readiness` (merge `aa275791`, 16:18 BRT); PR #87 está **merged em main** (merge `efbfb56`, 17:00:46 BRT). Estes merges são estado observado do GitHub e não foram executados por esta automação.
+- `main` contém S14, `vercel.json` e `src/app/api/agents/worker/route.ts`. O deployment Production mais recente ainda é o SHA antigo `01677bad` (19/11 00:42 BRT); o check Vercel do merge #87 falhou por `build-rate-limit`. Portanto, não há deployment Production de S14 comprovado.
+- CI de integração #44943940164: dois jobs success no SHA `419694eb`. CI de código S14 #44933511061: 288/288 unitários e dois jobs success no SHA `46a6d1f5`. E2E #44933605001: 36/36 no Preview exato do SHA `46a6d1f5`; não chama o modelo.
+- Preview S14 READY: https://smkon-biemu0r7c-smkon.vercel.app. Preview integração READY: https://smkon-qzoa87ig9-smkon.vercel.app. Não são produção.
+- Vercel: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive em Preview/Production, comprimento não validado; `AGENT_EXECUTOR_ENABLED=true` nos dois; OIDC selecionado, sem autenticação runtime comprovada; teto interno US$ 5; nenhum budget externo.
+- Staging: 119 runs, todas killed; 0 steps, usage, grants ou drafts vinculados; kill switch false, limites 500/12. Produção: zero dados S14. RLS habilitado nas tabelas S14. RPCs de worker/ledger service_role-only; RPCs administrativas authenticated têm validação explícita owner/admin ou owner.
+- AI Gateway 7d: 0 requests/tokens/custo; `agent_model_usage` vazio nos dois bancos. Nenhuma chamada real comprovada.
+- Cron está declarado em source (`17 11 * * *`), mas não está comprovado em deployment Production. Não testar IA real até chave exclusiva de staging, grants mínimos, budget externo, validação do Cron secret e OIDC runtime.
+- Esta atualização foi commitada somente em branch docs derivada do commit #87; nenhum merge/produção foi realizado.
