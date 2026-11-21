@@ -199,3 +199,14 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
 
 A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
+
+
+### S11 — versionamento de snapshots e fechamento de CI (21/11/2026)
+
+- Migration 20261121200000_mercado_livre_order_versioning adiciona external_events.source_updated_at e atualiza a persistência para ignorar snapshots com date_last_updated anterior ao watermark já armazenado.
+- Normalizer passou para normalization_version 2 e inclui somente o timestamp de atualização do provedor, sem PII.
+- Teste SQL de regressão comprova insert inicial, replay antigo ignorado e snapshot mais novo aplicado.
+- Migration aplicada em smkon-staging como versão 20261121091235; Staging totaliza 28 migrations. Cinco testes SQL S11 executados em rollback-only sem exceções.
+- CI #475 passou no código; CI #477 passou também no head documental 4476c432f09bb1621a1a1648b221647822651aff.
+- PR #60 continua Draft. Preview READY mais recente é do commit intermediário 5809300, não do head. Deploy do head bloqueado por quota Vercel.
+- Produção permanece intacta: 20 migrations, sem objetos S11; backup/restauração não comprovados e OAuth real bloqueado por ausência de credenciais.
