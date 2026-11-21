@@ -3,6 +3,7 @@
 create table public.mercado_livre_credentials (
   connection_id uuid primary key,
   organization_id uuid not null,
+  domain public.smkon_revenue_domain not null default 'owned_sales' check (domain = 'owned_sales'),
   encrypted_tokens jsonb not null
     check (jsonb_typeof(encrypted_tokens) = 'object')
     check (encrypted_tokens ?& array['v','alg','kid','iv','tag','ciphertext']),
@@ -11,7 +12,7 @@ create table public.mercado_livre_credentials (
   refresh_lease_until timestamptz,
   updated_at timestamptz not null default now(),
   foreign key (connection_id, organization_id)
-    references public.source_connections(id, organization_id) on delete cascade
+    references public.source_connections(id, organization_id, domain) on delete cascade
 );
 
 create index mercado_livre_credentials_refresh_idx
