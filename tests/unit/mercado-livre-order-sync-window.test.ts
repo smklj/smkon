@@ -35,7 +35,7 @@ test("rejects partial, reversed, future and oversized date windows", () => {
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ createdFrom: "2026-10-01T04:00:00Z", createdTo: "2026-09-01T04:00:00Z" }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ createdFrom: "2025-11-21T04:00:00Z", createdTo: "2026-11-22T04:00:00Z" }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ createdFrom: "2024-01-01T00:00:00Z", createdTo: "2026-11-21T04:00:00Z" }, now).ok, false);
-  assert.equal(parseMercadoLivreOrderSyncPageRequest({ createdFrom: "not-a-date", createdTo: "2026-11-21T04:00:00Z" }, now).ok, false);
+  assert.equal(parseMercadoLivreOrderSyncPageRequest({ createdFrom: "not-a-date", createdTo: "2026-11-21T04:00:00Z" }, now).ok, false);\n  assert.equal(parseMercadoLivreOrderSyncPageRequest({ createdFrom: "2025-11-21T04:00:00", createdTo: "2026-11-21T04:00:00Z" }, now).ok, false);
 });
 
 test("offset is bounded and must align to a 50-order page", () => {
