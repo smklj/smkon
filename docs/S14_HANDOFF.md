@@ -185,3 +185,44 @@ Não executar operations_review real enquanto faltarem: (1) SUPABASE_SECRET_KEY 
 
 ### Segurança
 Nenhum merge, alteração em main/Production, migration remota, alteração de secret, concessão de grant, criação de budget compartilhado ou chamada paga ao modelo foi executada nesta rodada.
+
+## Reconciliação factual pós-release #87 — 21/11/2026 17:03 BRT
+
+Esta seção supersede snapshots anteriores sobre o estado de merge, Cron e produção. Consultas desta rodada foram somente de leitura, exceto estes commits documentais nesta branch; nenhum secret foi exibido.
+
+### GitHub e proveniência
+- GitHub registra a PR #82 como **merged** em 2026-11-21 19:18:09Z (16:18:09 BRT), merge commit `aa2757918370e8560d0ae7a2af4533e1613274ab`, com base `feature/smkon-production-readiness`. O merge não foi executado por esta automação.
+- GitHub registra a PR #87 como **merged em main** em 2026-11-21 20:00:46Z (17:00:46 BRT), merge commit `efbfb56fb16617b1816a70706a6e51be98af17d1`, com pais `01677bad697ed412bffe58d6b8dd7eabec8d6183` e `419694eb0df4499f6cec8f1701a2b687bc11b516`. A mensagem da PR #87 declara release das Frentes A/B/C; o escopo inclui S14. Esta automação não realizou esse merge.
+- O commit `aa275791` é ancestral de `main` (compare: 113 commits à frente, 0 atrás). Portanto, o código S14 está no histórico atual de `main`; isso não significa que já esteja no deployment de produção.
+- A branch de integração consultada estava em `419694eb0df4499f6cec8f1701a2b687bc11b516`. A PR #82 não está mais aberta: está fechada e merged. Não criar outra PR de código S14 sem revisar o estado atual.
+
+### CI, Preview e produção
+- CI #44943940164 no head de integração `419694eb`: sucesso nos dois jobs (typecheck/lint/build/unit tests e migrations/SQL tests).
+- CI específico do código S14 #44933511061: sucesso nos dois jobs no SHA `46a6d1f5`, com 288/288 testes unitários, audit, typecheck, lint, build e SQL.
+- E2E Playwright #44933605001: sucesso, 36/36 testes no Preview/SHA exato `46a6d1f5`; valida UI, fila e kill switch, não chama o modelo nem comprova uma execução de IA.
+- Preview isolado S14 READY: https://smkon-biemu0r7c-smkon.vercel.app (deployment `dpl_AWf8HaAnCGR4FotuTT6qfRtWnWK1`, SHA `46a6d1f5`). Preview atual da integração READY: https://smkon-qzoa87ig9-smkon.vercel.app (deployment `dpl_58rvG6hdtw6fDWojnBifv7qYFrdb`, SHA `419694eb`). Ambos são Preview, não produção.
+- O deployment de produção mais recente observado continua READY no SHA `01677bad697ed412bffe58d6b8dd7eabec8d6183`, deployment `dpl_2DNf1UScHg57eKLRf5vVZaDBRsB8`, criado em 2026-11-19 03:42:11Z. Compare desse SHA com o merge S14 `aa275791`: diverged (153 à frente / 6 atrás). Não contém o merge S14.
+- O status Vercel do merge de release `efbfb56` está **failure** com `build-rate-limit`; a listagem de deployments Production não mostrou deployment novo para esse SHA. A descrição da PR #87 afirma 350/350 testes, mas não foi encontrado um run de Actions associado ao merge commit; a evidência verificável desta rodada é o CI #44943940164 no pai de integração e o CI/E2E específicos acima.
+
+### Vercel Cron, worker e configuração
+- `main` agora contém `vercel.json` com Cron `17 11 * * *` para `/api/agents/worker`, e a rota `src/app/api/agents/worker/route.ts`. Isso corrige a documentação anterior que dizia que ambos estavam ausentes de `main`.
+- O Cron ainda não foi comprovado em produção: o deployment Production observado é anterior ao merge #87/S14 e o novo check Vercel falhou por quota. Não declarar Cron operacional até existir deployment Production READY do SHA atual e uma invocação autenticada comprovada.
+- Inventário Vercel sem decrypt: `SUPABASE_SECRET_KEY` ausente (nenhuma variável oculta de Production reportada); `CRON_SECRET` consta como sensitive em Preview e Production, mas seu comprimento mínimo de 32 caracteres não foi validado; `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; `AGENT_MODEL_PROVIDER=vercel-ai-gateway`; `AGENT_MODEL_AUTH=oidc`; modelo `anthropic/claude-haiku-5.5`; teto interno `AGENT_MONTHLY_BUDGET_USD=5`.
+- O código aceita OIDC pelo header `x-vercel-oidc-token` ou `VERCEL_OIDC_TOKEN`, somente com opt-in explícito. Token e autenticação efetiva em runtime não foram comprovados.
+- A rota falha fechado se `SUPABASE_SECRET_KEY` estiver ausente: responde `503 service_not_configured` antes de criar cliente/claim de fila. Como `AGENT_EXECUTOR_ENABLED=true` em Production, não promover/deployar o worker até que a configuração seja revisada; esta automação não alterou a flag.
+
+### Supabase, permissões e ledger
+- Staging `xoyasrizivadxnpmzzno`: 31 migrations; 119 `agent_runs`, todas `killed`; 0 `agent_steps`; 0 `agent_model_usage`; 0 grants; 0 conteúdos ligados a runs. `agent_settings`: `kill_switch=false`, 500 runs/dia, 12 steps/run.
+- Produção `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, steps, usage, grants, settings e conteúdos ligados a runs.
+- RLS habilitado nas cinco tabelas S14; uma policy SELECT em cada. `content_items` tem quatro policies. Em staging, `authenticated` e `service_role` têm SELECT nas tabelas S14; não há DML direto nesses objetos. `content_items` mantém DML sob RLS; a ferramenta de rascunho usa a RPC dedicada.
+- Distinção de EXECUTE: as RPCs de worker/consumo (`agent_claim_next_run`, `agent_draft_content`, `agent_fail_run`, `agent_finish_run`, `agent_model_spend_since`, `agent_record_model_usage`, `agent_record_step`, `agent_reap_stale_runs`) estão restritas a `service_role` (além de postgres). Algumas RPCs administrativas têm EXECUTE para `authenticated`, mas são SECURITY DEFINER e validam papel: `agent_start_run`/`agent_cancel_run`/`agent_set_tool` exigem owner/admin; `agent_set_kill_switch`/`agent_update_limits` exigem owner; `agent_tool_catalog` é catálogo read-only. Isso corrige a afirmação anterior de que todas as RPCs eram exclusivas de service_role.
+- Os nomes das três migrations S14 existem nos dois bancos, mas os version IDs divergem: staging `20261119101353`, `20261119101414`, `20261119114718`; produção `20261119040000`, `20261119050000`, `20261119060000`. Não executar repair/db push sem comparar definições e backup.
+
+### AI Gateway e bloqueio de teste real
+- Uso do AI Gateway nos últimos 7 dias: nenhuma linha (0 requests, tokens e custo). Budgets team/project/default: nenhum.
+- `agent_model_usage` está vazio em staging e produção; soma de tokens/custo é zero, consistente com o uso agregado zero. Nenhuma chamada real ao AI Gateway foi comprovada.
+- O teto interno é soft: o worker relê o gasto antes de cada claim; não reserva custo atomicamente e uma execução em andamento pode ultrapassar o limite. Não há outbox durável para reconciliar cobrança se a gravação falhar após a resposta.
+- Não executar `operations_review` real enquanto faltarem chave exclusiva de staging, grants mínimos de leitura, budget externo isolado, validação segura do `CRON_SECRET` e autenticação OIDC comprovada em runtime. Não usar credenciais de produção nem contornar as barreiras.
+
+### Segurança desta rodada
+- Nenhum merge, deploy, alteração em Production, migration remota, alteração de secret, grant, budget ou chamada paga foi executado por esta automação. O branch atual é apenas documentação e parte do commit `efbfb56`; não foi aberto PR nem promovido.
