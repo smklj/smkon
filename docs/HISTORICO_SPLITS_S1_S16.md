@@ -180,3 +180,15 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 - Commits principais: 420c1d5 migration; 18cd3f9 teste SQL; 5809300 parser server-owned; 0b4a69a testes unitários; be8629d endpoint; 561addd UI; 9969a3b liberação tolerante de lease; a7a79fd validação de parâmetros.
 - Documentação atualizada em S11_HANDOFF, S11_ORDER_SYNC e ROADMAP_SPLITS.
 - Estado no momento do handoff: PR #60 Draft; CI do novo head ainda precisa ser consultado; migration não aplicada em Supabase hospedado; Preview final não validado. OAuth real, divisão automática de janelas acima do offset 10.000 e conciliação financeira permanecem pendentes.
+
+
+### Validação do cursor durável em Staging — 21/11/2026
+
+- CI #456 passou no head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e: quality (audit, typecheck, lint, unit tests, build) e database migrations/SQL tests.
+- Migration 20261121180000_mercado_livre_order_sync_state aplicada em smkon-staging e registrada como versão 20261121090433.
+- Quatro testes SQL S11 executados em rollback-only no Staging: credentials, OAuth atomic completion, order sync e durable order sync state; todos sem exceções.
+- ACL verificada: RLS ativo, anon/authenticated sem SELECT e service_role com SELECT na tabela de checkpoint; três RPCs novas SECURITY DEFINER/search_path vazio, EXECUTE somente service_role; zero linhas reais no checkpoint.
+- Security Advisor adiciona apenas INFO de RLS enabled/no policy para o checkpoint (server-side only). Alertas SECURITY DEFINER/leaked password são preexistentes; quatro FKs sem índice remanescentes são de S15/S10, não S11.
+- Produção segue com 20 migrations, sem tabelas ou funções S11. Não houve migration, merge em main ou deploy de produção.
+- Preview final ainda não existe: o READY conhecido corresponde ao commit intermediário 98ca20c; Vercel bloqueia novo deployment pela quota diária. PR #60 permanece Draft.
+- Sem credenciais Mercado Livre/SUPABASE_SECRET_KEY no Vercel, sem OAuth real, sem pedidos reais. Ainda faltam divisão automática de janelas, sync incremental e conciliação financeira.
