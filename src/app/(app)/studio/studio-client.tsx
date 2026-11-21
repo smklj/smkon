@@ -19,6 +19,7 @@ import {
 } from "@/lib/content/types";
 import { ReelsPreviewPlayer } from "@/components/studio/ReelsPreviewPlayer";
 import { CreativeInspector } from "@/components/studio/CreativeInspector";
+import { BannerMockupInspector } from "@/components/studio/BannerMockupInspector";
 import { type SubtitleStyle } from "@/lib/media/subtitles";
 import {
   DEFAULT_WATERMARK_CONFIG,
@@ -515,6 +516,8 @@ export default function StudioClient() {
           />
         </div>
       </section>
+
+      <BannerMockupInspector />
 
       <section className="studio-preview">
         <div className="studio-editor-head">
