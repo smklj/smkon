@@ -165,3 +165,14 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - ACL/RLS S11 foi verificado anteriormente em Staging; a consulta desta rodada confirmou estado/migrations, não repetiu a auditoria de grants.
 - Produção permanece sem alterações. Não executar migration repair, `db push`, deploy ou promoção da branch de integração enquanto a divergência, Preview/E2E, backup e plano de release isolado não forem resolvidos.
 - A homologação com conta real/OAuth será feita pelo Owner posteriormente; não é critério para a implementação técnica desta rodada.
+
+
+## S14 — checkpoint operacional 21/11/2026 17:55 BRT
+
+- Splits #35–#42 e #46 integrados; PR #82 incorporada à integração e #87 levou a release S14 à `main`.
+- Production deployment READY `dpl_CgbrQ8jM7pzDCeWzCNbAQco5sUEZ` / SHA `d30c42a` inclui a rota worker. `vercel.json` declara Cron diário 08:17 BRT. Não há invocação autenticada do worker comprovada; a janela de logs disponível (30 min) está vazia.
+- S14 não está homologado com IA real: `SUPABASE_SECRET_KEY` ausente; grants Staging zero; budget externo zero; CRON_SECRET/OIDC sem prova runtime; AI Gateway 7d sem requests/tokens/custo; ledger `agent_model_usage` zerado.
+- CI S14 288/288 e E2E 36/36 aprovados no Preview/SHA exato 46a6d1f5. CI integração 350/350 no SHA 419694eb; não usar como prova do HEAD atual da main.
+- Staging 121 runs todas killed; Production sem runs. Assinaturas de schema/constraints/policies/RLS/ACL e funções selecionadas coincidem entre ambientes, mas IDs de migrations S14 diferem; reconciliar histórico antes de qualquer repair/db push.
+- Gate de release operacional: provisionar chave de Staging, grants mínimos, budget externo isolado, validar CRON_SECRET e OIDC em runtime, publicar Preview do SHA de homologação, executar uma única operations_review e reconciliar tokens/custo com agent_model_usage.
+- Production permanece sem novas alterações nesta auditoria. Não ativar execução paga até aprovação dos gates.
