@@ -87,7 +87,7 @@ const providerOrder = (id: number) => ({
 
 test("rejects missing, malformed, oversized and non-object order search results", () => {
   assert.equal(parseMercadoLivreOrderSearchPage({ paging: { total: 1 } }, 0).ok, false);
-  for (const results of [null, "not-an-array", {}, [null], [[]], ["order"]]) {
+  for (const results of [null, "not-an-array", {}, [null], [[]], ["order"], [{}], [{ ...providerOrder(1), order_items: "invalid" }]]) {
     assert.equal(parseMercadoLivreOrderSearchPage({ results }, 0).ok, false);
   }
   assert.equal(parseMercadoLivreOrderSearchPage({
