@@ -340,3 +340,14 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - Produção continua com 20 migrations e sem objetos S11. Nenhuma migration/deploy de produção foi executado.
 - Preview do head continua bloqueado por HTTP 402 api-deployments-free-per-day; o Preview READY mais recente é do commit intermediário 5809300, anterior à rota/UI do checkpoint. Credenciais Mercado Livre e SUPABASE_SECRET_KEY continuam ausentes.
 - Pendências: dividir automaticamente janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, conciliação financeira e backup/restauração comprováveis.
+
+
+## S14 — reconciliação de deployment e worker (21/11/2026 17:55 BRT)
+
+- PR #82 foi incorporada à integração; release #87 foi incorporada à `main`. HEAD da main nesta consulta: `69c57beb` (PR #94). O deployment Production atual observado é `dpl_CgbrQ8jM7pzDCeWzCNbAQco5sUEZ`, SHA `d30c42a`, READY; é descendente do merge #87 (6 commits depois do merge) e está 3 commits atrás do HEAD atual da main.
+- Build Production confirma `/api/agents/worker`; `vercel.json` na main declara `17 11 * * *` (08:17 BRT). Nenhuma invocação foi encontrada nos últimos 30 minutos; a retenção Hobby não permite consulta de 1h. Próximo horário programado após o deployment: 22/11/2026 08:17 BRT.
+- Vercel env inventory sem decrypt: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive em Preview e Production, sem validação de comprimento; `AGENT_EXECUTOR_ENABLED=true` em ambos; OIDC/Gateway/Haiku 5.5 e teto interno US$ 5 configurados.
+- O handler falha fechado sem chave de serviço: após validar flag, cron bearer, modelo e budget, `createServiceClient()` retorna null e o worker responde 503 `service_not_configured` antes de claim. Não há execução real confirmada.
+- AI Gateway 7d: zero requests, tokens e custo; budgets/rules externos ausentes. Staging 121 runs killed, sem steps/usage/grants; Production sem runs/usage. agent_model_usage está consistente com uso agregado zero, sem comprovação de chamada real.
+- Assinaturas de colunas, constraints, policies, RLS/ACL e funções selecionadas coincidem nos dois Supabase; versões de migration S14 permanecem diferentes. Nenhuma reconciliação de histórico foi aplicada.
+- A flag Production não foi alterada. Recomendação: manter executor desligado até credenciais, grants, budget e OIDC/CRON serem homologados em Staging.
