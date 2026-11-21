@@ -140,3 +140,14 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - **Segurança:** `rate_limit_consume` SECURITY DEFINER executável por anon/authenticated; corpo tem `search_path=''`, allowlist de scopes e valida subject de 64 hex. Uso anon parece intencional para login pré-auth, portanto não revogar em lote. `rate_limit_buckets` sem políticas RLS; grants diretos observados somente para postgres/service_role. 31 funções SECURITY DEFINER para authenticated exigem revisão individual; leaked-password protection desligada.
 - **Ações:** nenhuma migration, alteração de segredo/Auth, merge, deploy ou chamada paga executada.
 - **Próximo responsável:** ChatGPT/Claude pode continuar S4 e análise de código; Samuel precisa decidir provedor/credenciais S11, autorizações de Auth/produção e janela de release.
+
+
+## Decisão S11 — 20/11/2026
+
+- **Agente:** ChatGPT, decisão operacional tomada para destravar a frente sem solicitar escolha adicional ao Owner.
+- **Decisão:** Mercado Livre como primeiro provedor; staging do SMKON como primeiro ambiente; usuários/dados de teste do ambiente de desenvolvedor do provedor quando disponíveis.
+- **Modo:** OAuth e ingestão controlada, inicialmente read-only/dry-run; sem ações de escrita no marketplace.
+- **Registro técnico:** `docs/S11_HANDOFF.md`.
+- **Justificativa:** é uma das opções já previstas no roadmap; limitar o primeiro adapter reduz escopo e permite validar OAuth, paginação, idempotência, conciliação e isolamento antes de adicionar Amazon.
+- **Limites:** não conecta conta real, não cria secrets, não habilita sync recorrente, não aplica migrations, não gera custo pago, não faz merge nem deploy de produção.
+- **Próxima ação:** inspecionar os padrões reais de OAuth/connections/tenancy/finance; implementar adapter e fixtures sem credenciais; submeter qualquer migration como diff revisável antes de aplicação.
