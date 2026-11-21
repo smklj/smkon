@@ -17,6 +17,12 @@ test("creates a fixed, hour-aligned 12-month window for the first page", () => {
   assert.equal(parsed.value.createdFrom, "2025-11-21T04:00:00.000Z");
 });
 
+test("rejects non-object payloads instead of silently starting a first-page import", () => {
+  for (const input of [null, [], "invalid", 1, true]) {
+    assert.equal(parseMercadoLivreOrderSyncPageRequest(input, now).ok, false);
+  }
+});
+
 test("keeps the same date window when requesting the next page", () => {
   const parsed = parseMercadoLivreOrderSyncPageRequest({
     offset: 50,
