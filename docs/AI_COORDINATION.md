@@ -172,3 +172,11 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - Corrigido import dos testes com extensão explícita `.ts`, conforme padrão existente; corrigida normalização de scopes OAuth e validação de `token_type=bearer`.
 - Último commit de código: `63eee98244f57772bd1e08f8a0e46fdf39495d52`.
 - Nova execução CI ainda não confirmada. PR continua Draft, sem merge/deploy.
+
+
+### S11 — CI verde e verificação de ambiente (21/11/2026 UTC)
+
+- PR #57 head `520671b10cc7ac7cab18fb7dbc3e0a2051ea60a0`: typecheck, lint, unit tests, build e SQL/migration tests passaram. CI push e CI pull_request concluídos com sucesso.
+- E2E disparado por deployment_status foi cancelado; não confundir com o CI principal.
+- Vercel Preview verificado sem descriptografar secrets: nenhuma configuração Mercado Livre presente; sem credenciais OAuth, sem integração ativa.
+- Próximo passo técnico: módulo de cifragem/persistência segura e isolamento multi-tenant; manter sem chave real, sem token, sem migration aplicada. PR #57 continua Draft, sem merge/deploy.
