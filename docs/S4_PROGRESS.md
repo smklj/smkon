@@ -14,7 +14,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2c | Mídia e licenças | ✅ feito | #63 |
 | 2d | Financeiro (comissões) | ✅ feito (merge aguarda E2E) | #65 |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
-| 2f | Audiência / CRM | ⏳ | — |
+| 2f | Audiência / CRM | ✅ feito | #72 |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
 | 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ⏳ | — |
 
@@ -96,3 +96,14 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - Diferença mínima e documentada: a guarda de estado usava `value in COMMISSION_LABEL` (aceitaria nomes do protótipo, como `toString`); agora é a lista fechada. Para os valores possíveis no banco (check constraint com os seis estados) o resultado é idêntico.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **260/260** (256 anteriores sem edição + 4 novos em `finance-domain.test.ts`, com cliente falso conferindo filtro por workspace, ordem e limite), `npm run build` ✅, `npm run test:db` **23/23 arquivos**.
 - PR #63 (2c) mergeado em 21/11 com CI verde: typecheck/lint/build, SQL e "Playwright · Staging" (run 44896997728, no commit 8646f80 com todo o código; o commit seguinte só trocou o número do PR neste arquivo e teve o Preview recusado pela Vercel por limite diário do plano gratuito, "api-deployments-free-per-day").
+
+### Etapa 2f — audiência / CRM (21/11/2026)
+
+- `src/lib/audience/`: `validation.ts` → `schema.ts` sobre as primitivas centrais (`readString`, `oneOf`, `parseUuid`, `DATE_ONLY`, `WORKSPACE_OFFSET`, `workspaceDate`); o `oneOf` e o `parseUuid` locais, a regex de UUID e o cálculo de "hoje" duplicados saíram. Novo `missingDeletionConfirmation(raw)` (a guarda que estava inline na Server Action de resolver pedido). `validation.ts` ficou só como reexport (os testes `audience.test.ts` e `audience-contacts-page.test.ts` importam dele). E-mail e telefone (E.164) continuam no schema do módulo: só a audiência usa.
+- `server.ts` → `repository.ts` (renomeado, sem mudança de consulta; imports relativos com `.ts` e cliente só como tipo, carregável em `node --test`; `SupabaseClient` exportado) e `service.ts` (`canManageAudience`, `registerContact`, `correctContact`, `recordConsentEvent`, `revokeAll`, `registerSubjectRequest`, `resolveSubjectRequest`, `eraseContact`).
+- `audiencia/actions.ts`: cada ação chama o caso de uso do service dentro do mesmo `try` (validação e erro do banco continuam com o mesmo `log("warn", …)` e a mesma mensagem via `dbErrorMessage`); mesma ordem (auth → permissão → validação → RPC), mesmas mensagens e redirecionamentos; `formDataToRaw` central. `audiencia/page.tsx` e a rota de exportação importam `repository`/`service` e `isUuid` de `@/lib/validation/fields` (saiu o uso via `@/lib/content/server`).
+- `findWorkspace` continua vindo de `@/lib/tenancy/workspace`, que existe tanto na integração quanto, como fachada, no PR #68 (2e). Assim a 2f não depende do merge da 2e; depois dele, o import pode ir para `@/lib/tenancy/service`.
+- Divergências preservadas: só texto (`readString`), UUID de formulário pelo formato.
+- Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **270/270** (260 existentes sem edição + 10 novos em `audience-domain.test.ts`: reexport, UUID, data no fuso do workspace, guarda da exclusão, papéis, filtro por workspace nas leituras com cliente falso, recusa antes de RPC, argumentos da RPC e propagação do erro do banco), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
+- PR #68 (2e) segue aberto com typecheck/lint/build e SQL verdes; o "Playwright · Staging" não rodou porque a Vercel recusou o Preview por limite diário do plano gratuito (`api-deployments-free-per-day`). Integração mesclada na branch da 2e (78b5c0b) para nova tentativa quando a cota voltar.
+
