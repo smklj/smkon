@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { findWorkspace } from "@/lib/tenancy/workspace";
@@ -52,13 +53,16 @@ export async function POST() {
       .eq("domain", "owned_sales")
       .eq("status", "connected")
       .not("external_account_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (connectionError || !connection?.external_account_id) {
       return NextResponse.json({ error: "No connected Mercado Livre account was found in this workspace." }, { status: 404 });
     }
 
-    const service = createServiceClient();
-    if (!service) return NextResponse.json({ error: "Server database credentials are not configured." }, { status: 503 });
+    const typedService = createServiceClient();
+    if (!typedService) return NextResponse.json({ error: "Server database credentials are not configured." }, { status: 503 });
+    const service = typedService as unknown as SupabaseClient;
     const { data: credential, error: credentialError } = await service
       .from("mercado_livre_credentials")
       .select("encrypted_tokens,token_expires_at")

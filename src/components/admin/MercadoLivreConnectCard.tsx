@@ -14,6 +14,7 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -27,14 +28,32 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
     setBusy(true);
     setMessage(null);
     setPreview(null);
+    setSyncResult(null);
     try {
       const response = await fetch("/api/integrations/mercado-livre/sync/preview", { method: "POST", cache: "no-store" });
-      const result = await response.json() as { error?: string; pageSize?: number; providerTotal?: number | null; currencies?: Array<{ currency: string; orders: number; gross: number; fees: number }>; message?: string };
+      const result = await response.json() as { error?: string; pageSize?: number; providerTotal?: number | null; currencies?: Array<{ currency: string; orders: number; gross: number; fees: number }> };
       if (!response.ok) throw new Error(result.error ?? "Não foi possível validar a leitura.");
       const currencySummary = (result.currencies ?? []).map((item) => `${item.currency}: ${item.orders} pedidos · bruto ${item.gross.toFixed(2)} · tarifas estimadas ${item.fees.toFixed(2)}`).join(" | ");
       setPreview(`Dry-run: ${result.pageSize ?? 0} pedidos nesta página; total informado pelo provedor: ${result.providerTotal ?? "indisponível"}. ${currencySummary}. Nenhum dado foi gravado.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha na validação.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runSync() {
+    setBusy(true);
+    setMessage(null);
+    setPreview(null);
+    setSyncResult(null);
+    try {
+      const response = await fetch("/api/integrations/mercado-livre/sync", { method: "POST", cache: "no-store" });
+      const result = await response.json() as { error?: string; pageSize?: number; persistedCount?: number; message?: string };
+      if (!response.ok || result.persistedCount === undefined) throw new Error(result.error ?? "Não foi possível importar os pedidos.");
+      setSyncResult(`${result.persistedCount} snapshot(s) processado(s) de ${result.pageSize ?? 0} pedido(s). ${result.message ?? "Sem lançamentos de liquidação."}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha na importação.");
     } finally {
       setBusy(false);
     }
@@ -82,7 +101,7 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
           <p className="row-title">Mercado Livre</p>
           <p className="row-meta">
             {connected
-              ? "Conta autorizada. A sincronização financeira permanece controlada."
+              ? "Conta autorizada. A importação manual grava snapshots sem PII; não gera liquidação financeira."
               : "Conecte sua conta para autorizar a leitura dos dados de vendas."}
           </p>
         </div>
@@ -90,9 +109,20 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
           {busy ? "Preparando…" : connected ? "Reconectar" : "Conectar Mercado Livre"}
         </button>
       </div>
+      {connected ? (
+        <div className="row">
+          <button className="button" type="button" onClick={runPreview} disabled={busy || !canManage}>
+            Testar leitura
+          </button>
+          <button className="button button-primary" type="button" onClick={runSync} disabled={busy || !canManage}>
+            {busy ? "Importando…" : "Importar até 50 pedidos"}
+          </button>
+        </div>
+      ) : null}
       {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}
       {preview ? <p className="feedback" role="status">{preview}</p> : null}
-      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. A leitura de vendas será liberada após a validação da conexão. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : ""}</p>
+      {syncResult ? <p className="feedback" role="status">{syncResult}</p> : null}
+      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : "A importação é manual, limitada a 50 pedidos e não cria lançamentos financeiros."}</p>
     </div>
   );
 }
