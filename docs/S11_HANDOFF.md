@@ -223,3 +223,14 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Vercel Preview foi consultado sem descriptografar valores. Não há variáveis de configuração Mercado Livre visíveis no projeto; portanto, nenhum app OAuth está configurado e nenhuma conta pode ser conectada nesta etapa.
 - O projeto não possui ainda módulo de cifragem/persistência de tokens para esse adapter. Próxima implementação deve adicionar envelope AES-256-GCM com chave de 32 bytes gerida como secret server-side, tabela isolada por organization, RLS sem acesso direto de cliente e operações de refresh serializadas. Não criar chave real, não gravar tokens e não aplicar migration sem validação.
 - PR #57 permanece Draft; merge e deploy não autorizados.
+
+
+### Incremento de criptografia de tokens — 21/11/2026 UTC
+
+- Adicionado `token-crypto.ts`: envelope versionado AES-256-GCM, IV aleatório de 96 bits, tag de autenticação, AAD vinculando organization/provider/conta externa, limite de payload e validação estrita do envelope.
+- Adicionado `token-crypto.server.ts` como entrypoint protegido por `server-only`; o núcleo criptográfico permanece isolado para testes unitários.
+- Chave configurada por `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` (base64 de 32 bytes) e identificador `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY_ID`. Nenhuma chave foi criada/configurada. O loader atual lê uma chave ativa; o formato suporta keyring com chaves antigas retidas quando fornecido pelo servidor.
+- Testes adicionados para round-trip, adulteração, AAD cross-tenant, rotação via keyring e entradas inválidas.
+- **Limite:** ainda não há repository, tabela, callback, lock de refresh ou persistência integrada. O módulo criptográfico isolado não torna a conexão operacional.
+- CI para head `9961b9cf5197e3ba72962e6fd32170d85903efba` está pendente no momento do registro; commits intermediários tiveram execuções canceladas por novo push. Consultar o run mais recente antes de declarar aprovação.
+- Nenhuma migration aplicada, nenhuma conta conectada, nenhum secret configurado e nenhum deploy realizado.
