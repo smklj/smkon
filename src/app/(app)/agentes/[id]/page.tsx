@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CancelRunForm } from "@/components/agents/CancelRunForm";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
-import { isUuid } from "@/lib/content/server";
+import { isUuid } from "@/lib/validation/fields";
 import {
   draftFromStep,
   failureReason,
@@ -15,12 +15,12 @@ import {
   summarizePayload,
   usageTotals,
 } from "@/lib/agents/detail";
-import { loadRunDetail, type AgentRunDetail, type AgentStepDetail } from "@/lib/agents/server";
+import { canOperateRuns, loadRunDetail, type AgentRunDetail, type AgentStepDetail } from "@/lib/agents/service";
 import { AGENT_LABEL, isActive, isAgentKind, RUN_STATUS_LABEL, RUN_STATUS_TONE, STEP_PHASE_LABEL } from "@/lib/agents/types";
 import { errorFields, log } from "@/lib/observability/log";
 import { WORKSPACE_TIMEZONE } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace, type MemberRole } from "@/lib/tenancy/workspace";
+import { findWorkspace, type MemberRole } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Execução de agente" };
 
@@ -93,7 +93,7 @@ export default async function AgentRunPage({ params }: { params: Promise<{ id: s
   }
 
   const { run, role } = data;
-  const canOperate = role === "owner" || role === "admin";
+  const canOperate = canOperateRuns(role);
   const reason = failureReason(run.error_code);
   const outcome = parseOutcome(run.outcome);
   const totals = run.usage.state === "ok" ? usageTotals(run.usage.rows) : null;

@@ -8,7 +8,7 @@ import { ToolToggle } from "@/components/agents/ToolToggle";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { Pager, pageHref } from "@/components/ui/Pager";
 import { failureReason } from "@/lib/agents/detail";
-import { loadAgents, type AgentOverview } from "@/lib/agents/server";
+import { canControlAgents, canOperateRuns, loadAgents, type AgentOverview } from "@/lib/agents/service";
 import {
   AGENT_LABEL,
   AGENT_TOOL_LABEL,
@@ -23,7 +23,7 @@ import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { WORKSPACE_TIMEZONE } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
-import { findWorkspace, type MemberRole } from "@/lib/tenancy/workspace";
+import { findWorkspace, type MemberRole } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Agentes de IA" };
 
@@ -64,8 +64,8 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
   const cursor = typeof params.cursor === "string" ? params.cursor : null;
   const data = await load(cursor);
   const ok = data.state === "ok" ? data : null;
-  const isOwner = ok?.role === "owner";
-  const canOperate = ok?.role === "owner" || ok?.role === "admin";
+  const isOwner = ok ? canControlAgents(ok.role) : false;
+  const canOperate = ok ? canOperateRuns(ok.role) : false;
   const settings = ok?.agents.settings;
 
   return (
