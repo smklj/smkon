@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   MERCADO_LIVRE_ORDER_PAGE_SIZE,
   MERCADO_LIVRE_ORDER_MAX_OFFSET,
+  parseMercadoLivreOrderSyncAction,
   parseMercadoLivreOrderSyncPageRequest,
 } from "../../src/lib/integrations/mercado-livre/order-sync-window.ts";
 
@@ -51,4 +52,25 @@ test("offset is bounded and must align to a 50-order page", () => {
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 51 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: MERCADO_LIVRE_ORDER_MAX_OFFSET + 50 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 100, createdFrom: "2025-11-21T04:00:00Z", createdTo: "2026-11-21T04:00:00Z" }, now).ok, true);
+});
+
+test("defaults to resume and accepts only the explicit restart action", () => {
+  assert.deepEqual(parseMercadoLivreOrderSyncAction(undefined), { ok: true, value: "next" });
+  assert.deepEqual(parseMercadoLivreOrderSyncAction({}), { ok: true, value: "next" });
+  assert.deepEqual(parseMercadoLivreOrderSyncAction({ action: "restart" }), { ok: true, value: "restart" });
+  assert.equal(parseMercadoLivreOrderSyncAction({ action: "next" }).ok, true);
+});
+
+test("rejects client-supplied cursor/window fields and malformed actions", () => {
+  for (const input of [
+    null,
+    [],
+    "next",
+    { action: "delete" },
+    { offset: 50 },
+    { createdFrom: "2025-11-21T04:00:00Z", createdTo: "2026-11-21T04:00:00Z" },
+    { action: "next", offset: 0 },
+  ]) {
+    assert.equal(parseMercadoLivreOrderSyncAction(input).ok, false);
+  }
 });
