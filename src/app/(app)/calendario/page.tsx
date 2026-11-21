@@ -53,7 +53,9 @@ const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeZone: WORKSPACE_TIMEZO
 function groupByDay(jobs: PublicationJobRow[]): Array<[string, PublicationJobRow[]]> {
   const groups = new Map<string, PublicationJobRow[]>();
   for (const job of jobs) {
-    const key = dayFormat.format(new Date(job.scheduled_for));
+    // "quinta-feira, 19 de novembro" → "Quinta-feira, 19 de novembro" (só a primeira letra).
+    const formatted = dayFormat.format(new Date(job.scheduled_for));
+    const key = formatted.charAt(0).toLocaleUpperCase("pt-BR") + formatted.slice(1);
     groups.set(key, [...(groups.get(key) ?? []), job]);
   }
   return [...groups.entries()];

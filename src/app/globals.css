@@ -280,7 +280,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .studio-preview-grid p { white-space: pre-wrap; font-size: 13px; color: var(--muted); flex: 1; margin-bottom: 12px; }
 .studio-preview-grid button { align-self: flex-start; border: 1px solid var(--line-strong); background: var(--surface-2); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; }
 .studio-muted { color: var(--muted); font-size: 13px; }
-.template-picker { display: grid; gap: 6px; padding: 14px; margin-bottom: 16px; border: 1px dashed var(--line-strong); border-radius: var(--radius); }
+.template-picker { display: grid; gap: 6px; padding: 14px; margin: 14px 0 18px; border: 1px dashed var(--line-strong); border-radius: var(--radius); }
 .template-picker-field { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .template-picker-controls { display: flex; flex-wrap: wrap; gap: 8px; }
 .template-picker-controls select { flex: 1 1 220px; min-width: 0; height: 38px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); padding: 0 10px; font-size: 13px; }
@@ -368,7 +368,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .stack-top { margin-top: 16px; }
 .calendar-day { margin-top: 18px; }
 .calendar-day:first-of-type { margin-top: 8px; }
-.calendar-day-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: capitalize; color: var(--text-2); }
+.calendar-day-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-2); }
 .calendar-day-count { font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .calendar-time { flex: none; width: 48px; padding-top: 1px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--text); }
 .row-muted .row-title, .row-muted .calendar-time { color: var(--muted); }
