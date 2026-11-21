@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  buildAuthorizationUrl,
   createCodeChallenge,
   createOAuthAttempt,
   isOAuthAttemptValid,
   safeEqualState,
-} from "../../src/lib/integrations/mercado-livre/oauth";
+} from "../../src/lib/integrations/mercado-livre/oauth-state";
+import { buildAuthorizationUrl } from "../../src/lib/integrations/mercado-livre/oauth-url";
 
 test("OAuth attempt creates high-entropy state and PKCE verifier", () => {
   const attempt = createOAuthAttempt(1_000);
