@@ -362,3 +362,17 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - **Plano de implementação seguro:** primeira fase deve persistir snapshot normalizado sem PII, com upsert transacional de evento+pedido e hash do payload; manter `settled_at=null` e não produzir ledger de liquidação. Pagamentos/estornos/encargos serão reconciliados numa etapa separada usando endpoints de billing/payment e ajustes com chave externa idempotente.
 - **Documentação oficial consultada:** https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas ; https://developers.mercadolivre.com.br/pt_br/pagamentos ; https://developers.mercadolivre.com.br/pt_br/api-docs-pt-br/provisoes .
 - **Decisão:** não ativar persistência nem agendamento até que a RPC transacional, testes de replay/atualização e mapeamento de pagamentos estejam implementados. A revisão foi apenas de schema e semântica, não de execução financeira.
+
+
+## Persistência de snapshots e validação em staging — 21/11/2026 UTC
+
+- Implementado `order-snapshot.ts`: normalização PII-free, status conservador, valores com precisão de quatro casas e hash SHA-256 da representação normalizada.
+- Implementado `POST /api/integrations/mercado-livre/sync`: sessão Supabase, workspace e role Owner/Admin; identidade conferida com `GET /users/me`; leitura limitada a 50 pedidos recentes; persistência via RPC atômica. A UI conectada agora oferece dry-run e importação manual.
+- Migration `20261121150000_mercado_livre_order_sync.sql`: upsert transacional em `external_events` e `sales_orders`, allowlist estrita de 11 campos, validação de organização/conexão/provider/domain/status, idempotência por chaves únicas, CAS de conexão e execução somente por service_role. Sem payload bruto, PII ou lançamentos no ledger.
+- Semântica: bruto vem de `total_amount`; tarifa é agregação de `sale_fee × quantity`; desconto, frete e reembolso permanecem zero até reconciliação específica; `paid` não é liquidação e `settled_at` não é inferido.
+- CI #393 no commit `8fbcd9f`: sucesso nos dois jobs. O merge commit `c3c5f0a` integrou a base atualizada `feature/smkon-production-readiness`; Preview desse commit está READY. O CI do merge commit e o E2E acionado pelo deployment ainda precisam de conclusão no head final.
+- Staging `smkon-staging`: migrations de credentials, OAuth attempts e order sync aplicadas. Testes rollback-only de lease/CAS, RLS/grants, state one-time, replay idempotente, atualização, isolamento, rejeição de PII/valor negativo e ausência de ledger passaram sem exceções.
+- Security advisor: as duas tabelas S11 aparecem como RLS enabled/no policy (INFO), intencional por serem service_role-only. Avisos em outras RPCs e Auth são preexistentes; não foram modificados.
+- Preview não tem `SUPABASE_SECRET_KEY` nem variáveis de app Mercado Livre. OAuth real e importação real continuam bloqueados até o Owner configurar as credenciais no Vercel/DevCenter.
+- Produção: histórico de migrations ainda não está alinhado (falta `20261119232441_keyset_pagination_indexes`); não há evidência verificável de backup/restauração pelo conector. Nenhuma migration ou deploy de produção foi executado.
+- Limite funcional: importação manual de primeira página (até 50), sem paginação histórica, cursor de cobertura, reconciliação de pagamentos/estornos/provisões ou agendamento. Não declarar operação financeira completa.
