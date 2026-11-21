@@ -43,7 +43,7 @@
 Testes: `test:unit` **216/216** (inclui `pagination` 11, `agents-runs-page` 4, `audience-contacts-page` 5, `load-test` 3); `test:db` **19 arquivos** (inclui `040_keyset_pagination_indexes`, 13 asserções com EXPLAIN de verificação sob RLS e isolamento entre workspaces); typecheck, lint e build ok; CI verde nos PRs #49 e #51.
 
 ## Problemas e pendências
-- **Staging:** `20261119120000` **não aplicada**. Autorizada pelo Owner, mas a ferramenta `apply_migration` pede confirmação interativa (há `drop index`) e expirou nas 3 tentativas (ninguém respondeu). Conferido por leitura que nada foi aplicado. Até aplicar, `/produtos` usa o caminho de compatibilidade (200 linhas, sem próxima página, log `products.list.legacy`); demais listas funcionam com os índices antigos. **Ação do Owner:** responder à confirmação numa execução, ou aplicar pelo painel/CLI; depois conferir advisors e incluir um teste E2E de paginação da API de produtos.
+- **Staging:** `20261119120000` **aplicada** (registrada como `20261119232441_keyset_pagination_indexes`); conferido em 21/11 por leitura: coluna `score_rank`, os 4 índices novos presentes e os 2 substituídos removidos. `get_advisors` sem avisos ligados ao S16 (segurança e performance). E2E de paginação da API de produtos adicionado em `tests/e2e/products.spec.mjs`.
 - **Produção:** migration não aplicada — exige autorização explícita.
 - Busca de contatos por trecho: pior caso 38 ms com 30 mil contatos; índice trigram só se o volume justificar.
 - Carga autenticada contra banco real fica para um preview com `LOAD_COOKIE` de usuário de teste do staging (decisão do Owner: é uma credencial).
@@ -51,4 +51,4 @@ Testes: `test:unit` **216/216** (inclui `pagination` 11, `agents-runs-page` 4, `
 - Seletor de mídia do Studio usa só a 1ª página (200).
 
 ## Próxima etapa recomendada
-Aplicar `20261119120000` no staging (confirmando a pergunta da ferramenta), rodar `get_advisors` e o E2E; depois autorizar a produção junto com as migrations do S15.
+Autorizar a produção de `20261119120000` junto com as migrations do S15 (staging já aplicado e coberto pelo E2E).
