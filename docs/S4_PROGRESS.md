@@ -14,7 +14,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2c | Mídia e licenças | ✅ feito | #63 |
 | 2d | Financeiro (comissões) | ✅ feito (merge aguarda E2E) | #65 |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
-| 2f | Audiência / CRM | ✅ feito | (PR da etapa 2f) |
+| 2f | Audiência / CRM | ✅ feito | #72 |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
 | 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ⏳ | — |
 
