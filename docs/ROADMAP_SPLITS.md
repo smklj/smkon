@@ -174,3 +174,5 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - Preview S14 e Preview de integração estão READY. Nenhum é produção.
 - Bloqueios operacionais: `SUPABASE_SECRET_KEY` ausente; tool grants zero; budget externo inexistente; comprimento do `CRON_SECRET` e OIDC runtime não validados. AI Gateway 7d = 0 requests/tokens/custo; `agent_model_usage` = 0.
 - `vercel.json` e rota do worker existem em main, Cron `17 11 * * *`; não há invocação autenticada nem deployment Production atual que comprove o Cron ativo.
+
+- Handoff de reconciliação pós-release: Draft PR #88 (docs-only), branch `docs/s14-handoff-reconciliation-20261121-1703`; sem merge.
