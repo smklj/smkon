@@ -229,3 +229,10 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - Vercel não possui variáveis MERCADO_LIVRE_* nem SUPABASE_SECRET_KEY. OAuth real e leitura com conta de teste não foram executados.
 - Produção: 20 migrations, zero tabelas/funções S11, sem alterações. Backup/restauração não puderam ser comprovados com as ferramentas disponíveis.
 - Pendências: divisão automática de janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, reconciliação de pagamentos/taxas/frete/estornos/provisões/repasses e promoção isolada para main. Não declarar o conector financeiro operacional.
+
+
+## Inventário Vercel — correção do Preview intermediário (21/11/2026)
+
+A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
+
+A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
