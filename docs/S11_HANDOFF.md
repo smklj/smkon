@@ -350,3 +350,15 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - **Ambiente:** nenhum secret configurado, nenhuma conta autorizada, nenhuma migration hospedada aplicada, nenhum deploy de produção.
 - **CI:** workflow disparado após as alterações; resultado precisa ser consultado no último head antes de declarar validação.
 - **Próxima ação:** fechar revisão de código/CI e completar pipeline persistente em staging com fixtures; depois configurar credenciais e realizar OAuth/dry-run real. Agendamento automático somente após reconciliação comprovada e aprovação do Owner.
+
+
+## Revisão do modelo financeiro e semântica do Mercado Livre — 21/11/2026 UTC
+
+- **Ambiente inspecionado:** projeto Supabase `smkon-staging` (`xoyasrizivadxnpmzzno`), somente leitura. Nenhuma DDL/DML foi executada nesta revisão.
+- **Modelo existente confirmado:** `sales_orders`, `external_events`, `sales_order_adjustments` e `financial_ledger_entries`. `sales_orders` possui unicidade por `(organization_id, provider, external_order_id)`; `external_events` por `(organization_id, provider, external_id, event_type)`. Isso permite ingestão repetível sem duplicação, desde que os upserts ocorram na mesma transação.
+- **Restrições relevantes:** `sales_orders.order_status` aceita `pending`, `paid`, `fulfilled`, `cancelled`, `refunded`, `partially_refunded`; valores monetários são não negativos. Ledger aceita `sales_gross`, `sales_discount`, `sales_fee`, `sales_shipping`, `sales_refund`, mas a existência desses tipos não prova liquidação.
+- **Semântica externa verificada:** documentação oficial diferencia status de order e status dos pagamentos; order `paid` indica pagamento aprovado, mas não comprova repasse/recebimento líquido. Os objetos de pagamento incluem `status`, `status_detail`, `date_approved` e `transaction_amount_refunded`. Portanto, não preencher `settled_at` nem criar lançamento de recebimento liquidado apenas com `order.status=paid`.
+- **Taxas:** `sale_fee` é reportada por item e deve ser agregada com quantidade, mas a reconciliação completa exige considerar marketplace_fee, descontos, frete do vendedor e ajustes de faturamento. Não tratar uma soma simplificada de `sale_fee` como valor líquido final.
+- **Plano de implementação seguro:** primeira fase deve persistir snapshot normalizado sem PII, com upsert transacional de evento+pedido e hash do payload; manter `settled_at=null` e não produzir ledger de liquidação. Pagamentos/estornos/encargos serão reconciliados numa etapa separada usando endpoints de billing/payment e ajustes com chave externa idempotente.
+- **Documentação oficial consultada:** https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas ; https://developers.mercadolivre.com.br/pt_br/pagamentos ; https://developers.mercadolivre.com.br/pt_br/api-docs-pt-br/provisoes .
+- **Decisão:** não ativar persistência nem agendamento até que a RPC transacional, testes de replay/atualização e mapeamento de pagamentos estejam implementados. A revisão foi apenas de schema e semântica, não de execução financeira.
