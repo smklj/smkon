@@ -89,7 +89,7 @@ $$;
 
 -- Behavioral lease/CAS test with disposable tenant fixtures.
 -- The surrounding test transaction rolls all fixture rows back.
-do $
+do $s11_lease_test$
 declare
   v_user uuid := 'f1000000-0000-4000-8000-000000000001';
   v_org uuid := 'f2000000-0000-4000-8000-000000000001';
@@ -195,6 +195,6 @@ begin
     raise exception 'second worker must save with its own lease and current version';
   end if;
 end;
-$;
+$s11_lease_test$;
 
 rollback;
