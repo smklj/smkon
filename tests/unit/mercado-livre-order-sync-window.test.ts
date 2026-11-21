@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   MERCADO_LIVRE_ORDER_PAGE_SIZE,
   MERCADO_LIVRE_ORDER_MAX_OFFSET,
+  parseMercadoLivreOrderSearchPage,
   parseMercadoLivreOrderSyncAction,
   parseMercadoLivreOrderSyncPageRequest,
 } from "../../src/lib/integrations/mercado-livre/order-sync-window.ts";
@@ -73,4 +74,77 @@ test("rejects client-supplied cursor/window fields and malformed actions", () =>
   ]) {
     assert.equal(parseMercadoLivreOrderSyncAction(input).ok, false);
   }
+});
+
+
+const providerOrder = (id: number) => ({
+  id,
+  status: "paid",
+  currency_id: "BRL",
+  total_amount: 10,
+  date_created: "2026-11-21T01:00:00.000Z",
+});
+
+test("rejects missing, malformed, oversized and non-object order search results", () => {
+  assert.equal(parseMercadoLivreOrderSearchPage({ paging: { total: 1 } }, 0).ok, false);
+  for (const results of [null, "not-an-array", {}, [null], [[]], ["order"]]) {
+    assert.equal(parseMercadoLivreOrderSearchPage({ results }, 0).ok, false);
+  }
+  assert.equal(parseMercadoLivreOrderSearchPage({
+    results: Array.from({ length: 51 }, (_, index) => providerOrder(index + 1)),
+  }, 0).ok, false);
+});
+
+test("rejects malformed paging metadata and invalid provider totals", () => {
+  for (const paging of [null, [], "invalid", { total: null }, { total: -1 }, { total: 1.5 }, { total: "50" }, { total: Number.MAX_SAFE_INTEGER + 1 }]) {
+    assert.equal(parseMercadoLivreOrderSearchPage({ results: [], paging }, 0).ok, false);
+  }
+});
+
+test("rejects an empty page before the provider total without advancing the checkpoint", () => {
+  const parsed = parseMercadoLivreOrderSearchPage({ results: [], paging: { total: 51 } }, 50);
+  assert.equal(parsed.ok, false);
+});
+
+test("rejects a partial page when the provider reports more orders remain", () => {
+  const partial = Array.from({ length: 17 }, (_, index) => providerOrder(index + 1));
+  const parsed = parseMercadoLivreOrderSearchPage({ results: partial, paging: { total: 100 } }, 0);
+  assert.equal(parsed.ok, false);
+});
+
+test("accepts a full page with more results and advances by the returned count", () => {
+  const results = Array.from({ length: 50 }, (_, index) => providerOrder(index + 1));
+  const parsed = parseMercadoLivreOrderSearchPage({ results, paging: { total: 51 } }, 0);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.value.providerTotal, 51);
+  assert.equal(parsed.value.hasMore, true);
+  assert.equal(parsed.value.nextOffset, 50);
+  assert.equal(parsed.value.orders.length, 50);
+});
+
+test("accepts a short terminal page only when it reaches the provider total", () => {
+  const results = [providerOrder(51), providerOrder(52)];
+  const parsed = parseMercadoLivreOrderSearchPage({ results, paging: { total: 52 } }, 50);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.value.hasMore, false);
+  assert.equal(parsed.value.nextOffset, 52);
+});
+
+test("rejects provider totals smaller than the requested page range", () => {
+  const parsed = parseMercadoLivreOrderSearchPage({
+    results: [providerOrder(1), providerOrder(2)],
+    paging: { total: 1 },
+  }, 0);
+  assert.equal(parsed.ok, false);
+});
+
+test("preserves full-page continuation when the provider omits paging.total", () => {
+  const full = Array.from({ length: 50 }, (_, index) => providerOrder(index + 1));
+  const parsed = parseMercadoLivreOrderSearchPage({ results: full }, 0);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.value.providerTotal, null);
+  assert.equal(parsed.value.hasMore, true);
 });
