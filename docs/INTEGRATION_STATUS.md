@@ -119,3 +119,10 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - **Ainda pendente:** callback OAuth, state persistido e de uso único, secret store/cifragem, armazenamento rotativo de tokens, lock de refresh, mapper de dados financeiros, sync, persistência idempotente e migration.
 - **Segurança:** sem secrets, contas, chamadas externas, migrations ou deploys.
 - **Próxima ação:** aguardar CI/revisão do PR #57 e concluir a decisão técnica de armazenamento seguro antes de implementar callback e persistência.
+
+
+### S11 — validação em andamento (21/11/2026 UTC)
+
+- PR #57: primeira CI executou typecheck/lint com sucesso e testes SQL/migrations com sucesso; 1 teste unitário falhou devido a import ESM sem extensão. Os demais 238 passaram.
+- Correção publicada no branch; imports agora usam extensão explícita. A revisão também corrigiu a separação de scopes e validou token type Bearer.
+- Aguardando nova CI para confirmar correção. Sem chamada externa, credenciais, migrations ou deploy.
