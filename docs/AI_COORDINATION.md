@@ -126,3 +126,17 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - **Limites:** reconstrução baseada em PRs, roadmap e handoffs; a busca de commits vazia do conector não retornou uma exportação completa de commits. O estado de produção e as pendências de autorização precisam ser revalidados antes de qualquer release.
 - **Ações externas:** nenhuma migration, alteração de segredo, merge em `main` ou promoção de produção executada.
 - **Próxima ação:** usar o histórico como base para fechar S4, revisar PRs abertos e resolver as pendências de segurança/produção com autorização do Owner.
+
+
+## Auditoria S4/S11/S14, segurança e release — 20/11/2026
+
+- **Agente:** ChatGPT · **Documento:** `docs/RELEASE_AUDIT_S4_S11_S14_SECURITY.md`
+- **Commit do relatório:** `d1738d49632b9cfb452f5be727c42e56b2c99356`
+- **Escopo:** inspeção read-only de código/árvore GitHub, PR #56, migrations staging/produção, Security Advisors e grants da tabela de rate limit.
+- **S4:** etapas 1, 2, 2a e 2b concluídas (#54/#55); 2c mídia, 2d financeiro, 2e tenancy, 2f audiência, 2g agentes e handoff pendentes. Staging 21/21 migrations remove o bloqueio anterior para regenerar tipos.
+- **S11:** não foi encontrado conector financeiro real nem handoff S11 no commit; existem placeholders de conexões e módulo de comissões. Provedor inicial e credenciais dependem do Owner.
+- **S14:** executor implementado, mas nenhuma chamada real ao AI Gateway foi comprovada. A migration `agent_model_usage` agora consta na produção, atualizando o handoff antigo; a presença/validade das variáveis e OIDC ainda precisa ser verificada sem expor segredos.
+- **Ambientes:** staging 21/21 migrations; produção 20/21, falta `keyset_pagination_indexes`. PR #56 aberto e GitHub retornou `mergeable=false`. Preview READY não é Production.
+- **Segurança:** `rate_limit_consume` SECURITY DEFINER executável por anon/authenticated; corpo tem `search_path=''`, allowlist de scopes e valida subject de 64 hex. Uso anon parece intencional para login pré-auth, portanto não revogar em lote. `rate_limit_buckets` sem políticas RLS; grants diretos observados somente para postgres/service_role. 31 funções SECURITY DEFINER para authenticated exigem revisão individual; leaked-password protection desligada.
+- **Ações:** nenhuma migration, alteração de segredo/Auth, merge, deploy ou chamada paga executada.
+- **Próximo responsável:** ChatGPT/Claude pode continuar S4 e análise de código; Samuel precisa decidir provedor/credenciais S11, autorizações de Auth/produção e janela de release.
