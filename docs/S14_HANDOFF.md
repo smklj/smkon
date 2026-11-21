@@ -131,3 +131,12 @@ Esta seção supersede os estados anteriores de configuração e banco que diver
 3. Validar `CRON_SECRET` sem revelar o valor.
 4. Conceder grants mínimos de leitura para `operations_review` em staging.
 5. Obter Preview do head #71, executar E2E e somente então fazer uma execução real controlada; conferir resposta, steps, verifier e ledger.
+
+
+## Atualização de CI e branch — 21/11/2026, 10:00 BRT
+
+- PR #71 agora está 7 commits à frente e 0 atrás da head de integração `16bd6b009a64884fadccbfa5afc47d40ccb11eae`; comparação `ahead`, Draft e mergeable. Head atual: `c2454be94a6f221502f768ed917f636c73cdbaaf`.
+- O primeiro CI disparado na PR (#44906510584, synthetic merge da head anterior) falhou no typecheck: `planTimeout`, `toolTimeout` e `summaryTimeout` estavam declarados dentro dos blocos `try`, mas usados nos respectivos `catch`. O job de migrations/SQL passou.
+- Corrigi o escopo no commit `c2454be`, declarando cada budget antes do `try`. Esse commit ainda aguarda uma execução CI própria; não atribuir a ele o resultado do run anterior.
+- O check Vercel segue falhando por `api-deployments-free-per-day`; o inventário de deployments da branch #71 continua vazio (nenhum Preview criado). E2E do head atual não executado.
+- PR #67 continua aberta em Draft, mas a comparação atual é divergente (2 commits à frente/8 atrás, mergeable=false). Mantida como fallback até o CI atual da #71 concluir.
