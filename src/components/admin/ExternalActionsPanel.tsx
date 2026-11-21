@@ -41,7 +41,12 @@ export function ExternalActionsPanel() {
     };
   }, [load]);
 
-  async function handleDecide(requestId: string, decision: "approved" | "rejected", expectedHash: string) {
+  async function handleDecide(
+    requestId: string,
+    decision: "approved" | "rejected",
+    expectedHash: string,
+    publishImmediately = false,
+  ) {
     setBusyId(requestId);
     setError("");
     setNotice("");
@@ -55,10 +60,47 @@ export function ExternalActionsPanel() {
       if (!res.ok) {
         throw new Error(data.error || "Não foi possível registrar a decisão.");
       }
-      setNotice(decision === "approved" ? "Ação externa aprovada com sucesso." : "Ação externa recusada.");
+
+      if (decision === "approved" && publishImmediately) {
+        const execRes = await fetch("/api/actions/external/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId }),
+        });
+        const execData = await execRes.json().catch(() => ({}));
+        if (!execRes.ok) {
+          throw new Error(`Aprovado, mas erro ao publicar no Metricool: ${execData.error}`);
+        }
+        setNotice("Ação externa aprovada e publicada no Metricool com sucesso!");
+      } else {
+        setNotice(decision === "approved" ? "Ação externa aprovada com sucesso." : "Ação externa recusada.");
+      }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao decidir ação externa.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleExecute(requestId: string) {
+    setBusyId(requestId);
+    setError("");
+    setNotice("");
+    try {
+      const execRes = await fetch("/api/actions/external/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      const execData = await execRes.json().catch(() => ({}));
+      if (!execRes.ok) {
+        throw new Error(execData.error || "Falha ao publicar ação externa.");
+      }
+      setNotice("Publicação enviada com sucesso ao Metricool!");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao executar ação externa.");
     } finally {
       setBusyId(null);
     }
@@ -88,7 +130,7 @@ export function ExternalActionsPanel() {
   }
 
   if (loading) {
-    return <p className="muted">Carregando ações externas pendentes...</p>;
+    return <p className="muted">Carregando ações externas...</p>;
   }
 
   return (
@@ -106,7 +148,7 @@ export function ExternalActionsPanel() {
 
       {items.length === 0 ? (
         <div className="empty">
-          <p className="empty-title">Nenhuma ação aguardando aprovação</p>
+          <p className="empty-title">Nenhuma ação aguardando aprovação ou envio</p>
           <p className="muted">
             Quando agentes ou analistas propuserem publicações ou alterações de perfil, elas aparecerão aqui para
             conferência do hash exato e aprovação humana.
@@ -119,6 +161,7 @@ export function ExternalActionsPanel() {
             const payload = item.payload || {};
             const network = item.account?.network || "Rede social";
             const handle = item.account?.handle ? `@${item.account.handle}` : item.account?.display_name || "Conta";
+            const isApproved = item.status === "approved";
 
             return (
               <li className="row" key={item.id} style={{ display: "block", padding: "1rem" }}>
@@ -127,7 +170,12 @@ export function ExternalActionsPanel() {
                     <strong style={{ textTransform: "capitalize" }}>{network}</strong>
                     <span className="muted" style={{ marginLeft: "0.5rem" }}>{handle}</span>
                   </div>
-                  <Badge tone="warn">{ACTION_LABEL[item.action] || item.action}</Badge>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <Badge tone={isApproved ? "ok" : "warn"}>
+                      {isApproved ? "Aprovado" : "Aguardando aprovação"}
+                    </Badge>
+                    <Badge tone="neutral">{ACTION_LABEL[item.action] || item.action}</Badge>
+                  </div>
                 </div>
 
                 {/* Prévia do conteúdo / payload */}
@@ -189,24 +237,48 @@ export function ExternalActionsPanel() {
                   >
                     Cancelar
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    disabled={isBusy}
-                    onClick={() => handleDecide(item.id, "rejected", item.payload_hash)}
-                    style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}
-                  >
-                    Recusar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={isBusy}
-                    onClick={() => handleDecide(item.id, "approved", item.payload_hash)}
-                    style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}
-                  >
-                    {isBusy ? "Processando..." : "Aprovar (Hash Exato)"}
-                  </button>
+
+                  {!isApproved ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        disabled={isBusy}
+                        onClick={() => handleDecide(item.id, "rejected", item.payload_hash)}
+                        style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}
+                      >
+                        Recusar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={isBusy}
+                        onClick={() => handleDecide(item.id, "approved", item.payload_hash, false)}
+                        style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}
+                      >
+                        Apenas Aprovar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={isBusy}
+                        onClick={() => handleDecide(item.id, "approved", item.payload_hash, true)}
+                        style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}
+                      >
+                        {isBusy ? "Processando..." : "Aprovar & Publicar"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={isBusy}
+                      onClick={() => handleExecute(item.id)}
+                      style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}
+                    >
+                      {isBusy ? "Publicando..." : "Publicar no Metricool Agora ↗"}
+                    </button>
+                  )}
                 </div>
               </li>
             );

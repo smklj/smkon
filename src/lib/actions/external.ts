@@ -45,7 +45,7 @@ export async function listPendingExternalActions(
       account:social_accounts(network, handle, display_name, account_type, via)
     `)
     .eq("organization_id", organizationId)
-    .eq("status", "pending_approval")
+    .in("status", ["pending_approval", "approved"])
     .order("requested_at", { ascending: false });
 
   if (error) {
