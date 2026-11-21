@@ -104,3 +104,18 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 - O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
 - PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
 - Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
+
+
+## Cursor durável (incremento em revisão)
+
+O fluxo manual agora usa cursor server-side em mercado_livre_order_sync_state, único por organização/conexão. O browser envia somente action: "next" ou action: "restart"; não pode escolher offset, createdFrom ou createdTo.
+
+1. mercado_livre_claim_order_sync cria a janela de 12 meses se ainda não houver estado e adquire uma lease exclusiva.
+2. O endpoint valida a identidade Mercado Livre e lê a página de até 50 pedidos usando a janela/offset do banco.
+3. mercado_livre_persist_order_sync_page persiste snapshots via RPC existente e avança o offset na mesma transação; o replay com lease/offset antigo falha.
+4. Em erro externo, o endpoint libera a lease com um código genérico; se a liberação falhar, a lease expira em até cinco minutos.
+5. Após reload, next retoma a partir do último checkpoint confirmado. restart reinicia a janela explicitamente e a UI pede confirmação.
+
+Estados: ready, running, completed e blocked. blocked é usado quando o offset máximo do provedor é atingido. A tabela é server-side only: RLS ligado, sem grants para anon/authenticated, e RPCs SECURITY DEFINER com search_path vazio concedidas somente a service_role.
+
+A migration e o teste SQL estão em revisão no PR #60. Não aplicar no Staging/Production antes do CI verde e de reconciliar o histórico remoto de migrations. O cursor não é ainda um sync incremental: a próxima etapa é dividir automaticamente janelas quando o offset atingir o teto e acompanhar date_last_updated.
