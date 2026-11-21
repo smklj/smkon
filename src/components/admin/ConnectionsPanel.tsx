@@ -52,7 +52,8 @@ export async function ConnectionsPanel() {
     return <p className="feedback feedback-error" role="alert">Não foi possível carregar as conexões agora.</p>;
   }
 
-  const rows = data.state === "ok" ? data.rows : [];\n  const canManage = data.state === "ok" && data.canManage;
+  const rows = data.state === "ok" ? data.rows : [];
+  const canManage = data.state === "ok" && data.canManage;
   const mercadoLivreConnected = rows.some((row) => row.provider === "mercado_livre" && row.status === "connected");
 
   return (
