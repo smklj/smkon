@@ -162,3 +162,46 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 4. Owner: fornecer autorização separada quando estiver pronto para conectar usuário de teste, configurar secrets ou aplicar migration.
 
 **Estado:** decisão de produto tomada; plano documentado; implementação ainda não iniciada; integração operacional não comprovada.
+
+
+---
+
+## 10. Implementação inicial — 20/11/2026
+
+**Branch de trabalho:** `feature/s11-mercado-livre-adapter` (criada a partir de `feature/smkon-production-readiness`).  
+**Estado:** adapter técnico inicial implementado; OAuth ainda não integrado a rotas nem persistido; nenhuma conta conectada.
+
+### Arquivos adicionados
+
+- `src/lib/integrations/mercado-livre/types.ts`: tipos de configuração, tokens e erros.
+- `src/lib/integrations/mercado-livre/oauth-state.ts`: geração de state/verifier, PKCE S256, comparação constante e validade temporal.
+- `src/lib/integrations/mercado-livre/oauth-url.ts`: construção da URL de autorização Brasil.
+- `src/lib/integrations/mercado-livre/oauth.ts`: troca server-side de authorization code e refresh token; respostas limitadas e sem propagar mensagens do provedor.
+- `src/lib/integrations/mercado-livre/client.ts`: cliente HTTP server-only, GET-only, origem fixa, timeout, limite de resposta e erros tipados.
+- `tests/unit/mercado-livre-oauth.test.ts`: testes de state, expiração, PKCE e URL.
+
+### Evidência oficial consultada
+
+- [Autenticação e autorização — Mercado Livre](https://developers.mercadolivre.com.br/pt_br/registre-o-seu-aplicativo/autenticacao-e-autorizacao): Authorization Code server-side e access token enviado no header Bearer.
+- [Quick Start in-house — Mercado Livre](https://developers.mercadolivre.com.br/desenvolvimento-in-house): redirect URI HTTPS exato, state imprevisível, scopes mínimos e PKCE opcional conforme configuração da aplicação.
+- [Autenticação e autorização para testes](https://developers.mercadolivre.com.br/pt_br/realizacao-de-testes/autenticacao-e-autorizacao): troca de code e refresh token; refresh token é de uso único e cada refresh devolve um novo token.
+- A documentação informa access token com validade de seis horas e refresh token rotativo; por isso o novo par precisa ser persistido atomicamente antes de qualquer chamada subsequente.
+
+### Decisões técnicas e limitações intencionais
+
+- O client permite apenas GET; não existe caminho de escrita no marketplace neste incremento.
+- URL de API é fixa em `https://api.mercadolibre.com`; não aceita host informado pelo chamador.
+- O OAuth usa PKCE S256. O fluxo só será compatível se PKCE estiver habilitado na configuração da aplicação do DevCenter.
+- Ainda não há callback, armazenamento server-side de state, criptografia/persistência de tokens, lock de refresh, repository, sync, mapper financeiro ou migration. Não declarar OAuth ou S11 operacional.
+- A persistência de tokens está bloqueada até definir e revisar um secret store/criptografia já suportado pelo ambiente. Nenhuma chave ou variável foi criada.
+- A URL de autorização usa o domínio brasileiro `auth.mercadolivre.com.br`; confirmar que o app do DevCenter e seu redirect URI foram cadastrados para Brasil.
+- O client HTTP e os testes não foram executados neste ambiente. A validação deve rodar no checkout com Node 22.18+ e dependências instaladas: `npm run test:unit`, `npm run typecheck` e `npm run lint`.
+
+### Próxima etapa segura
+
+1. Validar a compilação/testes no CI desta branch.
+2. Inspecionar o suporte de cookies/sessão e a política de rotas para desenhar o armazenamento de state one-time server-side.
+3. Escolher, com base nos recursos já configurados, o mecanismo de cifragem e armazenamento de tokens; não armazenar tokens em `source_connections`.
+4. Só então adicionar rotas OAuth e testes de callback sem conectar conta até o Owner fornecer o cadastro de app e aprovar a configuração de credenciais.
+
+**Validação atual:** código commitado na branch; testes ainda não executados; nenhum acesso externo ao Mercado Livre foi realizado.
