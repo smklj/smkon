@@ -245,3 +245,17 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Limites atuais: o repository ainda não orquestra o refresh end-to-end nem implementa callback OAuth; o caminho de claim deve ser integrado a uma operação que descriptografe, faça refresh, cifre o novo par e salve via CAS, liberando lease em falha. O save retorna false se a lease/version não corresponder.
 - CI precisa ser verificado no head mais recente após estes commits. Migration é apenas arquivo versionado; **não foi aplicada** em Supabase local, staging ou produção.
 - Nenhuma chave real, token ou conta conectada; nenhum deploy ou merge.
+
+
+### Orquestração de refresh e callback OAuth — 21/11/2026 UTC
+
+- Adicionado `refresh.ts`: adquire lease exclusivo, descriptografa o par atual com AAD de organização/provedor/conta, valida o usuário externo, chama refresh OAuth, confirma que a conta retornada não mudou, cifra o novo par e persiste via CAS/versão/lease. O lease é liberado no `finally`; nenhum token é escrito em logs ou retornado por API.
+- Adicionada migration `20261121140000_mercado_livre_oauth_attempts.sql`: estado OAuth armazenado como hash SHA-256, verifier cifrado, usuário iniciador, conexão/workspace e expiração de 10 minutos. RPC consome state atomicamente uma única vez; tabela e RPC acessíveis apenas por service_role.
+- Adicionado repository `oauth-attempts.ts`, rota autenticada `POST /api/integrations/mercado-livre/oauth/start` e callback `GET /api/integrations/mercado-livre/oauth/callback`.
+- O start exige usuário autenticado, papel owner/admin e conexão Mercado Livre/owned_sales existente; cria state aleatório, PKCE S256 e retorna URL de autorização sem expor verifier.
+- O callback exige a mesma sessão iniciadora, consome state antes da troca do code, valida a conta externa, persiste apenas tokens cifrados e atualiza metadados da conexão. State inválido, expirado ou reutilizado é rejeitado.
+- Variáveis esperadas no servidor: `MERCADO_LIVRE_CLIENT_ID`, `MERCADO_LIVRE_CLIENT_SECRET`, `MERCADO_LIVRE_REDIRECT_URI`, `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` e opcional `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY_ID`. Nenhuma variável foi criada nem configurada.
+- Adicionado teste SQL estrutural `supabase/tests/mercado_livre_credentials.test.sql` para RLS, grants, FK composta, SECURITY DEFINER, search_path e privilégio da RPC.
+- **Limitações/validação pendente:** CI ainda não foi confirmado para o head mais recente; testes concorrentes com fixtures reais de duas conexões e execução end-to-end OAuth em conta de teste ainda não foram realizados. O callback não foi exercitado contra o Mercado Livre. A migration continua sem aplicação em qualquer Supabase hospedado.
+- **Atenção operacional:** callback requer que a conexão `source_connections` exista previamente e que a sessão Supabase do usuário seja preservada durante o redirecionamento do provedor. O app deve cadastrar exatamente o mesmo redirect URI em DevCenter e Vercel antes de qualquer teste.
+- PR #57 permanece Draft. Nenhum merge, deploy, secret, conta real ou chamada OAuth foi executado.
