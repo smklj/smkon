@@ -3,6 +3,7 @@ import { AreaCard } from "@/components/admin/AreaCard";
 import { ConnectionsPanel } from "@/components/admin/ConnectionsPanel";
 import { ContentList } from "@/components/admin/ContentList";
 import { DomainCard } from "@/components/admin/DomainCard";
+import { ExternalActionsPanel } from "@/components/admin/ExternalActionsPanel";
 import { IntegrationHubPanel } from "@/components/admin/IntegrationHubPanel";
 import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
 import { MembersPanel } from "@/components/admin/MembersPanel";
@@ -61,6 +62,15 @@ export default function AdminPage() {
       <section className="panel" aria-labelledby="integracoes-titulo">
         <SectionHeading id="integracoes-titulo" title="Conexões do workspace" aside={<span className="muted">dados reais</span>} />
         <ConnectionsPanel />
+      </section>
+
+      <section className="panel" aria-labelledby="acoes-externas-titulo">
+        <SectionHeading
+          id="acoes-externas-titulo"
+          title="Ações externas e publicações"
+          aside={<span className="muted">aprovação humana por hash exato</span>}
+        />
+        <ExternalActionsPanel />
       </section>
 
       <section className="panel" aria-labelledby="hub-titulo">
