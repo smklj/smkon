@@ -8,13 +8,27 @@ updates:
       time: "06:00"
       timezone: America/Sao_Paulo
     open-pull-requests-limit: 5
+    # Versão maior é migração deliberada, num PR próprio, depois de ler as notas de mudança.
+    # @types/node acompanha o Node do runtime (engines: 22).
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
     groups:
       next-react:
         patterns: ["next", "react", "react-dom", "eslint-config-next", "@types/react", "@types/react-dom"]
+        update-types: ["minor", "patch"]
       supabase:
         patterns: ["@supabase/*"]
+        update-types: ["minor", "patch"]
       tooling:
         dependency-type: development
+        update-types: ["minor", "patch"]
     labels: ["dependencies"]
     commit-message:
       prefix: "chore(deps)"
