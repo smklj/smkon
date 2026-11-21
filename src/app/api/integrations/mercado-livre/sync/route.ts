@@ -8,6 +8,7 @@ import { refreshMercadoLivreConnection } from "@/lib/integrations/mercado-livre/
 import { mercadoLivreGet } from "@/lib/integrations/mercado-livre/client";
 import { normalizeMercadoLivreOrder, type MercadoLivreOrderInput } from "@/lib/integrations/mercado-livre/order-snapshot";
 import {
+  MERCADO_LIVRE_ORDER_MAX_OFFSET,
   MERCADO_LIVRE_ORDER_PAGE_SIZE,
   parseMercadoLivreOrderSyncPageRequest,
 } from "@/lib/integrations/mercado-livre/order-sync-window";
@@ -145,10 +146,11 @@ export async function POST(request: Request) {
     const providerTotal = typeof page.paging?.total === "number" && Number.isSafeInteger(page.paging.total)
       ? page.paging.total
       : null;
-    const nextOffset = orders.length === MERCADO_LIVRE_ORDER_PAGE_SIZE &&
-      (providerTotal === null || offset + orders.length < providerTotal)
-      ? offset + orders.length
-      : null;
+    const hasMore = orders.length === MERCADO_LIVRE_ORDER_PAGE_SIZE &&
+      (providerTotal === null || offset + orders.length < providerTotal);
+    const candidateNextOffset = offset + orders.length;
+    const paginationLimitReached = hasMore && candidateNextOffset > MERCADO_LIVRE_ORDER_MAX_OFFSET;
+    const nextOffset = hasMore && !paginationLimitReached ? candidateNextOffset : null;
 
     return NextResponse.json({
       mode: "manual_historical_snapshot_import",
@@ -157,6 +159,8 @@ export async function POST(request: Request) {
       pageSize: orders.length,
       providerTotal,
       nextOffset,
+      hasMore,
+      paginationLimitReached,
       createdFrom,
       createdTo,
       persistedCount: processed,
