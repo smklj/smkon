@@ -96,3 +96,14 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - **Validações:** os números 238/238 unitários e 19/19 SQL vêm do corpo do PR #56; não foram reexecutados nesta auditoria.
 - **Ações protegidas:** nenhuma migration de produção, alteração de Auth/segredos, merge em `main` ou deploy executado.
 - **Plano detalhado:** `docs/RELEASE_AUDIT_S4_S11_S14_SECURITY.md`.
+
+
+## 8. Decisão e plano S11 — 20/11/2026
+
+- **Provedor inicial:** Mercado Livre.
+- **Ambiente:** staging do SMKON, com usuários/dados de teste do ambiente de desenvolvedor do Mercado Livre quando disponíveis.
+- **Modo inicial:** somente leitura e dry-run; nenhuma ação de escrita no marketplace.
+- **Documento de execução:** [S11_HANDOFF.md](S11_HANDOFF.md).
+- **Estado:** decisão registrada e plano definido; conector ainda não implementado nem operacionalmente validado.
+- **Próxima etapa:** inspeção dos padrões de OAuth, ConnectionsPanel, tenancy e financeiro; adapter tipado + fixtures; testes de OAuth, paginação, idempotência, falhas e isolamento multi-tenant.
+- **Não autorizado nesta decisão:** contas reais, secrets, sincronização recorrente, migrations aplicadas, custos pagos, merge em `main` ou deploy de produção.
