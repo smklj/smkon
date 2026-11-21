@@ -215,3 +215,17 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - **Limites de segurança:** nenhuma conta conectada nesta atualização; nenhuma variável ou secret criada; nenhuma migration hospedada aplicada; nenhuma sincronização recorrente ou mutação no marketplace habilitada; nenhum merge ou deploy de produção autorizado.
 - **Estado:** planejamento e handoff documentados. O adapter, callback, persistência e refresh têm implementação no PR #57; OAuth real e operação ponta a ponta continuam pendentes. Não declarar integração operacional.
 - **Próxima ação:** quando o Owner estiver pronto, configurar o aplicativo e os secrets em Preview e executar a validação OAuth com conta de teste. Até lá, seguir com tarefas SMKON independentes da conexão externa.
+
+
+## S11 — fluxo futuro de conexão Mercado Livre registrado — 21/11/2026 UTC
+
+- **Agente:** ChatGPT
+- **Branch de documentação:** `feature/smkon-production-readiness`; **PR de implementação:** #57 (Draft, aberto, não mergeado).
+- **Decisão funcional:** manter a conexão Mercado Livre como etapa explícita e futura do SMKON, sem bloquear outras frentes. O usuário não precisa configurar o DevCenter ou fornecer credenciais nesta etapa.
+- **Fluxo planejado:** (1) preparar a experiência de conexão e estado desconectado; (2) Owner configura o aplicativo no DevCenter e cadastra variáveis exclusivamente no ambiente Preview; (3) usuário inicia “Conectar Mercado Livre” e autoriza via OAuth; (4) validar callback, state one-time, PKCE, identidade e permissões; (5) verificar tokens cifrados, persistência e refresh; (6) executar ingestão manual read-only/dry-run; (7) somente após reconciliação e autorização separada considerar sync recorrente.
+- **Critérios de produto:** exibir estados desconectado, aguardando autorização, conectado, erro/reautorização e desconectando; mostrar conta autorizada e última validação/sincronização sem expor tokens; oferecer conectar, reconectar e desconectar com confirmação adequada; erros devem ser acionáveis e não conter dados sensíveis.
+- **Critérios de segurança:** OAuth exclusivamente server-side; segredo nunca no browser, NEXT_PUBLIC, localStorage ou logs; state de uso único e PKCE; isolamento por organização e owner/admin; tokens cifrados; endpoints de leitura inicialmente; sync manual/dry-run antes de qualquer persistência financeira.
+- **Estado real:** o backend OAuth/persistência/refresh foi implementado e a validação automatizada foi fechada no CI #364 conforme `docs/INTEGRATION_STATUS.md`. A experiência de interface de conexão, OAuth real e sync ponta a ponta ainda não estão comprovados como operacionais. Não afirmar que existe botão/tela pronta.
+- **Bloqueios do Owner:** criar/selecionar app no DevCenter, cadastrar credenciais e chave de criptografia no Preview; autorizar conta de teste quando o fluxo estiver pronto. Nenhum valor secreto deve ser enviado pelo chat.
+- **Limites mantidos:** nenhuma migration hospedada, alteração de secrets, conta conectada, sync recorrente, merge ou deploy de produção nesta execução.
+- **Próxima ação:** revisar o fluxo de UI e os estados de conexão no PR #57; depois validar OAuth real em Preview com conta de teste, sem habilitar sincronização financeira automática.
