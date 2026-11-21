@@ -6,7 +6,8 @@ import { findWorkspace } from "@/lib/tenancy/workspace";
 import { decryptMercadoLivreTokens, loadMercadoLivreTokenKeyring } from "@/lib/integrations/mercado-livre/token-crypto.server";
 import { refreshMercadoLivreConnection } from "@/lib/integrations/mercado-livre/refresh";
 import { mercadoLivreGet } from "@/lib/integrations/mercado-livre/client";
-import { normalizeMercadoLivreOrder, type MercadoLivreOrderInput } from "@/lib/integrations/mercado-livre/order-snapshot";
+import { executePaginatedSync } from "@/lib/integrations/mercado-livre/sync";
+import type { MercadoLivreOrderInput } from "@/lib/integrations/mercado-livre/order-snapshot";
 import type { MercadoLivreTokenSet } from "@/lib/integrations/mercado-livre/types";
 
 export const runtime = "nodejs";
@@ -29,7 +30,7 @@ function parseTokenSet(value: string): MercadoLivreTokenSet {
 }
 
 /** Manual, bounded snapshot import. It stores no raw provider payload or PII and creates no ledger entries. */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -103,34 +104,57 @@ export async function POST() {
       return NextResponse.json({ error: "Provider identity check failed." }, { status: 409 });
     }
 
-    const page = await mercadoLivreGet<OrderSearch>(tokens.accessToken, "/orders/search", {
-      seller: connection.external_account_id,
-      limit: 50,
-      offset: 0,
-      sort: "date_desc",
-    });
-    const orders = Array.isArray(page.results) ? page.results : [];
-    const snapshots = orders.map(normalizeMercadoLivreOrder);
+    const url = new URL(request.url);
+    const maxPages = Math.min(Math.max(Number(url.searchParams.get("maxPages")) || 1, 1), 10);
+    const initialOffset = Math.max(Number(url.searchParams.get("offset")) || 0, 0);
 
-    const { data: processed, error: persistError } = await service.rpc("mercado_livre_persist_order_snapshots", {
-      p_connection_id: connection.id,
-      p_organization_id: workspace.organizationId,
-      p_orders: snapshots,
-      p_synced_at: new Date().toISOString(),
-    });
-    if (persistError || typeof processed !== "number") {
-      throw new Error("Atomic Mercado Livre order snapshot persistence failed.");
+    const syncResult = await executePaginatedSync(
+      async ({ seller, limit, offset, sort }) => {
+        return mercadoLivreGet<OrderSearch>(tokens.accessToken, "/orders/search", {
+          seller,
+          limit,
+          offset,
+          sort,
+        });
+      },
+      async (snapshots, syncedAt) => {
+        const { data: processed, error: persistError } = await service.rpc("mercado_livre_persist_order_snapshots", {
+          p_connection_id: connection.id,
+          p_organization_id: workspace.organizationId,
+          p_orders: snapshots,
+          p_synced_at: syncedAt,
+        });
+        if (persistError || typeof processed !== "number") {
+          throw new Error("Atomic Mercado Livre order snapshot persistence failed.");
+        }
+        return processed;
+      },
+      connection.external_account_id,
+      {
+        pageSize: 50,
+        maxPages,
+        initialOffset,
+        dryRun: false,
+      },
+    );
+
+    if (!syncResult.success) {
+      throw new Error(syncResult.error ?? "Paginated snapshot import encountered an error.");
     }
 
     return NextResponse.json({
-      mode: "manual_snapshot_import",
+      mode: "paginated_snapshot_import",
       accountValidated: true,
-      pageSize: orders.length,
-      providerTotal: page.paging?.total ?? null,
-      persistedCount: processed,
+      pagesProcessed: syncResult.pagesProcessed,
+      ordersFetched: syncResult.ordersFetched,
+      ordersPersisted: syncResult.ordersPersisted,
+      providerTotal: syncResult.totalProviderOrders,
+      hasMore: syncResult.hasMore,
+      nextOffset: syncResult.nextOffset,
+      checkpoints: syncResult.checkpoints,
       persisted: true,
       ledgerEntriesCreated: 0,
-      message: "Snapshots normalizados gravados atomicamente. Sem PII, sem payload bruto e sem liquidação inferida.",
+      message: "Snapshots normalizados gravados atomicamente com checkpoints. Sem PII, sem payload bruto e sem liquidação inferida.",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Mercado Livre snapshot import failed. Check connection, authorization and server configuration." }, {
