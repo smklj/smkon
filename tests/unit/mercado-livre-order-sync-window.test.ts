@@ -40,6 +40,7 @@ test("rejects partial, reversed, future and oversized date windows", () => {
 });
 
 test("offset is bounded and must align to a 50-order page", () => {
+  assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 50 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: -50 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: 51 }, now).ok, false);
   assert.equal(parseMercadoLivreOrderSyncPageRequest({ offset: MERCADO_LIVRE_ORDER_MAX_OFFSET + 50 }, now).ok, false);
