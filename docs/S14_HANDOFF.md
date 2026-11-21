@@ -87,3 +87,42 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 Com as autorizações 1–3, rodar uma execução real de `operations_review` no staging, conferir o detalhe e o consumo,
 e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com evidência obrigatória sobre o
 `draft_content` e, quando autorizado, publicação via APIs oficiais só com hash aprovado.
+
+
+## Auditoria complementar — 21/11/2026, 05:00 BRT
+
+### Estado GitHub e integração
+
+- Etapas S14 1–9 permanecem integradas na branch `feature/smkon-production-readiness` pelos PRs #35–#42 e #46; conferência atual: todos fechados e mergeados.
+- O PR #58 continua aberto/Draft. Head observado: `8f3b5f97428176e6fabc31536df9c00ec0286d26`; base observado: `7ab9b864336b822cb6b86892a6b96f109b9b715d`. A comparação está **divergida: 19 commits à frente e 10 atrás**, `mergeable=false`. A divergência veio de avanços recentes da integração após o merge-base `011accdb`; não forçar merge/rebase.
+- Para remover a divergência sem transportar os commits alheios do branch antigo, a correção determinística de `run.ts` foi portada para um branch novo baseado no SHA atual da integração: `fix/s14-deadline-timeout-sync-20261121`. Este branch contém a mesma correção de timeout; aguarda CI e revisão num PR separado.
+
+### CI e Preview
+
+- CI #44878822439 no head antigo `8f3b5f97`: **success** nos dois jobs. Quality: audit de dependências, typecheck, lint, unit tests e build. Database: migrations e SQL tests.
+- Check Vercel para esse SHA: **success**; deployment Preview READY: https://smkon-ncou79p43-smkon.vercel.app.
+- Playwright #44868983047 terminou **success**, mas foi executado no commit anterior `d4055dae`, não no SHA `8f3b5f97`. Não atribuir esse E2E ao head atual; repetir no Preview do branch sincronizado quando disponível.
+
+### Vercel / AI Gateway
+
+- Variáveis não secretas observadas em Preview e Production: `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5`, `AGENT_EXECUTOR_ENABLED=true`.
+- `CRON_SECRET` está cadastrado como sensitive nos dois ambientes; valor não lido e comprimento mínimo de 32 caracteres não validado. `SUPABASE_SECRET_KEY` não aparece no projeto Vercel. `AI_GATEWAY_API_KEY` ausente é esperado no modo OIDC.
+- O catálogo atual do AI Gateway contém `anthropic/claude-haiku-5.5` com preço base de US$ 0,10/1M tokens de entrada e US$ 0,50/1M tokens de saída até 100k tokens; os valores locais em `model-pricing.ts` coincidem para essa faixa.
+- Budget do projeto e budgets default do AI Gateway: **nenhum**. Uso agregado do projeto nos últimos 7 dias: **zero requests, tokens e custo**. Não há chamada real comprovada.
+- O código recebe o token OIDC pelo header `x-vercel-oidc-token` e envia-o como Bearer ao Gateway. A documentação oficial da Vercel confirma que Functions recebem esse header; ver https://vercel.com/docs/oidc e https://vercel.com/docs/ai-gateway/authentication-and-byok.
+- O teto interno é **suave**: `runWorkerTick` relê o gasto antes de cada reserva, mas não antes de cada chamada do modelo; a execução atual pode fazer Planner e Verifier mesmo se o gasto cruzar o teto na primeira chamada. Além disso, uma interrupção após resposta 2xx e antes da RPC de registro pode deixar custo sem linha. O budget externo é bloqueador para o primeiro teste real.
+- `vercel.json` agenda `GET /api/agents/worker` diariamente às 11:17 UTC. Cron Vercel não executa em Preview; o cron de produção só passa a existir com a rota publicada em Production.
+
+### Supabase — leitura somente
+
+- Staging `xoyasrizivadxnpmzzno`: 26 migrations; `agent_runs=85`, todas com status `killed`; `agent_steps=0`; `agent_model_usage=0`; `content_items` com `agent_run_id` = 0. `agent_settings.kill_switch=false`, limites atuais 500 execuções/dia e 12 passos/execução. `agent_tool_grants=0`, portanto nenhuma ferramenta read/draft está liberada no workspace inspecionado.
+- Production `hpplboyysmfcjsnjrdmw`: 20 migrations; `agent_runs=0`, `agent_steps=0`, `agent_model_usage=0`. As três migrations S14 (`agent_draft_content`, `agent_claim_queue`, `agent_model_usage`) estão presentes nos dois ambientes; não foi aplicada migration nesta auditoria.
+- ACL staging de `agent_model_usage`: RLS habilitado; anon sem SELECT e sem EXECUTE da RPC de registro; authenticated SELECT sob policy; service_role sem INSERT direto e com EXECUTE apenas pela RPC de registro. A tabela tem zero linhas.
+
+### Critérios e bloqueios
+
+- **Implementado:** etapas S14 1–9 e UI de detalhe integradas na branch de preparação; correção determinística de timeout portada para branch baseada no head atual da integração.
+- **Validado:** CI #44878822439 e check Vercel do head antigo passaram. E2E #44868983047 passou no SHA anterior; novo E2E ainda precisa ser executado no Preview do branch sincronizado.
+- **Não operacional:** faltam `SUPABASE_SECRET_KEY` de staging no Preview, budget externo do AI Gateway, confirmação do comprimento de `CRON_SECRET` e grants de ferramentas no workspace. Nenhuma chamada real foi feita; consumo permanece zero.
+- Antes do smoke test: Owner deve cadastrar a secret de staging como sensitive em Preview, criar budget externo baixo para o projeto, validar `CRON_SECRET` (32+ caracteres) sem compartilhar o valor e conceder somente as ferramentas necessárias a `operations_review`. Depois executar uma única run e conferir resposta do Gateway, passos, status final e registros de consumo (plan/verify) em `agent_model_usage`.
+- Não houve merge em `main`, alteração de secrets, mudança de configuração Production, migration remota ou escrita de dados. Manter Production sem release S14 até concluir os gates.
