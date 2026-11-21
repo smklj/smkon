@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { assertMercadoLivreManager, storeMercadoLivreCredentials } from "@/lib/integrations/mercado-livre/repository";
 import { consumeMercadoLivreOAuthAttempt } from "@/lib/integrations/mercado-livre/oauth-attempts";
 import { decryptMercadoLivreTokens, encryptMercadoLivreTokens, loadMercadoLivreTokenKeyring } from "@/lib/integrations/mercado-livre/token-crypto.server";
-import { exchangeAuthorizationCode } from "@/lib/integrations/mercado-livre/oauth";
+import { exchangeAuthorizationCode } from "@/lib/integrations/mercado-livre/oauth";\nimport { mercadoLivreGet } from "@/lib/integrations/mercado-livre/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
