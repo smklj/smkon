@@ -215,3 +215,17 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - O teste S11 de offset foi ajustado para exigir a janela fixa em páginas posteriores. A falha timing-sensitive do teste S14 observada em #431 não se repetiu em #435.
 - PR #60 continua Draft porque o check Vercel falha por `api-deployments-free-per-day`; não existe Preview da paginação. O Preview READY `af27230` é da versão anterior e não valida a UI nova.
 - Nenhum merge da paginação, OAuth real ou alteração de produção foi feito.
+
+
+## S11 — estado consolidado após checkpoint durável (21/11/2026)
+
+- PR #57 está fechado/mergeado por squash em feature/smkon-production-readiness (commit 8c73cbc); isso não é merge em main.
+- PR #60 continua Draft na branch feat/s11-manual-history-pagination. Implementa paginação manual e cursor durável server-side com lease, retomada e persistência/checkpoint atômicos.
+- CI #456 passou no código head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e. O head documental mais recente está em nova execução CI #462; não declarar verde até concluir.
+- Migration 20261121180000_mercado_livre_order_sync_state aplicada em smkon-staging e registrada como 20261121090433. Quatro testes SQL S11 foram executados em rollback-only no Staging sem exceções.
+- A tabela de checkpoint tem RLS; anon/authenticated não têm SELECT; service_role tem SELECT. As três RPCs novas são SECURITY DEFINER, search_path vazio e EXECUTE somente para service_role. Zero checkpoints reais porque nenhuma conta está conectada.
+- Security Advisor mantém INFO de RLS enabled/no policy para tabelas secretas server-side; WARNs de SECURITY DEFINER/leaked-password são preexistentes. Performance Advisor ainda aponta quatro FKs de S15/S10, não do S11.
+- Vercel tem Preview READY apenas para commit intermediário 98ca20c, não para o head atual; quota api-deployments-free-per-day impede novo Preview.
+- Vercel não possui variáveis MERCADO_LIVRE_* nem SUPABASE_SECRET_KEY. OAuth real e leitura com conta de teste não foram executados.
+- Produção: 20 migrations, zero tabelas/funções S11, sem alterações. Backup/restauração não puderam ser comprovados com as ferramentas disponíveis.
+- Pendências: divisão automática de janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, reconciliação de pagamentos/taxas/frete/estornos/provisões/repasses e promoção isolada para main. Não declarar o conector financeiro operacional.
