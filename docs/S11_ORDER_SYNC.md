@@ -149,3 +149,16 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - Produção continua com 20 migrations e sem objetos S11. Nenhuma migration/deploy de produção foi executado.
 - Preview do head continua bloqueado por HTTP 402 api-deployments-free-per-day; o Preview READY mais recente é do commit intermediário 5809300, anterior à rota/UI do checkpoint. Credenciais Mercado Livre e SUPABASE_SECRET_KEY continuam ausentes.
 - Pendências: dividir automaticamente janelas acima do offset 10.000, sync incremental por date_last_updated, OAuth real, conciliação financeira e backup/restauração comprováveis.
+
+
+## Consistência da paginação do provedor — 21/11/2026
+
+- A rota `POST /api/integrations/mercado-livre/sync` valida a resposta de `GET /orders/search` por meio de `parseMercadoLivreOrderSearchPage` antes de normalizar ou persistir qualquer snapshot.
+- `results` é obrigatório e precisa ser um array com no máximo 50 objetos de pedido válidos. Resposta ausente, tipo incorreto, item malformado ou página maior que o limite é rejeitada.
+- Quando `paging.total` existe, ele precisa ser um inteiro seguro não negativo. O intervalo `offset + results.length` não pode ultrapassar o total. Página vazia/curta enquanto o total ainda indica pedidos pendentes é tratada como inconsistente; não é interpretada como fim do histórico.
+- A rejeição acontece antes da RPC `mercado_livre_persist_order_sync_page`. O fluxo de erro existente chama `mercado_livre_release_order_sync` com a lease ativa; o checkpoint não avança e permanece retomável.
+- Testes unitários cobrem results ausente/não-array, itens malformados, mais de 50 resultados, total inválido, página vazia antes do total, página parcial com itens restantes, página final curta consistente e continuação sem total.
+- O teste SQL de estado agora verifica explicitamente que liberar a lease limpa o lease e mantém `next_offset` inalterado.
+- Implementação no PR #60: helper, rota e testes nos commits `e4dc8e9`, `c947900`, `b3ae136`, `b3a27ee`, `c8ddc0f`, `01d04d8` e `8671491`. CI #499 passou nos dois jobs no head `86714917f814df7ada36d5c21a5aa04526d2c19c`.
+- O Preview do head exato ainda não existe; a listagem da Vercel retorna zero deployments para esse SHA. E2E Playwright não foi disparado, pois o workflow depende de um Preview concluído ou de dispatch manual, e não há autorização de deploy nem ação de dispatch disponível nesta conexão.
+- Nenhuma migration, merge do PR #60, deploy ou alteração em produção foi executada. PR #57 não foi reaberto nem mergeado novamente.
