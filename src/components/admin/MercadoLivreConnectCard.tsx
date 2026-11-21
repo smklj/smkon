@@ -19,8 +19,8 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("mercadoLivre") === "connected") {
-      setMessage("Conta Mercado Livre conectada com sucesso.");
       window.history.replaceState({}, "", window.location.pathname);
+      queueMicrotask(() => setMessage("Conta Mercado Livre conectada com sucesso."));
     }
   }, []);
 

@@ -14,6 +14,7 @@ as $$
 declare
   v_connection_id uuid;
   v_item jsonb;
+  v_key_count integer;
   v_external_id text;
   v_status text;
   v_currency text;
@@ -33,10 +34,11 @@ begin
     raise exception 'invalid_connection_context' using errcode = '22023';
   end if;
 
-  if p_orders is null
-     or jsonb_typeof(p_orders) <> 'array'
-     or jsonb_array_length(p_orders) > 50 then
+  if p_orders is null or jsonb_typeof(p_orders) <> 'array' then
     raise exception 'invalid_order_batch' using errcode = '22023';
+  end if;
+  if jsonb_array_length(p_orders) > 50 then
+    raise exception 'order_batch_limit_exceeded' using errcode = '22023';
   end if;
 
   if p_synced_at is null or p_synced_at > now() + interval '5 minutes' then
@@ -60,9 +62,13 @@ begin
   for v_item in
     select value from jsonb_array_elements(p_orders)
   loop
+    if jsonb_typeof(v_item) <> 'object' then
+      raise exception 'invalid_order_snapshot_shape' using errcode = '22023';
+    end if;
+
     -- Strict allowlist: the RPC rejects raw provider payloads and any PII fields.
-    if jsonb_typeof(v_item) <> 'object'
-       or jsonb_object_length(v_item) <> 11
+    select count(*) into v_key_count from jsonb_object_keys(v_item);
+    if v_key_count <> 11
        or exists (
          select 1
          from jsonb_object_keys(v_item) as item_key(key)
@@ -95,7 +101,7 @@ begin
     if v_external_id is null or v_external_id !~ '^[0-9]{1,40}$' then
       raise exception 'invalid_external_order_id' using errcode = '22023';
     end if;
-    if v_status not in ('pending', 'paid', 'fulfilled', 'cancelled', 'refunded', 'partially_refunded') then
+    if v_status is null or v_status not in ('pending', 'paid', 'fulfilled', 'cancelled', 'refunded', 'partially_refunded') then
       raise exception 'invalid_order_status' using errcode = '22023';
     end if;
     if v_currency is null or v_currency !~ '^[A-Z]{3}$' then

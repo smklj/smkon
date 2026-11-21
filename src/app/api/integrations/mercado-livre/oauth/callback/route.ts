@@ -23,8 +23,6 @@ export async function GET(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: "Authentication required; restart connection." }, { status: 401 });
 
-    // Check server configuration before consuming one-time state, so a transient
-    // deployment configuration issue does not force the user to restart OAuth.
     const clientId = process.env.MERCADO_LIVRE_CLIENT_ID;
     const clientSecret = process.env.MERCADO_LIVRE_CLIENT_SECRET;
     const redirectUri = process.env.MERCADO_LIVRE_REDIRECT_URI;
@@ -32,7 +30,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Mercado Livre OAuth is not configured." }, { status: 503 });
     }
 
-    // Consume state atomically even when the provider returns an explicit denial.
     const attempt = await consumeMercadoLivreOAuthAttempt(state, user.id);
     if (!attempt) return NextResponse.json({ error: "OAuth state expired, invalid or already used." }, { status: 400 });
     if (providerError) {
@@ -59,6 +56,11 @@ export async function GET(request: Request) {
     const verifier = decryptMercadoLivreTokens(attempt.encryptedVerifier, context, keyring);
     const tokenSet = await exchangeAuthorizationCode({ clientId, clientSecret, redirectUri }, code, verifier);
 
+    // Validate the provider identity before persisting credentials or marking the connection active.
+    const profile = await mercadoLivreGet<{ id: number }>(tokenSet.accessToken, "/users/me");
+    if (String(profile.id) !== tokenSet.userId) {
+      return NextResponse.json({ error: "Authorized Mercado Livre identity could not be verified." }, { status: 409 });
+    }
     if (connection.external_account_id && String(connection.external_account_id) !== tokenSet.userId) {
       return NextResponse.json({ error: "Authorized Mercado Livre account does not match this connection." }, { status: 409 });
     }
@@ -80,6 +82,7 @@ export async function GET(request: Request) {
       .from("source_connections")
       .update({
         external_account_id: tokenSet.userId,
+        display_name: `Mercado Livre · ${profile.id}`,
         status: "connected",
         granted_scopes: tokenSet.scopes,
         last_error_code: null,
@@ -90,11 +93,10 @@ export async function GET(request: Request) {
       .eq("provider", "mercado_livre")
       .eq("domain", "owned_sales");
     if (updateError) {
-      // Credentials are stored securely, but the connection remains non-operational until metadata is reconciled.
       return NextResponse.json({ error: "Tokens were stored but connection metadata could not be updated. Contact an administrator." }, { status: 500 });
     }
 
-    return NextResponse.json({ connected: true, provider: "mercado_livre", accountId: tokenSet.userId }, {
+    return NextResponse.redirect(new URL("/admin?mercadoLivre=connected", url.origin), {
       headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
     });
   } catch {
