@@ -119,7 +119,7 @@ As versões diferem por ambiente, mas os três nomes lógicos estão presentes n
 ### Supabase e consumo
 
 - `agent_model_usage` existe em staging e produção; ambas as tabelas têm **0 registros** e custo registrado **US$ 0**.
-- Staging contém 78 execuções, todas encerradas com `kill_switch`, e 0 linhas em `agent_steps`; produção contém 0 execuções. Isso não é evidência de execução de modelo.
+- Staging contém 81 execuções, sem linhas em `agent_steps`; produção contém 0 execuções. Isso não é evidência de execução de modelo.
 - A verificação de privilégios passou nos dois bancos: RLS habilitado; anon sem SELECT e sem EXECUTE das RPCs; authenticated com SELECT sob policy de membership; somente `service_role` executa `agent_record_model_usage` e `agent_model_spend_since`; INSERT direto por `service_role` continua revogado.
 - Nenhuma migration foi aplicada nesta auditoria; os nomes das três migrations S14 já estão presentes nos dois ambientes.
 
@@ -146,3 +146,37 @@ As versões diferem por ambiente, mas os três nomes lógicos estão presentes n
 Com as autorizações 1–3, rodar uma execução real de `operations_review` no staging, conferir o detalhe e o consumo,
 e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com evidência obrigatória sobre o
 `draft_content` e, quando autorizado, publicação via APIs oficiais só com hash aprovado.
+
+
+## Auditoria complementar — 21/11/2026, 03:00 BRT
+
+### Evidência atualizada de CI, Preview e E2E
+
+- PR #58 permanece **open / Draft**, com base em `feature/smkon-production-readiness`; a branch `fix/s14-deadline-timeout-classification` está 12 commits à frente e 0 atrás da base.
+- CI `44868819971` terminou **success** nos dois jobs: typecheck/lint/unit/build e migrations/SQL.
+- E2E `44868983047` terminou **success** em Playwright contra staging isolado.
+- Preview do commit `d4055dae8ab3c7c1137aaf1ddebae2ea8a9120dc` permanece **READY**: https://smkon-rfqq1r07k-smkon.vercel.app.
+- A correção de timeout é a única alteração de código do PR #58; os commits seguintes desta branch são documentais.
+
+### Revalidação de Vercel AI Gateway e variáveis
+
+- Configuração não secreta presente em Preview e Production: provider `vercel-ai-gateway`, modelo `anthropic/claude-haiku-5.5`, autenticação `oidc`, `AGENT_EXECUTOR_ENABLED=true` e teto interno `AGENT_MONTHLY_BUDGET_USD=5`.
+- `CRON_SECRET` está cadastrado como *sensitive* nos dois ambientes. O valor não foi lido; portanto, seu comprimento não foi validado. O código rejeita valores menores que 32 caracteres.
+- `SUPABASE_SECRET_KEY` não está cadastrado no projeto Vercel. `AI_GATEWAY_API_KEY` também não está cadastrado; isso é esperado para o modo OIDC selecionado.
+- Consulta de budgets do AI Gateway: nenhum budget específico e nenhum default ativo retornado. Consulta agregada de uso do projeto nos últimos 7 dias: nenhuma linha (sem custo, requests ou tokens registrados).
+- Consulta de runtime logs do Preview para `/api/agents/worker` nos últimos 30 minutos: nenhum log encontrado. Isso não substitui a evidência agregada do Gateway nem comprova uma execução.
+
+### Revalidação Supabase (somente leitura)
+
+| Ambiente | Migrations registradas | `agent_runs` | `agent_steps` | `agent_model_usage` | Rascunhos ligados a agentes |
+|---|---:|---:|---:|---:|---:|
+| Staging | 25 | 81 | 0 | 0 | 0 |
+| Production | 20 | 0 | 0 | 0 | 0 |
+
+As três migrations lógicas do S14 (`agent_draft_content`, `agent_claim_queue`, `agent_model_usage`) continuam presentes em ambos. Nenhuma migration ou escrita de dados foi executada nesta auditoria.
+
+### Decisão operacional
+
+- **Não executar smoke test real ainda:** falta `SUPABASE_SECRET_KEY` em Preview; não existe budget externo do AI Gateway. A ausência de `AI_GATEWAY_API_KEY` não é bloqueio isolado porque OIDC está selecionado, mas ainda não há chamada OIDC real comprovada.
+- **Não liberar Production:** `AGENT_EXECUTOR_ENABLED=true` está configurado em Production, porém a rota S14 não está em `main`. Antes de qualquer release, o Owner deve desligar a flag em Production e só reabilitá-la após secret, budget externo e smoke test controlado. Nenhum deploy de produção foi feito.
+- Cron declarado no repositório: `GET /api/agents/worker` diariamente às 11:17 UTC. Cron não executa em Preview; não há evidência de disparo em Production porque S14 não está na `main`.
