@@ -111,7 +111,9 @@ As versões diferem por ambiente, mas os três nomes lógicos estão presentes n
 - `CRON_SECRET` existe como variável *sensitive* nos dois ambientes; o valor foi mantido oculto e seu comprimento não foi validado.
 - `SUPABASE_SECRET_KEY` não aparece entre as variáveis do projeto. `AI_GATEWAY_API_KEY` também não aparece, o que é coerente com o modo OIDC escolhido.
 - A documentação oficial da Vercel confirma que Functions recebem o token OIDC no header `x-vercel-oidc-token`; o worker lê esse header. Isso valida o mecanismo documentado, mas não comprova que uma chamada real do deployment tenha funcionado.
-- Nenhum budget específico do projeto foi encontrado no AI Gateway. A consulta de uso do projeto nos últimos 7 dias retornou zero linhas.
+- Nenhum budget específico do projeto nem default foi encontrado no AI Gateway. A consulta de uso do projeto nos últimos 7 dias retornou zero linhas.
+- **Risco de custo:** o adaptador grava `agent_model_usage` depois de receber a resposta 2xx. Se a gravação falhar, a chamada ao provedor já pode ter sido cobrada e ficar sem registro; o erro interrompe a execução, mas não desfaz o custo. Por isso o budget externo é requisito antes de qualquer execução real.
+- `AGENT_EXECUTOR_ENABLED=true` já está configurado em Production. Hoje isso é inerte porque S14 ainda não está em `main`; antes de qualquer release, manter a flag Production desligada até concluir secrets, budget externo e smoke test controlado.
 
 ### Supabase e consumo
 
