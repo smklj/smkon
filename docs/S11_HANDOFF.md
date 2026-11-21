@@ -205,3 +205,12 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 4. Só então adicionar rotas OAuth e testes de callback sem conectar conta até o Owner fornecer o cadastro de app e aprovar a configuração de credenciais.
 
 **Validação atual:** código commitado na branch; testes ainda não executados; nenhum acesso externo ao Mercado Livre foi realizado.
+
+
+### Correção após primeira execução do CI — 21/11/2026 UTC
+
+- Primeira execução: typecheck e lint passaram; testes unitários falharam em um único arquivo por resolução ESM dos imports sem extensão `.ts`. O restante dos 238 testes passou; testes de migrations/SQL passaram.
+- Corrigido o teste para usar extensões explícitas, seguindo o padrão já utilizado por `tests/unit/tenancy-members.test.ts`.
+- Revisão do adapter também encontrou e corrigiu a normalização da lista de scopes OAuth (separação por espaços) e passou a exigir `token_type=bearer` na resposta.
+- Commit de correção mais recente: `63eee98244f57772bd1e08f8a0e46fdf39495d52`.
+- **Revalidação:** aguardando workflow para o head atualizado; não declarar CI verde até consultar a nova execução.
