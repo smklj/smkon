@@ -1227,3 +1227,602 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
   cursor: pointer;
 }
 
+/* ==========================================================================
+   Frente D (S21) & Frente E (S25) — Banners, Mockups 3D & Fábrica de Infoprodutos
+   ========================================================================== */
+.banner-mockup-section {
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.tab-pill-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-pill-group button {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-pill-group button:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.tab-pill-group button.active {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* Mockup 3D Stage */
+.mockup-studio-grid,
+.banner-studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 28px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .mockup-studio-grid,
+  .banner-studio-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mockup-preview-stage,
+.banner-preview-stage {
+  min-height: 420px;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.03) 0%, transparent 70%), #0d0d10;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 3D Transform Object */
+.mockup-3d-item {
+  position: relative;
+  width: 240px;
+  height: 330px;
+  border-radius: 4px 16px 16px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mockup-3d-item:hover {
+  transform: rotateY(-14deg) rotateX(4deg) scale(1.03) !important;
+}
+
+.mockup-spine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transform-origin: left;
+  transform: rotateY(90deg);
+  border-radius: 3px 0 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.spine-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mockup-cover-face {
+  position: absolute;
+  inset: 0;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.mockup-brand-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mockup-face-title {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.25;
+  margin: 12px 0 6px;
+}
+
+.mockup-face-subtitle {
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.mockup-face-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mockup-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.mockup-controls-card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.controls-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+/* Banner Promocional */
+.promo-banner-card {
+  background: #18181b;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.promo-banner-card.feed-square {
+  width: 320px;
+  height: 320px;
+}
+
+.promo-banner-card.story-vertical {
+  width: 250px;
+  height: 420px;
+}
+
+.banner-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.banner-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.banner-brand {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.banner-content-body {
+  margin: auto 0;
+}
+
+.banner-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+  margin: 0 0 8px;
+}
+
+.banner-desc {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.4;
+  margin: 0 0 14px;
+}
+
+.banner-price-tag {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.original-price {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.sale-price {
+  font-size: 22px;
+  font-weight: 900;
+  color: #f59e0b;
+}
+
+.installments-text {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.story-poll-sticker {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 12px;
+}
+
+.poll-question {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.poll-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.poll-opt {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Fábrica de Infoprodutos */
+.infoproduct-factory-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  margin-top: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .infoproduct-factory-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.blueprint-selector-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blueprint-selector-pane h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.blueprint-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.blueprint-card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blueprint-card:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.blueprint-card.active {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.blueprint-tier-badge {
+  font-size: 9px;
+  font-weight: 800;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.blueprint-card strong {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.blueprint-card p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.blueprint-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  color: var(--text-2);
+}
+
+.blueprint-detail-pane {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.blueprint-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+
+.niche-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.blueprint-detail-head h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 4px 0;
+  color: var(--text);
+}
+
+.blueprint-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.blueprint-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.blueprint-sales-box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.blueprint-sales-box strong {
+  font-size: 12px;
+  color: #f59e0b;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.blueprint-sales-box p {
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 0 0 10px;
+  font-style: italic;
+}
+
+.checkout-cta-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.checkout-cta-box strong {
+  margin: 0;
+  color: #10b981;
+}
+
+.blueprint-chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.blueprint-chapters-list h4 {
+  font-size: 13px;
+  margin: 0;
+  color: var(--text);
+}
+
+.chapter-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.chap-title-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.chap-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: #f59e0b;
+  text-transform: uppercase;
+}
+
+.chap-title-line strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.chap-hook {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 8px;
+  font-style: italic;
+}
+
+.chap-action-pills {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chap-action-pills li {
+  font-size: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--text-2);
+}
+
+/* Modal de Prévia */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-container-large {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 860px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h3 {
+  font-size: 15px;
+  margin: 0;
+  color: var(--text);
+}
+
+.modal-close-btn {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.modal-close-btn:hover {
+  color: var(--text);
+}
+
+.modal-body-frame {
+  flex: 1;
+  background: #27272a;
+}
+
+.infoproduct-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+
