@@ -1,6 +1,6 @@
 /**
  * S13 — execuções de agentes (Planner → Executor → Verifier). Espelha a migration
- * 20261119020000_agent_runs: o banco é a fonte da verdade; aqui ficam rótulos e validação de formulário.
+ * 20261119020000_agent_runs: o banco é a fonte da verdade; aqui ficam tipos, listas fechadas e rótulos.
  */
 
 export const AGENT_KINDS = ["product_research", "content_drafting", "operations_review"] as const;
@@ -80,23 +80,10 @@ export function isActive(status: RunStatus): boolean {
   return ACTIVE_STATUSES.includes(status);
 }
 
-/** Valida o formulário de nova execução. Lança Error com mensagem segura para a tela. */
-export function parseRunInput(agent: string, goal: string, maxSteps: string, limit: number): { agent: AgentKind; goal: string; maxSteps: number } {
-  if (!isAgentKind(agent)) throw new Error("Escolha um agente da lista.");
-  const trimmed = goal.trim();
-  if (trimmed.length < 3 || trimmed.length > 2000) throw new Error("Descreva o objetivo em 3 a 2000 caracteres.");
-  const steps = Number(maxSteps);
-  if (!Number.isInteger(steps) || steps < 3 || steps > limit) throw new Error(`Passos por execução: de 3 a ${limit}.`);
-  return { agent, goal: trimmed, maxSteps: steps };
-}
-
-/** Valida os limites do workspace (mesmas faixas das constraints do banco). */
-export function parseLimits(maxRuns: string, maxSteps: string): { maxRunsPerDay: number; maxStepsPerRun: number } {
-  const runs = Number(maxRuns);
-  const steps = Number(maxSteps);
-  if (!Number.isInteger(runs) || runs < 1 || runs > 500) throw new Error("Execuções por dia: de 1 a 500.");
-  if (!Number.isInteger(steps) || steps < 3 || steps > 50) throw new Error("Passos por execução: de 3 a 50.");
-  return { maxRunsPerDay: runs, maxStepsPerRun: steps };
-}
+/**
+ * Validação dos formulários: vive em schema.ts (S4). Reexportada aqui porque
+ * tests/unit/agents.test.ts importa de types.ts (testes não são editados).
+ */
+export { parseLimits, parseRunInput } from "./schema.ts";
 
 export const DEFAULT_AGENT_SETTINGS = { kill_switch: false, kill_reason: null, max_runs_per_day: 20, max_steps_per_run: 12 } as const;

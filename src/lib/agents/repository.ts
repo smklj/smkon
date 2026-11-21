@@ -1,8 +1,17 @@
-import { applyKeyset, decodeCursor, toPage } from "@/lib/pagination/keyset";
-import type { createClient } from "@/lib/supabase/server";
-import { isMissingSchemaObject } from "@/lib/tenancy/members";
-import type { UsageRow } from "./detail";
-import { AGENT_RUNS_KEYSET, AGENT_RUNS_PAGE_SIZE } from "./runs-page";
+/**
+ * Agentes · repository: acesso a dados (S4; antes server.ts, sem mudança de consulta).
+ * Leituras sob RLS com filtro explícito por `organization_id`; escritas só por RPC
+ * (agent_start_run, agent_cancel_run, agent_set_kill_switch, agent_set_tool,
+ * agent_update_limits), que conferem papel, kill switch e limites no banco.
+ * O executor/worker usa a sua própria interface (executor/rpc.ts), não este arquivo.
+ *
+ * Imports relativos com `.ts` e cliente só como tipo: carregável em `node --test`.
+ */
+import { applyKeyset, decodeCursor, toPage } from "../pagination/keyset.ts";
+import type { createClient } from "../supabase/server.ts";
+import { isMissingSchemaObject } from "../tenancy/members.ts";
+import type { UsageRow } from "./detail.ts";
+import { AGENT_RUNS_KEYSET, AGENT_RUNS_PAGE_SIZE } from "./runs-page.ts";
 import {
   DEFAULT_AGENT_SETTINGS,
   isAgentTool,
@@ -10,9 +19,9 @@ import {
   type AgentKind,
   type AgentTool,
   type RunStatus,
-} from "./types";
+} from "./types.ts";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export type AgentSettings = {
   kill_switch: boolean;
@@ -53,7 +62,6 @@ export type AgentOverview = {
   nextCursor: string | null;
   runsLast24h: number;
 };
-
 
 export type LoadAgentsOptions = { cursor?: string | null; pageSize?: number };
 

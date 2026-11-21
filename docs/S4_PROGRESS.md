@@ -15,7 +15,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2d | Financeiro (comissões) | ✅ feito | #65 |
 | 2e | Tenancy (workspace, membros, convites) | ✅ feito | #68 |
 | 2f | Audiência / CRM | ⏳ | — |
-| 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
+| 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ✅ feito | (PR a abrir) |
 | 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ⏳ | — |
 
 ## 1. Padrão por módulo
@@ -107,3 +107,12 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **275/275** (260 anteriores sem edição + 15 novos em `tenancy-domain.test.ts` e `invitations-domain.test.ts`, com cliente falso conferindo filtros por usuário/workspace, RPCs, hash do token e classificação de erros), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
 - Observação: o teste do S14 "prazo total: chamada lenta perto do fim do prazo falha com worker_timeout" voltou a falhar de forma intermitente (1 de 3 execuções; sensível a tempo sob carga). É tratado pelo PR #64 do S14, fora do escopo do S4.
 - PR #65 (2d) mergeado em 21/11 com CI verde (typecheck/lint/build, SQL e "Playwright · Staging" run 44901601605 no head `fc240e7`).
+
+### Etapa 2g — agentes (21/11/2026)
+
+- `src/lib/agents/`: `schema.ts` (novo: `parseRunInput` e `parseLimits` movidos de `types.ts`, agora lançando `ValidationError`, subclasse de `Error`, com as mesmas mensagens; `parseRunForm`, `stepLimitFromForm`, `parseLimitsForm`, `parseCancelForm`, `parseKillSwitchForm`, `parseToolForm` com a mesma lógica que estava inline nas Server Actions; UUID estrito via `validation/fields`). `types.ts` reexporta `parseRunInput`/`parseLimits` porque `tests/unit/agents.test.ts` importa de lá.
+- `server.ts` → `repository.ts` (renomeado, sem mudança de consulta nem de RPC; imports relativos com `.ts`, cliente só como tipo, `SupabaseClient` exportado). `service.ts` (novo): `canOperateRuns`/`canManageTools` (owner, admin), `canControlAgents` (owner), `queueRun`, `cancelAgentRun`, `switchAgents`, `setToolGrant`, `saveLimits`, e reexport de `loadAgents`/`loadRunDetail`.
+- `agentes/actions.ts`, `agentes/page.tsx` e `agentes/[id]/page.tsx` usam schema/service; mesma ordem por ação (iniciar: auth → permissão → validação; cancelar, kill switch, ferramenta e limites: validação → auth → permissão), mesmas mensagens e mesmos logs (`agents.start`, `agents.cancel`, `agents.kill_switch`, `agents.tool`, `agents.limits`). As páginas usam as mesmas regras de papel do service (tabela-verdade idêntica à comparação inline anterior). `findWorkspace` vem de `@/lib/tenancy/service`.
+- Executor e worker (`executor/*`, `worker/*`) **não** foram tocados: são o escopo ativo do S14 (PR #71) e já têm a sua interface de dados (`AgentRpcClient`). Decisão sobre os tipos: as funções `agent_record_step`/`agent_finish_run`/`agent_fail_run` continuam fora de `database.types.ts`, porque só o worker (service_role) as chama por essa interface própria e o arquivo compartilhado só deve ser regerado quando o staging estiver em dia com as migrations.
+- Nenhum agente publica: a camada só enfileira, cancela e configura; `draft_content` continua só propondo rascunho para aprovação humana da versão exata.
+- Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **284/284** (275 da integração sem edição + 9 novos em `agents-domain.test.ts`: reexport, `ValidationError`, teto de passos, cancelamento, kill switch, allowlist/limites, tabela de papéis, argumentos das RPCs com cliente falso, propagação de erro), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
