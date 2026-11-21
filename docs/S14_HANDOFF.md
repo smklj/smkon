@@ -87,3 +87,29 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 Com as autorizações 1–3, rodar uma execução real de `operations_review` no staging, conferir o detalhe e o consumo,
 e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com evidência obrigatória sobre o
 `draft_content` e, quando autorizado, publicação via APIs oficiais só com hash aprovado.
+
+
+## Reconciliação S14 — 21/11/2026, 08:57 BRT
+
+Esta seção registra a auditoria desta rodada e supersede estados anteriores conflitantes.
+
+### Git e CI
+- A PR #64 (head `06a77540e7c1c0c12feefb406d50d5257a874d29`) está aberta em Draft. A comparação real com a head atual da integração `b08654bbc47e537fe3e7ddf848d8ca1e891644ac` retorna `diverged`, 16 commits à frente e 5 atrás; `mergeable=false`. O corpo anterior da PR dizia mergeable, mas esse estado ficou obsoleto após novos merges na integração.
+- CI #44897554015 terminou `success` nos dois jobs: dependency audit, typecheck, lint, testes unitários, build, migrations e testes SQL. Esse run valida o head #64 acima, não a branch de rebase criada nesta rodada.
+- A Vercel registrou na PR #64 erro `api-deployments-free-per-day` (limite diário de deployments). Não há deployment Preview atribuível ao head da PR #64. O Preview anterior da PR #61 não valida este código.
+- Foi criada a branch `fix/s14-timeout-ledger-rebase-20261121-0857` a partir da head atual da integração para reaplicar somente os três arquivos de código/teste da correção, evitando carregar os cinco commits não relacionados. O PR desta branch deve ser validado pelo seu próprio CI e Preview antes de substituir a #64.
+
+### Auditoria de ambiente
+- Vercel project `smkon`: `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5`; `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `CRON_SECRET` está cadastrado como sensitive para Preview e Production; o valor permanece redacted e o comprimento/whitespace não foi validado. `SUPABASE_SECRET_KEY` não aparece no inventário de variáveis. A ausência de `AI_GATEWAY_API_KEY` é compatível com o modo OIDC, mas o token não foi observado em runtime autenticado.
+- AI Gateway: nenhum budget individual e nenhum default; uso do projeto nos últimos 7 dias sem linhas de requests/tokens/custo. Não há evidência de chamada real.
+- Staging Supabase `xoyasrizivadxnpmzzno`: 28 migrations; 96 `agent_runs`, todas `killed`; 0 `agent_steps`, 0 `agent_model_usage`, 0 `agent_tool_grants` e 0 conteúdos ligados a runs.
+- Production Supabase `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, steps, usage, grants e conteúdos ligados a runs. As migrations S14 de draft, claim queue e model usage estão registradas nos dois históricos. Nenhuma migration remota foi aplicada nesta auditoria.
+- Os zeros de `agent_model_usage` e do agregado do Gateway são consistentes com ausência de chamadas, mas não validam o caminho de contabilização após uma cobrança.
+
+### Cron, segurança e bloqueios
+- A integração contém `vercel.json` e `src/app/api/agents/worker/route.ts`; a rota e o arquivo de configuração não existem em `main` (404), portanto o Cron S14 não está ativo em Production.
+- `AGENT_EXECUTOR_ENABLED=true` continua em Production; não foi alterado. Não publicar S14 enquanto isso não for revisado e desligado antes do release autorizado.
+- Sem `SUPABASE_SECRET_KEY` no Preview, sem grants de ferramentas no staging e sem budget externo, o smoke test real deve permanecer bloqueado.
+- O ledger é gravado após a resposta do provedor. O patch contabiliza o pior caso se o body 2xx falhar ao ser lido e preserva o erro de AbortSignal, mas ainda não existe reservation/outbox durável para reconciliar uma cobrança se a RPC de consumo falhar depois da resposta.
+- Nenhuma chamada real ao modelo, alteração de secret, concessão de grants, migration remota, alteração de configuração Production ou merge foi realizada.

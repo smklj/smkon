@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · ✅ executor integrado (`docs/S14_HANDOFF.md`); migrations `20261119040000`/`050000` no staging e na produção, `060000` só no staging; falta `SUPABASE_SECRET_KEY`, crédito no AI Gateway e merge na `main` 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas integradas na branch de preparação; PR #64 divergiu após avanço da integração (16 ahead / 5 behind, não mergeable); patch sendo reaplicado na branch fix/s14-timeout-ledger-rebase-20261121-0857. CI #44897554015 passou nos dois jobs no head #64, mas não valida a nova branch. Preview da #64 bloqueado por limite diário da Vercel. Staging: 28 migrations, 96 runs killed, 0 steps/usage/grants/rascunhos; Production: 20 migrations, sem runs/usage. Gateway sem budgets/defaults e sem requests em 7 dias; falta SUPABASE_SECRET_KEY no Preview, grants e validação do CRON_SECRET. Cron ausente de main; nenhuma chamada real comprovada. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
