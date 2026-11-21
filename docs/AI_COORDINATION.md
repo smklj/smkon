@@ -180,3 +180,14 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - E2E disparado por deployment_status foi cancelado; não confundir com o CI principal.
 - Vercel Preview verificado sem descriptografar secrets: nenhuma configuração Mercado Livre presente; sem credenciais OAuth, sem integração ativa.
 - Próximo passo técnico: módulo de cifragem/persistência segura e isolamento multi-tenant; manter sem chave real, sem token, sem migration aplicada. PR #57 continua Draft, sem merge/deploy.
+
+
+## Atualização S11 — 21/11/2026 UTC
+
+- Branch `feature/s11-mercado-livre-adapter`, PR #57 continua Draft e aberto.
+- Implementado núcleo de cifragem AES-256-GCM para tokens, com AAD amarrado a organization + provider + external user, envelope versionado, validação de IV/tag/ciphertext e suporte a keyring com key id.
+- Entry point de uso server-side separado com `server-only`; testes cobrem round-trip, adulteração, isolamento contextual, key rotation e payload inválido.
+- Commits do incremento: `4bbdec3`, `525c3eb`, `505fb53`, `9961b9c`.
+- CI no head `9961b9cf5197e3ba72962e6fd32170d85903efba` estava pendente ao registrar; não declarar verde antes de consultar Actions.
+- Próxima prioridade: validar CI; depois revisar schema real e desenhar repository/migration de conexões com RLS/grants mínimos e membership check server-side. Refresh rotativo exige serialização/CAS antes de ser integrado.
+- Não criar/configurar chave real, conectar contas, aplicar migration em ambientes compartilhados, fazer merge em main ou deploy sem autorização explícita.
