@@ -2,9 +2,17 @@
 
 ## Escopo desta fase
 
-A primeira ingestão é manual, limitada a uma página de até 50 pedidos recentes de `GET /orders/search`. O endpoint exige sessão autenticada, workspace ativo e papel Owner/Admin. A identidade da conta é conferida com `GET /users/me` antes da persistência.
+A ingestão é manual e paginada, com até 50 pedidos por chamada de `GET /orders/search`. A primeira página fixa uma janela de criação dos últimos 12 meses; as páginas seguintes reutilizam exatamente o mesmo `createdFrom`/`createdTo` e avançam por `offset`, até o limite defensivo de 10.000. O endpoint exige sessão autenticada, workspace ativo e papel Owner/Admin. A identidade da conta é conferida com `GET /users/me` antes da persistência.
 
 O servidor transforma cada pedido em uma allowlist de campos normalizados e calcula SHA-256 sobre essa representação. Não persiste payload bruto, comprador, vendedor, endereço, destinatário, identificadores de pagamento ou outros dados pessoais.
+
+## Paginação manual do histórico
+
+- O servidor usa os filtros oficiais `order.date_created.from` e `order.date_created.to`, arredondados para a hora UTC porque a API ignora minutos/segundos nesses filtros.
+- O cartão mantém a janela fixa e oferece `Importar próxima página`; cada página contém até 50 pedidos e é persistida atomicamente.
+- Repetir uma página é seguro por causa das chaves idempotentes de evento/pedido. Se a tela for recarregada, o usuário pode reiniciar do offset zero; o cursor não é persistido no banco.
+- A navegação é limitada a offset 10.000. Acima disso, a divisão automática em janelas menores ainda não está disponível na interface.
+- A documentação do Mercado Livre informa que a busca por vendedor pode filtrar pedidos cancelados e que os pedidos ficam disponíveis por até 12 meses; portanto, este backfill não equivale a um extrato financeiro completo.
 
 ## Persistência e idempotência
 
@@ -23,8 +31,8 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 
 ## Limitações e próximos critérios de aceite
 
-1. A importação busca somente os 50 pedidos da primeira página; ainda não há paginação histórica, janela incremental com checkpoint de cobertura nem backfill.
-2. O timestamp `source_connections.last_synced_at` registra a última execução bem-sucedida, mas não é usado como cursor de cobertura.
+1. A paginação manual cobre a janela de criação de até 12 meses, 50 pedidos por página e offset até 10.000; ainda não há cursor persistido, divisão automática em janelas menores nem checkpoint de cobertura.
+2. O timestamp `source_connections.last_synced_at` registra a última página persistida, mas não é usado como cursor de cobertura nem como watermark incremental de `date_last_updated`.
 3. Pagamentos, parcelas, estornos, marketplace fees, frete do vendedor e provisões exigem reconciliação separada antes de produzir ajustes ou lançamentos financeiros.
 4. OAuth real e leitura com uma conta de teste Mercado Livre ainda precisam ser validados em Preview.
 5. Produção permanece bloqueada até CI verde no head final, Preview READY, staging validado, backup verificável e ausência de drift de migrations.
@@ -32,6 +40,7 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 ## Testes
 
 - `tests/unit/mercado-livre-order-snapshot.test.ts`: normalização, status, hash estável, PII e entradas inválidas.
+- `tests/unit/mercado-livre-order-sync-window.test.ts`: janela fixa de 12 meses, alinhamento por hora, offset de página, timezone explícito e rejeição de janelas inválidas.
 - `supabase/tests/mercado_livre_order_sync.test.sql`: privilégio/RLS, replay idempotente, atualização de status, isolamento por conexão/tenant, rejeição de valores inválidos/PII e ausência de liquidação/ledger.
 - `scripts/test-db.sh shim`: executa migrations e todos os testes SQL em PostgreSQL 17 descartável.
 
@@ -59,3 +68,12 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 - A RPC é `SECURITY DEFINER`, `search_path=''`, sem execução para anon/authenticated e com execução apenas para service_role.
 - O teste `supabase/tests/mercado_livre_oauth_completion.test.sql` valida atomicidade, incremento de versão, bloqueio por lease, rollback de metadados, rejeição de papel não administrador e de conta externa diferente.
 - Migration aplicada no staging e teste rollback-only executado sem exceções em 21/11/2026 UTC.
+
+
+## Paginação manual — follow-up S11 (21/11/2026)
+
+- `POST /api/integrations/mercado-livre/sync` agora recebe `offset` e, nas páginas seguintes, a mesma janela `createdFrom`/`createdTo`.
+- A UI mantém a janela na sessão e apresenta `Importar próxima página` quando o provedor informa mais resultados.
+- Cada página é limitada a 50 e usa a RPC transacional já existente. O replay de uma página não duplica pedidos/eventos.
+- A janela padrão é de 12 meses; o offset máximo é 10.000. A tela informa quando esse teto é atingido; seleção de sub-janelas e cursor durável continuam pendentes.
+- Fonte oficial: [Pedidos e opiniões](https://developers.mercadolivre.com.br/pt_br/pedidos-e-opinioes) e [Gerenciamento de vendas](https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas) — filtros de data, paginação e retenção de pedidos.
