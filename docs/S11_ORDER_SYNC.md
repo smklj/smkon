@@ -166,3 +166,7 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 ## Fail-closed em páginas sem total verificável
 
 A resposta de `GET /orders/search` é validada antes de normalizar ou persistir pedidos. Quando `paging.total` está presente, ele precisa ser um inteiro seguro não negativo e a página não pode ultrapassar esse total. Uma página curta só é terminal quando `offset + results.length` alcança exatamente o total informado. Se o provedor omitir o total, páginas completas de 50 itens podem continuar; páginas vazias ou parciais são rejeitadas porque não comprovam o fim do histórico. A rota libera a lease pelo fluxo de erro e não chama a RPC que persiste snapshots/avança o checkpoint. O parser também impõe o teto absoluto de 50 itens por página.
+
+## Limite do total do provedor
+
+`paging.total` também é limitado a `2.147.483.647`, o máximo de PostgreSQL `integer`, porque o valor é persistido em coluna e argumento RPC `integer`. Valores maiores são rejeitados antes da RPC de persistência, liberando a lease pelo fluxo de erro e mantendo o checkpoint sem avanço. O teste unitário cobre o limite máximo aceito e o primeiro valor fora da faixa.
