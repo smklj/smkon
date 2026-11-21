@@ -4,6 +4,7 @@
  * Baseado no Brand Guidelines oficial (Paleta, Tipografia Sora/Inter, Mascote SMK 3D, Archetypes e HUDs).
  */
 
+import { applySvgTypography } from "./svg-typography.ts";
 import {
   SMKON_BRAND_TOKENS,
   type BannerAspectRatio,
@@ -410,17 +411,9 @@ export function generateSmartBannerSvg(config: SmartBannerConfig): string {
     `;
   }
 
-  return `
+  return applySvgTypography(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
       <defs>
-        <!-- Fontes e Estilos Globais -->
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Sora:wght@700;800;900&amp;display=swap');
-          .sora-title { font-family: 'Sora', sans-serif; font-weight: 900; letter-spacing: -0.03em; }
-          .sora-badge { font-family: 'Sora', sans-serif; font-weight: 800; letter-spacing: 0.04em; }
-          .inter-body { font-family: 'Inter', sans-serif; }
-        </style>
-
         <!-- Gradientes Oficiais SMKON -->
         <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#080D12" />
@@ -607,5 +600,5 @@ export function generateSmartBannerSvg(config: SmartBannerConfig): string {
         </text>
       </g>
     </svg>
-  `;
+  `);
 }

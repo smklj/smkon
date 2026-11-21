@@ -67,6 +67,29 @@ export function defaultScheduleValue(now: Date = new Date()): string {
   return `${brt.toISOString().slice(0, 10)}T10:00`;
 }
 
+export type ChecksSummary = { total: number; passed: number; errors: number; warnings: number };
+
+/** Conta as verificações do dry-run: bloqueio = erro que falhou; aviso = alerta que falhou. */
+export function summarizeChecks(checks: readonly PublicationCheck[]): ChecksSummary {
+  let errors = 0;
+  let warnings = 0;
+  for (const check of checks) {
+    if (check.ok) continue;
+    if (check.severity === "error") errors += 1;
+    else warnings += 1;
+  }
+  return { total: checks.length, passed: checks.length - errors - warnings, errors, warnings };
+}
+
+/** Texto curto do resumo, exibido com a lista recolhida. */
+export function checksSummaryLabel(summary: ChecksSummary): string {
+  const parts = [`${summary.total} ${summary.total === 1 ? "verificação" : "verificações"}`];
+  if (summary.errors) parts.push(`${summary.errors} ${summary.errors === 1 ? "bloqueio" : "bloqueios"}`);
+  if (summary.warnings) parts.push(`${summary.warnings} ${summary.warnings === 1 ? "aviso" : "avisos"}`);
+  if (!summary.errors && !summary.warnings) parts.push(summary.total === 1 ? "aprovada" : "todas aprovadas");
+  return parts.join(" · ");
+}
+
 export function toChecks(value: unknown): PublicationCheck[] {
   if (!Array.isArray(value)) return [];
   return value.filter(

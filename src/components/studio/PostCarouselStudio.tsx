@@ -117,7 +117,7 @@ export function PostCarouselStudio({
 
   // Gerar novo post/carrossel automaticamente por IA com base no produto do estúdio
   const handleGenerateAiPost = (kind: SmartPostPackage["kind"]) => {
-    const topic = draftTitle || draftProduct || "Achados Inteligentes da Shopee";
+    const topic = (draftProduct ?? "").trim() || (draftTitle ?? "").trim() || "[tema do post]";
     const generated = generateAutonomousPost(kind, topic);
     setActivePost(generated);
     setCurrentSlideIndex(0);
@@ -142,12 +142,12 @@ export function PostCarouselStudio({
           <div className="post-meta-tags">
             <span className="post-kind-badge">
               {activePost.kind === "carousel-tips"
-                ? "🎠 Carrossel (Multi-Slide)"
+                ? "Carrossel"
                 : activePost.kind === "battle-poll"
-                ? "⚔️ Batalha / Comparativo"
+                ? "Comparativo A vs B"
                 : activePost.kind === "question-box"
-                ? "💬 Pergunta da Comunidade"
-                : "📸 Post de Feed"}
+                ? "Pergunta para a comunidade"
+                : "Post de feed"}
             </span>
             <span className="slide-counter-badge">
               Slide {currentSlideIndex + 1} de {activePost.slides.length}
@@ -237,30 +237,30 @@ export function PostCarouselStudio({
       <div className="mockup-controls-card">
         <h4 className="controls-title">Motor de Posts &amp; Carrosséis</h4>
 
-        {/* Botões de Geração Autônoma por IA */}
+        {/* Geração a partir de modelos determinísticos (sem IA). */}
         <div className="field-compact">
-          <label>Gerar Novo Post com IA</label>
+          <label>Gerar a partir de um modelo</label>
           <div className="ai-generate-actions">
             <button
               type="button"
               className="btn-ai-post"
               onClick={() => handleGenerateAiPost("carousel-tips")}
             >
-              ⚡ Gerar Carrossel (5 Slides)
+              Carrossel de 5 slides
             </button>
             <button
               type="button"
               className="btn-ai-post"
               onClick={() => handleGenerateAiPost("feed-single")}
             >
-              📸 Gerar Post de Feed
+              Post de feed
             </button>
             <button
               type="button"
               className="btn-ai-post"
               onClick={() => handleGenerateAiPost("battle-poll")}
             >
-              ⚔️ Gerar Batalha / Enquete
+              Comparativo A vs B
             </button>
           </div>
         </div>

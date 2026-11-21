@@ -57,7 +57,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         description="Catálogo com score explicável. O score só considera evidências com link da fonte, verificadas por owner ou admin nos últimos 180 dias."
         actions={
           <Link className="link" href="/admin/studio">
-            🗄️ Modo Planilha (Prisma Studio)
+            Ver em tabela no Data Studio
           </Link>
         }
       />

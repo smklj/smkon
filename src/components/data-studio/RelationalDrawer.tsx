@@ -1,91 +1,75 @@
 "use client";
 
-import type { RelationalDrawerContext } from "@/lib/data-studio/types";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+import { Badge } from "@/components/ui/PageHeader";
+import { DATA_MODELS, type DataRow } from "@/lib/data-studio/types";
 
-interface RelationalDrawerProps {
-  context: RelationalDrawerContext;
+const STATUS_TONES = DATA_MODELS.content.columns.find((column) => column.key === "status")?.tones ?? {};
+
+/** Painel lateral com os conteúdos ligados a um produto. Fecha com Esc ou clicando fora. */
+export function RelationalDrawer({ open, title, rows, onClose }: {
+  open: boolean;
+  title: string;
+  rows: DataRow[];
   onClose: () => void;
-}
+}) {
+  const closeRef = useRef<HTMLButtonElement>(null);
 
-export function RelationalDrawer({ context, onClose }: RelationalDrawerProps) {
-  if (!context.isOpen) return null;
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previous?.focus();
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
 
   return (
-    <div className="relational-drawer-backdrop" onClick={onClose}>
+    <div className="ds-drawer-backdrop" onClick={onClose}>
       <aside
-        className="relational-drawer-panel"
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Gaveta de Registros Relacionados"
+        className="ds-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="drawer-header">
-          <div className="drawer-title-group">
-            <span className="drawer-icon">🔗</span>
-            <div>
-              <h3 className="drawer-title">{context.title}</h3>
-              <p className="drawer-sub">
-                Registros relacionados em <strong>{context.targetModelId}</strong> vinculados ao ID #{context.sourceRecordId}
-              </p>
-            </div>
+        <header className="ds-drawer-head">
+          <div>
+            <p className="eyebrow">Relacionados</p>
+            <h2 className="ds-drawer-title">{title}</h2>
           </div>
-          <button
-            type="button"
-            className="drawer-close-btn"
-            onClick={onClose}
-            title="Fechar gaveta relacional"
-          >
-            ✕
+          <button ref={closeRef} type="button" className="button button-secondary" onClick={onClose}>
+            Fechar
           </button>
-        </div>
-
-        <div className="drawer-body">
-          {context.records.length === 0 ? (
-            <div className="drawer-empty-state">
-              <p className="empty-emoji">📂</p>
-              <h4>Nenhum registro relacionado encontrado</h4>
-              <p>Não há itens vinculados a este registro no momento.</p>
-            </div>
-          ) : (
-            <div className="drawer-records-list">
-              {context.records.map((rec, idx) => (
-                <div key={String(rec.id || idx)} className="drawer-record-card">
-                  <div className="record-card-head">
-                    <span className="record-id-badge">#{String(rec.id || idx + 1)}</span>
-                    {Boolean(rec.status) ? (
-                      <span className="record-status-pill">{String(rec.status)}</span>
-                    ) : null}
-                  </div>
-                  <h4 className="record-card-title">
-                    {String(rec.title || rec.name || rec.orderId || "Sem título")}
-                  </h4>
-                  <div className="record-card-meta">
-                    {Object.entries(rec)
-                      .filter(([k]) => !["id", "title", "name", "status"].includes(k))
-                      .slice(0, 4)
-                      .map(([key, val]) => (
-                        <div key={key} className="meta-pair">
-                          <span className="meta-k">{key}:</span>
-                          <strong className="meta-v">{String(val)}</strong>
-                        </div>
-                      ))}
-                  </div>
+        </header>
+        {rows.length === 0 ? (
+          <p className="empty">Nenhum conteúdo com este produto.</p>
+        ) : (
+          <ul className="rows">
+            {rows.map((row) => (
+              <li key={String(row.id)} className="row">
+                <div className="row-main">
+                  <p className="row-title">{String(row.title)}</p>
+                  <p className="row-meta">
+                    {[row.version, Array.isArray(row.channels) ? row.channels.join(" · ") : null].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="drawer-footer">
-          <span className="drawer-records-count">
-            Total: {context.records.length} item(s) relacionado(s)
-          </span>
-          <button
-            type="button"
-            className="button button-small button-secondary"
-            onClick={onClose}
-          >
-            Fechar Gaveta
-          </button>
-        </div>
+                <Badge tone={STATUS_TONES[String(row.status)] ?? "neutral"}>{String(row.status)}</Badge>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="ds-foot">
+          <Link className="link" href="/studio">Abrir no Content Studio</Link>
+        </p>
       </aside>
     </div>
   );

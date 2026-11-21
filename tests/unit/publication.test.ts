@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { defaultScheduleValue, isPublicationChannel, parseScheduleInput, toChecks } from "../../src/lib/publication/types.ts";
+import {
+  checksSummaryLabel,
+  defaultScheduleValue,
+  isPublicationChannel,
+  parseScheduleInput,
+  summarizeChecks,
+  toChecks,
+} from "../../src/lib/publication/types.ts";
 
 const now = new Date("2026-11-18T21:00:00Z"); // 18:00 em Brasília
 
@@ -33,4 +40,18 @@ test("toChecks ignora formatos inesperados", () => {
   assert.deepEqual(toChecks([{ check: "a", severity: "error", ok: true, detail: "ok" }, 3, null]), [
     { check: "a", severity: "error", ok: true, detail: "ok" },
   ]);
+});
+
+test("resumo das verificações: bloqueios, avisos e aprovadas", () => {
+  const checks = [
+    { check: "approved", severity: "error" as const, ok: true, detail: "Versão aprovada." },
+    { check: "media", severity: "error" as const, ok: false, detail: "Sem mídia." },
+    { check: "license", severity: "warning" as const, ok: false, detail: "Licença vence logo." },
+    { check: "caption", severity: "warning" as const, ok: true, detail: "Legenda ok." },
+  ];
+  assert.deepEqual(summarizeChecks(checks), { total: 4, passed: 2, errors: 1, warnings: 1 });
+  assert.equal(checksSummaryLabel(summarizeChecks(checks)), "4 verificações · 1 bloqueio · 1 aviso");
+  assert.equal(checksSummaryLabel(summarizeChecks(checks.filter((check) => check.ok))), "2 verificações · todas aprovadas");
+  assert.equal(checksSummaryLabel(summarizeChecks([checks[0]])), "1 verificação · aprovada");
+  assert.deepEqual(summarizeChecks([]), { total: 0, passed: 0, errors: 0, warnings: 0 });
 });

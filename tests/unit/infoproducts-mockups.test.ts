@@ -15,6 +15,7 @@ import {
   getBlueprintByNiche,
   compileInfoproductToHtml,
 } from "../../src/lib/infoproducts/index.ts";
+import { escapeHtml } from "../../src/lib/infoproducts/generator.ts";
 
 test("MOCKUP_THEMES: todos os temas possuem paletas e gradientes válidos", () => {
   const themes: MockupColorTheme[] = ["gold-black", "cyber-neon", "clean-minimal", "royal-purple"];
@@ -101,19 +102,29 @@ test("compileInfoproductToHtml: compila infoproduto em documento HTML independen
   const html = compileInfoproductToHtml(bp);
 
   assert.ok(html.includes("<!DOCTYPE html>"));
-  assert.ok(html.includes(`<title>${bp.title} — ${bp.authorOrBrand}</title>`));
-  assert.ok(html.includes(bp.title));
-  assert.ok(html.includes(bp.subtitle));
+  assert.ok(html.includes(`<title>${escapeHtml(bp.title)} — ${escapeHtml(bp.authorOrBrand)}</title>`));
+  assert.ok(html.includes(escapeHtml(bp.title)));
+  assert.ok(html.includes(escapeHtml(bp.subtitle)));
   assert.ok(html.includes(`R$ ${bp.recommendedPriceBrl.toFixed(2)}`));
 
   // Verifica renderização dos capítulos e checklists
   for (const chap of bp.chapters) {
-    assert.ok(html.includes(chap.title));
-    assert.ok(html.includes(chap.hookSummary));
+    assert.ok(html.includes(escapeHtml(chap.title)));
+    assert.ok(html.includes(escapeHtml(chap.hookSummary)));
   }
 
   // Verifica regras de impressão @media print
   assert.ok(html.includes("@media print"));
   assert.ok(html.includes("page-break"));
   assert.ok(html.includes("infoproduct-container"));
+});
+
+test("compileInfoproductToHtml: escapa texto do usuário e só põe nonce no <style> quando pedido", () => {
+  const bp = { ...INFOPRODUCT_BLUEPRINTS[0], title: '<img src=x onerror="alert(1)">', authorOrBrand: "Marca & Cia" };
+  const html = compileInfoproductToHtml(bp);
+  assert.ok(!html.includes("<img src=x"), "HTML do usuário não pode virar marcação");
+  assert.ok(html.includes("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;"));
+  assert.ok(html.includes("Marca &amp; Cia"));
+  assert.match(html, /<style>/, "arquivo baixado não leva nonce");
+  assert.match(compileInfoproductToHtml(bp, { styleNonce: "abc123" }), /<style nonce="abc123">/);
 });
