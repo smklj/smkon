@@ -107,3 +107,17 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - **Estado:** decisão registrada e plano definido; conector ainda não implementado nem operacionalmente validado.
 - **Próxima etapa:** inspeção dos padrões de OAuth, ConnectionsPanel, tenancy e financeiro; adapter tipado + fixtures; testes de OAuth, paginação, idempotência, falhas e isolamento multi-tenant.
 - **Não autorizado nesta decisão:** contas reais, secrets, sincronização recorrente, migrations aplicadas, custos pagos, merge em `main` ou deploy de produção.
+
+
+## 9. S11 Mercado Livre — validação do banco descartável (21/11/2026 UTC)
+
+- Branch: `feature/s11-mercado-livre-adapter`; PR #57 permanece Draft, base `feature/smkon-production-readiness`.
+- Schema do fixture conferido contra `20261117183000_split_01_revenue_domains.sql` e `supabase/tests/_support/supabase_shim.sql`: colunas de `organizations`, `organization_members`, `source_connections` e `auth.users` correspondem ao schema usado pelo teste.
+- Assinaturas das RPCs conferidas contra a migration `20261121130000_mercado_livre_credentials.sql`: claim(uuid, integer), save(uuid, bigint, uuid, jsonb, timestamptz), release(uuid, uuid).
+- O teste comportamental em `supabase/tests/mercado_livre_credentials.test.sql` cobre lease exclusivo, segundo worker sem lease, rejeição de lease incorreto, CAS válido com incremento de versão, limpeza do lease, novo lease e proteção contra release obsoleto.
+- Delimitador PL/pgSQL nomeado `$s11_lease_test$` foi relido e está balanceado.
+- Workflow `.github/workflows/ci.yml` executa `bash scripts/test-db.sh shim` no job Database, usando PostgreSQL 17 descartável; também executa typecheck, lint, unit tests, build e audit de dependências no job Quality.
+- **Resultado de execução do teste novo:** pendente de run GitHub Actions associado ao commit que contém o fixture corrigido. Revisão estática não equivale a execução aprovada.
+- Preview Vercel do commit `e5ea42629ed76bf1454f7b4891aa373574894e5a`: READY em ambiente Preview; não é deploy de produção nem validação de OAuth.
+- Nenhuma migration aplicada em Supabase hospedado; nenhuma credencial/secret configurada; nenhuma conta Mercado Livre conectada; nenhum merge ou deploy de produção.
+- Próxima ação: aguardar o CI do head mais recente e registrar os jobs/resultado. Se houver falha, inspecionar logs, corrigir no mesmo branch e repetir. Só então considerar encerrada a validação de banco.
