@@ -6,7 +6,7 @@ import { findWorkspace } from "@/lib/tenancy/workspace";
 import { decryptMercadoLivreTokens, loadMercadoLivreTokenKeyring } from "@/lib/integrations/mercado-livre/token-crypto.server";
 import { refreshMercadoLivreConnection } from "@/lib/integrations/mercado-livre/refresh";
 import { mercadoLivreGet } from "@/lib/integrations/mercado-livre/client";
-import { normalizeMercadoLivreOrder, type MercadoLivreOrderInput } from "@/lib/integrations/mercado-livre/order-snapshot";
+import { normalizeMercadoLivreOrder } from "@/lib/integrations/mercado-livre/order-snapshot";
 import {
   MERCADO_LIVRE_ORDER_MAX_OFFSET,
   MERCADO_LIVRE_ORDER_PAGE_SIZE,
