@@ -12,7 +12,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
 | 2c | Mídia e licenças | ✅ feito | #63 |
-| 2d | Financeiro (comissões) | ✅ feito | (PR desta etapa) |
+| 2d | Financeiro (comissões) | ✅ feito (merge aguarda E2E) | #65 |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
 | 2f | Audiência / CRM | ⏳ | — |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
