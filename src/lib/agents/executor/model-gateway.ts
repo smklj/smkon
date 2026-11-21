@@ -117,9 +117,10 @@ export function createGatewayModel(options: GatewayModelOptions): AgentModel {
     let raw: string;
     try {
       raw = await response.text();
-    } catch {
+    } catch (error) {
       // A resposta 2xx pode já ter gerado custo; contabiliza o pior caso mesmo se o stream falhar.
       await recordUsage(phase, system, user, maxTokens, null);
+      if (signal.aborted) throw error; // preserva timeout/cancelamento do AbortSignal
       throw new ModelCallError("gateway_body_read_failed");
     }
     if (Buffer.byteLength(raw, "utf8") > MAX_RESPONSE_BYTES) {
