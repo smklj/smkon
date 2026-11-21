@@ -335,4 +335,18 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Nenhuma sync recorrente, mutação no marketplace, merge do PR #57 ou deploy de produção está autorizado.
 - O PR #57 contém implementação do fluxo server-side e persistência/refresh, mas isso não equivale a conexão real ou operação ponta a ponta. Existe risco documentado de credencial persistida sem metadata se a atualização de `source_connections` falhar; esse caso precisa de reconciliação/atomicidade antes de declarar robustez operacional.
 
-**Próxima ação / responsável:** ChatGPT/Claude continua as frentes independentes. Quando Samuel estiver pronto, ele configura o app e secrets de Preview; em seguida ChatGPT/Claude executa o checklist OAuth e registra evidências. 
+**Próxima ação / responsável:** ChatGPT/Claude continua as frentes independentes. Quando Samuel estiver pronto, ele configura o app e secrets de Preview; em seguida ChatGPT/Claude executa o checklist OAuth e registra evidências.
+
+## Incremento de preparação one-click e smoke test read-only — 21/11/2026 UTC
+
+- **Branch/PR:** `feature/s11-mercado-livre-adapter` / PR #57 (Draft).
+- **Interface:** `ConnectionsPanel` agora apresenta ação “Conectar Mercado Livre” mesmo sem conexão existente; botão chama endpoint de preparação e depois inicia OAuth. Após retorno, usuário é redirecionado para Administração.
+- **Criação do vínculo:** `POST /api/integrations/mercado-livre/connect` deriva usuário e workspace da sessão, exige owner/admin, valida presença de configuração server-side e formato da chave de criptografia, e cria/reutiliza conexão pendente do domínio `owned_sales`. Não aceita organizationId arbitrário do browser.
+- **Validação OAuth:** callback consulta `GET /users/me` com access token recém-trocado e compara o ID retornado com o user_id do token antes de marcar a conexão como connected.
+- **Leitura de vendas:** `POST /api/integrations/mercado-livre/sync/preview` valida workspace/role, lê credencial cifrada via service role, renova token sob lease quando próximo da expiração, confere identidade novamente e consulta uma página limitada (até 50) de `/orders/search`. Retorna apenas totais agregados por moeda/status.
+- **Segurança do smoke test:** endpoint é read-only e bounded; não persiste pedidos, compradores, payloads, eventos ou lançamentos financeiros. Nenhuma mutação no marketplace.
+- **Interface conectada:** apresenta “Testar leitura de vendas” e resumo do dry-run, informando explicitamente que nada foi gravado.
+- **Limites restantes antes de operação:** sincronização persistente/idempotente, paginação incremental/checkpoint, reconciliação de pagamentos/estornos/taxas, política de retenção/PII, desconexão e recuperação de falhas ainda precisam ser implementadas e testadas. A página de preview não deve ser interpretada como operação financeira.
+- **Ambiente:** nenhum secret configurado, nenhuma conta autorizada, nenhuma migration hospedada aplicada, nenhum deploy de produção.
+- **CI:** workflow disparado após as alterações; resultado precisa ser consultado no último head antes de declarar validação.
+- **Próxima ação:** fechar revisão de código/CI e completar pipeline persistente em staging com fixtures; depois configurar credenciais e realizar OAuth/dry-run real. Agendamento automático somente após reconciliação comprovada e aprovação do Owner.
