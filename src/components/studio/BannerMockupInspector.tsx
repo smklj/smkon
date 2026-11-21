@@ -19,11 +19,38 @@ import {
   compileInfoproductToHtml,
   type InfoproductBlueprint,
 } from "@/lib/infoproducts";
+import { SMKONBannerCanvas } from "./SMKONBannerCanvas";
+import {
+  OFFICIAL_SMKON_PRESETS,
+  inferSmartBannerConfig,
+  type SmartBannerConfig,
+} from "@/lib/media/smart-banner-engine";
+import {
+  BANNER_ARCHETYPES,
+  MASCOT_EXPRESSIONS,
+  type BannerTemplateArchetype,
+  type MascotExpression,
+} from "@/lib/media/brand-system";
 
-type StudioViewTab = "mockup-3d" | "banner-promo" | "infoproduct-factory";
+type StudioViewTab = "smkon-brand" | "mockup-3d" | "banner-promo" | "infoproduct-factory";
 
-export function BannerMockupInspector() {
-  const [activeTab, setActiveTab] = useState<StudioViewTab>("mockup-3d");
+interface BannerMockupInspectorProps {
+  draftTitle?: string;
+  draftProduct?: string;
+  draftCategory?: string;
+}
+
+export function BannerMockupInspector({
+  draftTitle,
+  draftProduct,
+  draftCategory,
+}: BannerMockupInspectorProps = {}) {
+  const [activeTab, setActiveTab] = useState<StudioViewTab>("smkon-brand");
+
+  // Estado Banner Oficial SMKON (Design System & IA)
+  const [smartBannerConfig, setSmartBannerConfig] = useState<SmartBannerConfig>(() =>
+    OFFICIAL_SMKON_PRESETS["top-perifericos"]
+  );
 
   // Estado Mockup 3D
   const [mockupKind, setMockupKind] = useState<MockupKind>("ebook-3d");
@@ -63,14 +90,53 @@ export function BannerMockupInspector() {
     URL.revokeObjectURL(url);
   };
 
+  // Sincronização inteligente com o roteiro atual do estúdio
+  const handleAutoInferFromDraft = () => {
+    const inferred = inferSmartBannerConfig({
+      title: draftTitle,
+      product: draftProduct,
+      category: draftCategory,
+      format: smartBannerConfig.aspectRatio,
+    });
+    setSmartBannerConfig(inferred);
+  };
+
+  // Carregar preset das diretrizes oficiais
+  const handleLoadPreset = (presetKey: string) => {
+    const preset = OFFICIAL_SMKON_PRESETS[presetKey];
+    if (preset) {
+      setSmartBannerConfig({ ...preset });
+    }
+  };
+
+  // Troca de arquétipo visual
+  const handleArchetypeChange = (archetypeKey: BannerTemplateArchetype) => {
+    const arch = BANNER_ARCHETYPES[archetypeKey];
+    setSmartBannerConfig((prev) => ({
+      ...prev,
+      archetype: archetypeKey,
+      badgeText: arch.badgeText,
+      accentColor: arch.accentColor,
+      secondaryColor: arch.secondaryColor,
+      mascotExpression: arch.recommendedMascot,
+    }));
+  };
+
   return (
     <section className="banner-mockup-section">
       <div className="studio-editor-head">
         <div>
-          <p className="eyebrow">Frente D &amp; E · Canva &amp; Photoshop REA + Infoprodutos</p>
-          <h2>Gerador de Mockups 3D, Banners &amp; Fábrica Digital</h2>
+          <p className="eyebrow">Diretrizes Oficiais SMKON · Mascote SMK &amp; Design System</p>
+          <h2>Criação Padronizada de Banners, Mockups &amp; Capas com IA</h2>
         </div>
         <div className="tab-pill-group">
+          <button
+            type="button"
+            className={activeTab === "smkon-brand" ? "active" : ""}
+            onClick={() => setActiveTab("smkon-brand")}
+          >
+            🎨 Banners SMKON Oficial (IA)
+          </button>
           <button
             type="button"
             className={activeTab === "mockup-3d" ? "active" : ""}
@@ -95,7 +161,258 @@ export function BannerMockupInspector() {
         </div>
       </div>
 
-      {/* ABA 1: Mockup 3D (Photoshop REA) */}
+      {/* ABA 1: Banners SMKON Oficial (Diretrizes da Marca, Mascote SMK 3D & IA) */}
+      {activeTab === "smkon-brand" && (
+        <div className="smkon-brand-studio-grid">
+          <div className="smkon-brand-stage-pane">
+            <SMKONBannerCanvas config={smartBannerConfig} />
+          </div>
+
+          <div className="mockup-controls-card">
+            <div className="controls-header-row">
+              <h4 className="controls-title">Motor Inteligente SMKON</h4>
+              <button
+                type="button"
+                className="btn-sync-draft"
+                onClick={handleAutoInferFromDraft}
+                title="Detectar arquétipo, cores e mascote automaticamente a partir do roteiro do estúdio"
+              >
+                ⚡ IA Auto-Padronizar
+              </button>
+            </div>
+
+            {/* Presets Oficiais das Diretrizes */}
+            <div className="field-compact">
+              <label>Presets Oficiais (Diretrizes de Marca)</label>
+              <div className="official-presets-pills">
+                <button
+                  type="button"
+                  className={`preset-pill ${smartBannerConfig.id === "top-perifericos" ? "active" : ""}`}
+                  onClick={() => handleLoadPreset("top-perifericos")}
+                >
+                  Top 5 Periféricos
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill ${smartBannerConfig.id === "achado-shopee" ? "active" : ""}`}
+                  onClick={() => handleLoadPreset("achado-shopee")}
+                >
+                  Achado Shopee R$ 79,90
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill ${smartBannerConfig.id === "review-vale-a-pena" ? "active" : ""}`}
+                  onClick={() => handleLoadPreset("review-vale-a-pena")}
+                >
+                  Review: Vale a Pena?
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill ${smartBannerConfig.id === "setup-custo-beneficio" ? "active" : ""}`}
+                  onClick={() => handleLoadPreset("setup-custo-beneficio")}
+                >
+                  Setup Custo-Benefício
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill ${smartBannerConfig.id === "shorts-achado-hoje" ? "active" : ""}`}
+                  onClick={() => handleLoadPreset("shorts-achado-hoje")}
+                >
+                  Shorts 9:16 Achado
+                </button>
+                <button
+                  type="button"
+                  className={`preset-pill ${smartBannerConfig.id === "shorts-3-itens" ? "active" : ""}`}
+                  onClick={() => handleLoadPreset("shorts-3-itens")}
+                >
+                  Shorts 9:16 3 Itens
+                </button>
+              </div>
+            </div>
+
+            {/* Proporção de Tela */}
+            <div className="field-compact">
+              <label>Proporção &amp; Formato</label>
+              <div className="ratio-toggle-group">
+                <button
+                  type="button"
+                  className={smartBannerConfig.aspectRatio === "16:9" ? "active" : ""}
+                  onClick={() =>
+                    setSmartBannerConfig({ ...smartBannerConfig, aspectRatio: "16:9" })
+                  }
+                >
+                  16:9 Capa de Vídeo
+                </button>
+                <button
+                  type="button"
+                  className={smartBannerConfig.aspectRatio === "9:16" ? "active" : ""}
+                  onClick={() =>
+                    setSmartBannerConfig({ ...smartBannerConfig, aspectRatio: "9:16" })
+                  }
+                >
+                  9:16 Reels / TikTok
+                </button>
+                <button
+                  type="button"
+                  className={smartBannerConfig.aspectRatio === "1:1" ? "active" : ""}
+                  onClick={() =>
+                    setSmartBannerConfig({ ...smartBannerConfig, aspectRatio: "1:1" })
+                  }
+                >
+                  1:1 Feed / Vitrine
+                </button>
+              </div>
+            </div>
+
+            {/* Arquétipo de Conteúdo */}
+            <div className="field-compact">
+              <label>Arquétipo de Banner</label>
+              <select
+                value={smartBannerConfig.archetype}
+                onChange={(e) =>
+                  handleArchetypeChange(e.target.value as BannerTemplateArchetype)
+                }
+              >
+                {Object.entries(BANNER_ARCHETYPES).map(([key, arch]) => (
+                  <option key={key} value={key}>
+                    {arch.name} ({arch.defaultHeadline})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Expressão do Mascote SMK */}
+            <div className="field-compact">
+              <label>Expressão do Mascote SMK 3D</label>
+              <select
+                value={smartBannerConfig.mascotExpression}
+                onChange={(e) =>
+                  setSmartBannerConfig({
+                    ...smartBannerConfig,
+                    mascotExpression: e.target.value as MascotExpression,
+                  })
+                }
+              >
+                {Object.entries(MASCOT_EXPRESSIONS).map(([key, exp]) => (
+                  <option key={key} value={key}>
+                    {exp.label} · {exp.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Título Principal (Sora ExtraBold) */}
+            <div className="field-compact">
+              <label>Título Principal (Sora ExtraBold)</label>
+              <input
+                type="text"
+                value={smartBannerConfig.headline}
+                onChange={(e) =>
+                  setSmartBannerConfig({ ...smartBannerConfig, headline: e.target.value })
+                }
+                placeholder="Ex.: TOP 5 ACHADOS"
+              />
+            </div>
+
+            {/* Palavra de Destaque (Pill Colorida) */}
+            <div className="field-compact">
+              <label>Palavra / Frase de Destaque (Caixa)</label>
+              <input
+                type="text"
+                value={smartBannerConfig.highlightWord || ""}
+                onChange={(e) =>
+                  setSmartBannerConfig({
+                    ...smartBannerConfig,
+                    highlightWord: e.target.value,
+                  })
+                }
+                placeholder="Ex.: DA SHOPEE ou ATÉ R$300"
+              />
+            </div>
+
+            {/* Selo / Badge Superior */}
+            <div className="field-compact">
+              <label>Selo Superior (Badge)</label>
+              <input
+                type="text"
+                value={smartBannerConfig.badgeText}
+                onChange={(e) =>
+                  setSmartBannerConfig({ ...smartBannerConfig, badgeText: e.target.value })
+                }
+                placeholder="Ex.: 🔥 ACHADOS DA SHOPEE"
+              />
+            </div>
+
+            {/* Preço / Tag de Oferta */}
+            <div className="field-compact">
+              <label>Preço / Tag de Oferta</label>
+              <input
+                type="text"
+                value={smartBannerConfig.priceTag || ""}
+                onChange={(e) =>
+                  setSmartBannerConfig({ ...smartBannerConfig, priceTag: e.target.value })
+                }
+                placeholder="Ex.: R$ 79,90 ou ATÉ R$300"
+              />
+            </div>
+
+            {/* Subtítulo */}
+            <div className="field-compact">
+              <label>Subtítulo Explicativo (Inter)</label>
+              <input
+                type="text"
+                value={smartBannerConfig.subheadline || ""}
+                onChange={(e) =>
+                  setSmartBannerConfig({
+                    ...smartBannerConfig,
+                    subheadline: e.target.value,
+                  })
+                }
+                placeholder="Ex.: Melhores recomendações testadas"
+              />
+            </div>
+
+            {/* HUD Holográfico */}
+            <div className="field-compact">
+              <label>HUD Holográfico Flutuante</label>
+              <div className="hud-config-row">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={smartBannerConfig.showHolographicHud}
+                    onChange={(e) =>
+                      setSmartBannerConfig({
+                        ...smartBannerConfig,
+                        showHolographicHud: e.target.checked,
+                      })
+                    }
+                  />
+                  <span>Ativar Painel Neon</span>
+                </label>
+                {smartBannerConfig.showHolographicHud && (
+                  <select
+                    value={smartBannerConfig.hudContent || "headphone"}
+                    onChange={(e) =>
+                      setSmartBannerConfig({
+                        ...smartBannerConfig,
+                        hudContent: e.target.value as SmartBannerConfig["hudContent"],
+                      })
+                    }
+                  >
+                    <option value="headphone">🎧 Headphone / Áudio</option>
+                    <option value="discount">🏷️ Porcentagem % Desconto</option>
+                    <option value="verified">✓ Selo Aprovado</option>
+                    <option value="tech">💻 Hardware / Monitor</option>
+                    <option value="speaker">🔊 Speaker / Gadget</option>
+                  </select>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ABA 2: Mockup 3D (Photoshop REA) */}
       {activeTab === "mockup-3d" && (
         <div className="mockup-studio-grid">
           <div className="mockup-preview-stage" style={{ perspective: transforms3D.containerPerspective }}>
@@ -196,7 +513,7 @@ export function BannerMockupInspector() {
         </div>
       )}
 
-      {/* ABA 2: Banners Promocionais & Stories (Canva REA) */}
+      {/* ABA 3: Banners Promocionais & Stories (Canva REA) */}
       {activeTab === "banner-promo" && (
         <div className="banner-studio-grid">
           <div className="banner-preview-stage">
@@ -296,7 +613,7 @@ export function BannerMockupInspector() {
         </div>
       )}
 
-      {/* ABA 3: Fábrica de Infoprodutos Digitais (S25) */}
+      {/* ABA 4: Fábrica de Infoprodutos Digitais (S25) */}
       {activeTab === "infoproduct-factory" && (
         <div className="infoproduct-factory-grid">
           <div className="blueprint-selector-pane">

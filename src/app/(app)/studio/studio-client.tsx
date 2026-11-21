@@ -569,7 +569,10 @@ export default function StudioClient() {
         </div>
       </section>
 
-      <BannerMockupInspector />
+      <BannerMockupInspector
+        draftTitle={draft.title}
+        draftProduct={draft.product}
+      />
 
       <section className="studio-preview">
         <div className="studio-editor-head">
