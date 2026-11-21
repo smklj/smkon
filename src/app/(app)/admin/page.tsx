@@ -3,7 +3,7 @@ import { AreaCard } from "@/components/admin/AreaCard";
 import { ConnectionsPanel } from "@/components/admin/ConnectionsPanel";
 import { ContentList } from "@/components/admin/ContentList";
 import { DomainCard } from "@/components/admin/DomainCard";
-import { IntegrationPlaceholders } from "@/components/admin/IntegrationPlaceholders";
+import { IntegrationHubPanel } from "@/components/admin/IntegrationHubPanel";
 import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
 import { MembersPanel } from "@/components/admin/MembersPanel";
 import { PageHeader, SectionHeading } from "@/components/ui/PageHeader";
@@ -63,12 +63,10 @@ export default function AdminPage() {
         <ConnectionsPanel />
       </section>
 
-      <details className="panel panel-collapsible">
-        <summary>
-          <SectionHeading id="planejadas-titulo" title="Integrações planejadas" aside={<span className="muted">ainda não validadas</span>} />
-        </summary>
-        <IntegrationPlaceholders />
-      </details>
+      <section className="panel" aria-labelledby="hub-titulo">
+        <SectionHeading id="hub-titulo" title="Hub de integrações" aside={<span className="muted">redes e plataformas</span>} />
+        <IntegrationHubPanel />
+      </section>
     </div>
   );
 }

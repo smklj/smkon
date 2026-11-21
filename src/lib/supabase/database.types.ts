@@ -839,6 +839,78 @@ export type Database = {
         }
         Relationships: []
       }
+      external_action_requests: {
+        Row: {
+          action: string
+          approved_hash: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          error_code: string | null
+          executed_at: string | null
+          external_ref: string | null
+          id: string
+          organization_id: string
+          payload: Json
+          payload_hash: string
+          requested_at: string
+          requested_by: string
+          social_account_id: string
+          status: string
+        }
+        Insert: {
+          action: string
+          approved_hash?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          error_code?: string | null
+          executed_at?: string | null
+          external_ref?: string | null
+          id?: string
+          organization_id: string
+          payload: Json
+          payload_hash: string
+          requested_at?: string
+          requested_by: string
+          social_account_id: string
+          status?: string
+        }
+        Update: {
+          action?: string
+          approved_hash?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          error_code?: string | null
+          executed_at?: string | null
+          external_ref?: string | null
+          id?: string
+          organization_id?: string
+          payload?: Json
+          payload_hash?: string
+          requested_at?: string
+          requested_by?: string
+          social_account_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_action_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_action_requests_social_account_id_organization_id_fkey"
+            columns: ["social_account_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "social_accounts"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       external_events: {
         Row: {
           connection_id: string
@@ -1517,6 +1589,65 @@ export type Database = {
           },
         ]
       }
+      social_accounts: {
+        Row: {
+          account_type: string
+          capabilities: string[]
+          created_at: string
+          display_name: string | null
+          external_account_id: string
+          handle: string | null
+          id: string
+          last_error_code: string | null
+          last_synced_at: string | null
+          network: string
+          organization_id: string
+          status: Database["public"]["Enums"]["smkon_connection_status"]
+          updated_at: string
+          via: string
+        }
+        Insert: {
+          account_type: string
+          capabilities?: string[]
+          created_at?: string
+          display_name?: string | null
+          external_account_id: string
+          handle?: string | null
+          id?: string
+          last_error_code?: string | null
+          last_synced_at?: string | null
+          network: string
+          organization_id: string
+          status?: Database["public"]["Enums"]["smkon_connection_status"]
+          updated_at?: string
+          via: string
+        }
+        Update: {
+          account_type?: string
+          capabilities?: string[]
+          created_at?: string
+          display_name?: string | null
+          external_account_id?: string
+          handle?: string | null
+          id?: string
+          last_error_code?: string | null
+          last_synced_at?: string | null
+          network?: string
+          organization_id?: string
+          status?: Database["public"]["Enums"]["smkon_connection_status"]
+          updated_at?: string
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       source_connections: {
         Row: {
           created_at: string
@@ -1698,6 +1829,22 @@ export type Database = {
           member_role: string
           workspace_id: string
         }[]
+      }
+      request_external_action: {
+        Args: { p_action: string; p_payload: Json; p_social_account_id: string }
+        Returns: { payload_hash: string; request_id: string }[]
+      }
+      decide_external_action: {
+        Args: { p_decision: string; p_expected_hash: string; p_note?: string; p_request_id: string }
+        Returns: string
+      }
+      cancel_external_action: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      external_action_hash: {
+        Args: { p_action: string; p_payload: Json }
+        Returns: string
       }
       approve_content: {
         Args: { p_content_id: string; p_expected_hash: string; p_note?: string }

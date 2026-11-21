@@ -62,6 +62,17 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 |---|---|
 | **S7.2** · fases A, B e C implementadas (`docs/S7_2_HANDOFF.md`); monocromático com cor só para estado | Movimento e feedback: tokens de motion, transições, `loading.tsx`/`error.tsx`, toasts, destaque de linha alterada, contagem nas métricas, sparklines em SVG, hierarquia visual |
 
+## Integrações (plano `INTEGRACOES_E_AUTOMACAO.md`)
+
+| Split | Escopo |
+|---|---|
+| **S17** · implementado e testado (`docs/S17_HANDOFF.md`); migration `20261121180000` aguardando autorização | Hub de Conectores: Hotmart/Shopify/Stripe em `source_connections`, `social_accounts`, `external_action_requests` com aprovação por hash, catálogo e painel em `/admin` |
+| **S18** | Webhook da Hotmart → `external_events` → ledger 🔐 segredos |
+| **S19** | Adaptador Metricool para todas as redes + tela de aprovação de ações 🔐 plano/conta |
+| **S20** | Brand Kit de Perfil |
+| **S21** | APIs nativas (Meta, TikTok, YouTube) 🔐 apps |
+| **S22** | Atribuição conteúdo → venda |
+
 ## P4 — Escala e experiência
 
 | Split | Escopo |
