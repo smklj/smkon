@@ -59,6 +59,9 @@ export function parseMercadoLivreOrderSyncPageRequest(
 
   let createdFrom: Date;
   let createdTo: Date;
+  if (offset > 0 && body.createdFrom === undefined && body.createdTo === undefined) {
+    return { ok: false, error: "A fixed date window is required after the first page." };
+  }
   if (body.createdFrom === undefined && body.createdTo === undefined) {
     createdTo = floorToHour(now);
     createdFrom = oneYearBefore(createdTo);
