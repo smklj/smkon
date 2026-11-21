@@ -77,3 +77,11 @@ As chaves únicas existentes de eventos e pedidos garantem replay idempotente. U
 - Cada página é limitada a 50 e usa a RPC transacional já existente. O replay de uma página não duplica pedidos/eventos.
 - A janela padrão é de 12 meses; o offset máximo é 10.000. A tela informa quando esse teto é atingido; seleção de sub-janelas e cursor durável continuam pendentes.
 - Fonte oficial: [Pedidos e opiniões](https://developers.mercadolivre.com.br/pt_br/pedidos-e-opinioes) e [Gerenciamento de vendas](https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas) — filtros de data, paginação e retenção de pedidos.
+
+
+### Validação da paginação — 21/11/2026 04:16 BRT
+
+- PR #60 aberto como Draft contra `feature/smkon-production-readiness`.
+- CI #428 passou nos dois jobs: Quality (audit, typecheck, lint, unit tests e build) e Database migrations/SQL tests.
+- O check Vercel está failure por `api-deployments-free-per-day`; não há Preview para o código de paginação. O Preview anterior `af27230` continua READY, mas não contém esta alteração.
+- O PR permanece Draft até haver Preview verificável; não houve merge desta alteração nem deploy de produção.
