@@ -3,7 +3,7 @@
  *
  * O domínio de tenancy agora vive em schema.ts / repository.ts / service.ts.
  * Este arquivo só reexporta o service para os chamadores de módulos que ainda
- * não passaram pela etapa do S4 (audiência, agentes) ou que pertencem a outra
+ * não passaram pela etapa do S4 (agentes) ou que pertencem a outra
  * frente (integração Mercado Livre). Código novo importa de `@/lib/tenancy/service`.
  */
 export {
