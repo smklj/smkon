@@ -11,7 +11,7 @@ Branches `feature/s16-*` · migrations `20261119120000`–`20261119129999` · te
 | 2 | Paginação por cursor em `src/lib/pagination` + produtos, conteúdos e mídia | ✅ feito | #49 (mergeado) |
 | 2b | Paginação em `/agentes` (depois de `docs/S14_HANDOFF.md` na integração) | ✅ feito (sem índice novo: o existente basta, medido) | #51 |
 | 2c | Paginação da audiência (depois de `docs/S15_HANDOFF.md` na integração) | ✅ feito (sem índice novo: o existente basta, medido) | #53 |
-| 3 | Migration de índices medidos + teste SQL + EXPLAIN de verificação | ✅ feito (`20261119120000`, `040_*`, CI verde) · staging: **aguarda confirmação do Owner** (3 tentativas em 19/11; a ferramenta pede confirmação interativa por causa dos `drop index` e expira em 180 s) | #49 (mergeado) |
+| 3 | Migration de índices medidos + teste SQL + EXPLAIN de verificação | ✅ feito (`20261119120000`, `040_*`, CI verde) · **staging: aplicada** (registrada como `20261119232441`, conferida em 21/11) | #49 (mergeado) |
 | 4 | Cache seguro (sem vazamento entre usuários/workspaces) | ✅ decisão medida + `private, no-store` nas APIs de listas | #51 |
 | 5 | Teste de carga em `scripts/` (node, alvo configurável, p50/p95) | ✅ script + resultados locais; carga autenticada com Supabase falso (#51) | #49 (mergeado), #51 |
 | 6 | `docs/S16_HANDOFF.md` + linha do S16 no ROADMAP | ✅ feito | #53 |
@@ -277,10 +277,26 @@ latência real do PostgREST pesar (não medido no staging; fica registrado, sem 
 - Staging: 3ª tentativa de `apply_migration` de `20261119120000` expirou de novo esperando a confirmação
   interativa; conferido por leitura: `score_rank` ausente, índices antigos intactos, nada aplicado.
 
+## Staging e E2E de paginação (21/11/2026, execução 4)
+
+- A migration está aplicada no staging (`xoyasrizivadxnpmzzno`), registrada como `20261119232441_keyset_pagination_indexes`
+  (a aplicação ocorreu em 19/11 às 23:24 UTC, fora desta frente; esta execução só conferiu por leitura):
+  `products.score_rank` existe; `products_org_rank_keyset_idx`, `content_items_org_updated_id_idx`,
+  `media_assets_org_created_id_idx` e `content_items_org_status_idx` existem; os substituídos
+  (`content_items_org_updated_idx`, `media_assets_org_idx`) foram removidos.
+- `get_advisors` (21/11): **segurança** — nenhum aviso ligado ao S16 (a migration não cria funções, tabelas nem
+  políticas; os avisos existentes são de outras frentes: funções `SECURITY DEFINER` de RPC, tabelas do Mercado Livre
+  sem política por desenho, proteção de senha vazada do Auth). **Performance** — nenhum dos 4 índices do S16 aparece
+  como "não usado"; os avisos de FK sem índice composto (`media_licenses`, `consent_events`, …) são de outras frentes
+  e as buscas já usam índices de coluna única medidos.
+- Novo E2E `tests/e2e/products.spec.mjs` → "API de produtos pagina por cursor sem repetir nem perder itens":
+  cria 3 produtos, percorre `/api/products?limit=2` pelo `nextCursor` até achá-los, confere ordem (mais novo
+  primeiro), zero repetições, páginas de no máximo 2 (o caminho de compatibilidade devolveria 200 e falharia),
+  `Cache-Control: no-store` e cursor inválido → 400 `invalid_input`.
+
 ## Pendências desta frente
 
-- Aplicar `20261119120000` no staging (confirmação do Owner na ferramenta) e conferir advisors; só então incluir
-  no E2E um teste de paginação da API de produtos.
+- Produção: `20261119120000` (🔐 autorização do Owner, junto com as demais migrations pendentes).
 - Migração de rascunhos do `localStorage` no Studio deduplica contra a 1ª página (50 mais recentes); rascunhos
   locais são sempre os mais novos, então o risco de duplicar é baixo, mas fica registrado.
 - Seletor de mídia do Studio usa só a 1ª página (200); busca por nome fica para quando houver demanda.
