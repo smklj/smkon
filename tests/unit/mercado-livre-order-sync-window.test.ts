@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   MERCADO_LIVRE_ORDER_PAGE_SIZE,
   MERCADO_LIVRE_ORDER_MAX_OFFSET,
+  MERCADO_LIVRE_ORDER_MAX_PROVIDER_TOTAL,
   parseMercadoLivreOrderSearchPage,
   parseMercadoLivreOrderSyncAction,
   parseMercadoLivreOrderSyncPageRequest,
@@ -96,7 +97,7 @@ test("rejects missing, malformed, oversized and non-object order search results"
 });
 
 test("rejects malformed paging metadata and invalid provider totals", () => {
-  for (const paging of [null, [], "invalid", { total: null }, { total: -1 }, { total: 1.5 }, { total: "50" }, { total: Number.MAX_SAFE_INTEGER + 1 }]) {
+  for (const paging of [null, [], "invalid", { total: null }, { total: -1 }, { total: 1.5 }, { total: "50" }, { total: Number.MAX_SAFE_INTEGER + 1 }, { total: MERCADO_LIVRE_ORDER_MAX_PROVIDER_TOTAL + 1 }]) {
     assert.equal(parseMercadoLivreOrderSearchPage({ results: [], paging }, 0).ok, false);
   }
 });
@@ -110,6 +111,17 @@ test("rejects a partial page when the provider reports more orders remain", () =
   const partial = Array.from({ length: 17 }, (_, index) => providerOrder(index + 1));
   const parsed = parseMercadoLivreOrderSearchPage({ results: partial, paging: { total: 100 } }, 0);
   assert.equal(parsed.ok, false);
+});
+
+test("accepts the largest provider total representable by PostgreSQL integer", () => {
+  const results = Array.from({ length: 50 }, (_, index) => providerOrder(index + 1));
+  const parsed = parseMercadoLivreOrderSearchPage({
+    results,
+    paging: { total: MERCADO_LIVRE_ORDER_MAX_PROVIDER_TOTAL },
+  }, MERCADO_LIVRE_ORDER_MAX_OFFSET);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.value.providerTotal, MERCADO_LIVRE_ORDER_MAX_PROVIDER_TOTAL);
 });
 
 test("accepts a full page with more results and advances by the returned count", () => {
