@@ -62,16 +62,29 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 |---|---|
 | **S7.2** · fases A, B e C implementadas (`docs/S7_2_HANDOFF.md`); monocromático com cor só para estado | Movimento e feedback: tokens de motion, transições, `loading.tsx`/`error.tsx`, toasts, destaque de linha alterada, contagem nas métricas, sparklines em SVG, hierarquia visual |
 
-## Integrações (plano `INTEGRACOES_E_AUTOMACAO.md`)
+## Integrações e Automação de Conteúdo
 
 | Split | Escopo |
 |---|---|
-| **S17** · implementado e testado (`docs/S17_HANDOFF.md`); migration `20261121180000` no staging; produção aguardando autorização | Hub de Conectores: Hotmart/Shopify/Stripe em `source_connections`, `social_accounts`, `external_action_requests` com aprovação por hash, catálogo e painel em `/admin` |
-| **S18** | Webhook da Hotmart → `external_events` → ledger 🔐 segredos |
-| **S19** | Adaptador Metricool para todas as redes + tela de aprovação de ações 🔐 plano/conta |
-| **S20** | Brand Kit de Perfil |
-| **S21** | APIs nativas (Meta, TikTok, YouTube) 🔐 apps |
-| **S22** | Atribuição conteúdo → venda |
+| **S17** · ✅ implementado e testado (`docs/S17_HANDOFF.md`); mergeado na integração | Hub de Conectores: Hotmart/Shopify/Stripe em `source_connections`, `social_accounts`, `external_action_requests` com aprovação por hash, catálogo e painel em `/admin` |
+| **S18** · ✅ implementado e testado (`docs/S18_HANDOFF.md`); mergeado na integração | Receptor de Webhooks Hotmart → normalização PII-free e ledger contábil idempotente |
+| **S19** · ✅ implementado e testado (`docs/S19_HANDOFF.md`); mergeado na integração | Adaptador Metricool para redes sociais + painel de decisão e execução de ações externas |
+
+## Frente D — Content Studio Pro & Motor Criativo (CapCut + Canva + Photoshop REA) (`docs/FRENTE_D_CONTENT_STUDIO_PRO.md`)
+
+| Split | Escopo |
+|---|---|
+| **S20** · planejado | Motor de Remix & Vídeo Autônomo (CapCut REA): legendas dinâmicas palavra por palavra (word-by-word highlight), auto-crop 9:16, inpainting/remoção de marcas d'água de terceiros, injeção de marca d'água SMKON e locução neural TTS |
+| **S21** · planejado | Motor de Banners & Mockups 3D (Canva + Photoshop REA): remoção automática de fundo por IA, renderizador de capas/mockups 3D de infoprodutos, templates de carrosséis e banners com selos de desconto/frete grátis e stories interativos |
+| **S22** · planejado | Content Studio Pro: player vertical 9:16 no navegador, inspector lateral de ajustes rápidos (gancho, legenda, tags de afiliado) e fluxo de aprovação com 1 clique para despacho automático |
+
+## Frente E — Expansão de Marketplaces & Infoprodutos (`docs/FRENTE_E_COMMERCE_INFOPRODUTOS.md`)
+
+| Split | Escopo |
+|---|---|
+| **S23** · planejado | Conector de Afiliados Shopee & Shein: geração automatizada de links rastreados com SubIDs, injeção de cupons de criador, catálogo de achadinhos virais e cookie de atribuição de 7 dias |
+| **S24** · planejado | Conector Kiwify & Checkout Instantâneo Pix: webhook receptor em tempo real, validação de token, conciliação e lançamento automático no ledger contábil do SMKON |
+| **S25** · planejado | Fábrica Autônoma de Infoprodutos Digitais: geração completa de e-books, manuais e kits digitais pela IA, diagramação profissional em PDF com índice e capa 3D (S21) e cadastro para venda imediata |
 
 ## P4 — Escala e experiência
 
