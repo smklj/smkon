@@ -1,0 +1,90 @@
+/* Leitura de dados (S7.2 C): números, barras, estados, paginação. Ordem de cascata: ver src/app/globals.css. */
+/* ==========================================================================
+   S7.2 fase C — leitura de dados e hierarquia (monocromático; cor só para estado)
+   ========================================================================== */
+:root {
+  /* Degraus neutros para estágios ordenados (mais avançado = mais claro). */
+  --step-1: #4a4a4a;
+  --step-2: #7a7a7a;
+  --step-3: #b0b0b0;
+  --step-4: #f2f2f2;
+}
+
+/* Indicadores principais sem caixa: números grandes sobre o fundo, divisão por linha fina. */
+.metrics-open { background: none; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; }
+.metrics-open .metric { padding: 20px 20px 18px 0; }
+.metrics-open .metric + .metric { padding-left: 20px; }
+.metrics-open .metric strong { font-size: 40px; }
+
+/* Barras diárias */
+.trends { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.trend { margin: 0; min-width: 0; }
+.trend-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.trend-title { font-size: 12px; color: var(--text-2); }
+.trend-total { font: 600 13px var(--font-display-stack); font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; }
+.trend-bars { display: grid; gap: 2px; height: 72px; align-items: end; border-bottom: 1px solid var(--line-strong); }
+.trend-col { position: relative; height: 100%; display: flex; align-items: flex-end; cursor: default; }
+.trend-bar { display: block; width: 100%; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--step-2); transform-origin: bottom; animation: bar-grow var(--dur-3) var(--ease-out) backwards; transition: background-color var(--dur-1) var(--ease-out); }
+.trend-bar.is-zero { height: 2px !important; background: var(--line-strong); border-radius: 1px; }
+.trend-col.is-today .trend-bar:not(.is-zero) { background: var(--step-4); }
+.trend-col:hover .trend-bar:not(.is-zero) { background: var(--text); }
+.trend-col:hover::before { content: ""; position: absolute; inset: 0 -1px; background: rgba(255, 255, 255, 0.04); border-radius: 4px; }
+.trend-col::after, .statebar-seg::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%) translateY(2px);
+  white-space: nowrap; padding: 5px 8px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong);
+  background: var(--elevated); color: var(--text); font-size: 11px; font-variant-numeric: tabular-nums;
+  opacity: 0; pointer-events: none; z-index: 5; transition: opacity var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.trend-col:hover::after, .statebar-seg:hover::after { opacity: 1; transform: translateX(-50%); }
+.trend-col:first-child::after { left: 0; transform: none; }
+.trend-col:last-child::after { left: auto; right: 0; transform: none; }
+.trend-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--muted); }
+.trend-empty { margin-top: 8px; }
+
+/* Barra segmentada de estados */
+.statebar { margin-top: 12px; display: grid; gap: 10px; }
+.statebar-track { display: flex; gap: 2px; height: 10px; }
+.statebar-track.is-empty { background: var(--surface-2); border-radius: 4px; }
+.statebar-seg { position: relative; min-width: 4px; border-radius: 2px; animation: bar-grow-x var(--dur-3) var(--ease-out) backwards; transform-origin: left; }
+.statebar-seg:first-child { border-radius: 4px 2px 2px 4px; }
+.statebar-seg:last-child { border-radius: 2px 4px 4px 2px; }
+.statebar-seg:only-child { border-radius: 4px; }
+.statebar-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
+.statebar-legend li { display: flex; align-items: center; gap: 8px; }
+.statebar-name { flex: 1; color: var(--text-2); }
+.statebar-value { font-variant-numeric: tabular-nums; color: var(--text); }
+.statebar-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.tone-s1 { background: var(--step-1); }
+.tone-s2 { background: var(--step-2); }
+.tone-s3 { background: var(--step-3); }
+.tone-s4 { background: var(--step-4); }
+.tone-danger { background: var(--danger); }
+
+/* Seções de referência recolhíveis */
+.panel-collapsible { padding: 0; }
+.panel-collapsible > summary { list-style: none; cursor: pointer; padding: 18px 20px; border-radius: var(--radius-lg); transition: background-color var(--dur-1) var(--ease-out); }
+.panel-collapsible > summary::-webkit-details-marker { display: none; }
+.panel-collapsible > summary:hover { background: rgba(255, 255, 255, 0.02); }
+.panel-collapsible > summary .section-heading { margin-bottom: 0; }
+.panel-collapsible > summary .section-heading h2::before { content: "›"; display: inline-block; width: 14px; color: var(--muted); transition: transform var(--dur-2) var(--ease-out); }
+.panel-collapsible[open] > summary .section-heading h2::before { transform: rotate(90deg); }
+.panel-collapsible > :not(summary) { padding: 0 20px 18px; }
+.panel-collapsible[open] > :not(summary) { animation: fade-in var(--dur-2) var(--ease-out); }
+
+/* Estado vazio com próximo passo */
+.empty-action { margin-top: 14px; }
+
+@keyframes bar-grow { from { transform: scaleY(0); } }
+@keyframes bar-grow-x { from { transform: scaleX(0); } }
+
+@media (max-width: 960px) {
+  .trends { grid-template-columns: 1fr; gap: 24px; }
+  .metrics-open .metric, .metrics-open .metric + .metric { padding-left: 0; }
+  .metrics-open .metric:nth-child(even) { padding-left: 16px; }
+  .metrics-open .metric strong { font-size: 32px; }
+}
+
+/* S16 · paginação por cursor */
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 16px; margin-top: 8px; border-top: 1px solid var(--line); }
+.pager-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.studio-load-more { display: flex; justify-content: center; padding: 12px 0 4px; }
