@@ -1,9 +1,15 @@
+/**
+ * Mídia e licenças · repository: acesso a dados (Supabase e Storage) da biblioteca (S4).
+ * Só consultas, inserts e RPCs; permissões ficam em service.ts e a validação em
+ * schema.ts. O isolamento por workspace é garantido pela RLS e reforçado pelo
+ * filtro organization_id nas consultas e inserts.
+ */
 import { applyKeyset, decodeCursor, DEFAULT_PAGE_SIZE, toPage, type KeysetSpec, type Page } from "@/lib/pagination/keyset";
 import type { createClient } from "@/lib/supabase/server";
 import { MEDIA_BUCKET, type LicenseRow, type MediaRow } from "./types";
-import type { LicenseInput } from "./validation";
+import type { LicenseInput } from "./schema";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 const MEDIA_COLUMNS = "id,storage_path,kind,mime_type,size_bytes,original_name,created_at,archived_at";
 const LICENSE_COLUMNS =

@@ -11,7 +11,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2 | Validação centralizada `src/lib/validation/fields.ts` + testes | ✅ feito | #54 |
 | 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
-| 2c | Mídia e licenças | ⏳ | — |
+| 2c | Mídia e licenças | ✅ feito | (PR desta etapa) |
 | 2d | Financeiro (comissões) | ⏳ | — |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
 | 2f | Audiência / CRM | ⏳ | — |
@@ -79,3 +79,11 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - Divergência preservada: o Studio aceita link HTTPS vazio, host sem ponto e credenciais na URL (corta em 2048), mais permissivo que `isHttpsUrl` de produtos. Virou a variante nomeada `isOptionalHttpsUrl` em `validation/fields.ts`.
 - Os demais usos de `isUuid` via `@/lib/content/server` (convites, audiência, agentes, admin, mídia) continuam funcionando pelo reexport e serão trocados para `@/lib/validation/fields` na etapa de cada módulo.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **238/238** (226 existentes sem edição + 12 novos em `content-schema.test.ts` e `publication-schema.test.ts`), `npm run build` ✅, `npm run test:db` **19/19 arquivos** (Postgres 16 local).
+
+### Etapa 2c — mídia e licenças (21/11/2026)
+
+- `src/lib/media/`: `validation.ts` → `schema.ts` (`parseLicenseInput` sobre `readString`/`readFlag`/`oneOf`/`DATE_ONLY`/`isHttpsUrl` centrais, mais `parseMediaId` e `parseRevokeInput`, com as mesmas mensagens e a mesma ordem das Server Actions); `validation.ts` ficou só como reexport (o teste `media.test.ts` importa dele). `server.ts` → `repository.ts` (renomeado, sem mudança de consulta; `SupabaseClient` exportado) e `service.ts` (`canManageMedia`, que reexporta `canEditContent` do tenancy, e `registerLicense`).
+- `midia/actions.ts`: valida antes da autenticação via schema (erro de entrada vira a mesma mensagem; qualquer outro erro propaga, como o `redirect`), usa o service para registrar licença e importa `formDataToRaw` central. `midia/page.tsx` e `api/media/route.ts` só trocaram o import para `repository`. O uso de `isUuid` via `@/lib/content/server` saiu do módulo de mídia.
+- Divergência preservada: a mídia continua aceitando só texto (`readString`), não número do JSON (`readScalar`) como produtos.
+- Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **256/256** (250 existentes sem edição + 6 novos em `media-schema.test.ts`), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
+- Observação: numa das execuções o teste do S14 "prazo total: chamada lenta perto do fim do prazo falha com worker_timeout" falhou uma vez e passou nas duas repetições seguintes (sensível a tempo sob carga; o PR #61 do S14 trata a classificação de timeout). Não é do escopo do S4.

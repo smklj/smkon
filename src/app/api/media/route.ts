@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
-import { listMedia } from "@/lib/media/server";
+import { listMedia } from "@/lib/media/repository";
 import { licenseStatus, todayInBrazil } from "@/lib/media/types";
 import { createClient } from "@/lib/supabase/server";
 import { findWorkspace } from "@/lib/tenancy/workspace";

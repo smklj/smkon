@@ -4,7 +4,7 @@ import { LicenseForm } from "@/components/media/LicenseForm";
 import { MediaUpload } from "@/components/media/MediaUpload";
 import { Pager, pageHref } from "@/components/ui/Pager";
 import { ArchiveMedia, RevokeLicense } from "@/components/media/RevokeLicense";
-import { listMedia, type MediaWithLicenses } from "@/lib/media/server";
+import { listMedia, type MediaWithLicenses } from "@/lib/media/repository";
 import {
   formatBytes,
   LICENSE_STATUS_LABEL,
