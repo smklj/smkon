@@ -5,6 +5,63 @@ Mantido pela frente **Integração** (execução agendada de hora em hora). Bran
 
 **Última verificação:** 19/11/2026 ~19:30 UTC (execução 5) · commit `72942c0` (Merge S15, PR #47)
 
+## 0. Quadro atual — execução 7 (21/11/2026 ~10:20 UTC)
+
+> Esta seção é o estado vigente. As seções 1–6 são o histórico da execução 5; as seções 7+ são auditorias S11 de 20–21/11.
+
+**Base verificada:** `7ab9b86` (docs(roadmap): record S11 staging index validation).
+
+### CI da integração (push)
+- Último run: [CI #427](https://github.com/smklj/smkon/actions/runs/44879037718) em `7ab9b86` — ✅ success. Runs #423–#426 foram
+  cancelados por pushes seguidos (não são falhas). Nenhuma quebra de integração; nenhuma correção de código necessária.
+
+### Validação local (Postgres 16 descartável, Node 22.23.5) — `7ab9b86` + este PR
+| Etapa | Resultado real |
+|---|---|
+| `npm ci` | ✅ 362 pacotes, 0 vulnerabilidades |
+| `npm run typecheck` | ✅ |
+| `npm run lint` | ✅ |
+| `npm run test:unit` | ✅ 250/250 (0 falhas, 0 pulados) |
+| `npm run build` | ✅ |
+| `npm run test:db` (26 migrations) | ✅ 23/23 arquivos de teste |
+
+### Migrations (comparação por nome; `list_migrations` em 21/11 ~10:15 UTC)
+- Repositório (integração): 26 migrations, até `20261121170000_mercado_livre_fk_indexes`.
+- **Staging** (`xoyasrizivadxnpmzzno`): 28 — as 26 do repositório **mais 2 que não estão na integração**:
+  `mercado_livre_order_sync_state` (versão `20261121090433`) e `mercado_livre_order_versioning` (`20261121091235`).
+  Ambas existem só na branch do PR #60 (`feat/s11-manual-history-pagination`, Draft, não mergeado) como
+  `20261121180000_*` e `20261121200000_*`. ⚠️ Desvio: staging à frente da integração; conferir que o conteúdo mergeado
+  do #60 seja idêntico ao aplicado (ou corrigir por migration nova) antes de qualquer `db push`.
+- **Produção** (`hpplboyysmfcjsnjrdmw`): 20. Faltam (🔐 Owner), em ordem: `20261119120000_keyset_pagination_indexes`,
+  `20261121130000_mercado_livre_credentials`, `20261121140000_mercado_livre_oauth_attempts`,
+  `20261121150000_mercado_livre_order_sync`, `20261121160000_mercado_livre_oauth_atomic_completion`,
+  `20261121170000_mercado_livre_fk_indexes` (+ as 2 do #60 quando mergeadas).
+
+### S5.1 (desta frente)
+- ✅ `workspace_members` aplicada no staging (versão `20261119232430`), grants/RLS e advisors conferidos na execução 6.
+- ✅ E2E de admin endurecido neste PR (#56): o teste "Membros" exige a lista com o próprio usuário e rejeita o aviso
+  de migration ausente. Resultado no "Playwright · Staging" deste PR deve ser conferido antes do merge.
+- 🔐 Decisão do Owner (não alterada): `ensure_workspace` cria workspace vazio para usuário removido de todos os workspaces.
+
+### Quadro das frentes
+| Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
+|---|---|---|---|---|---|
+| S14 (agentes) | ✅ handoff; correção de timeout em andamento | #61 (Draft) | — | #61 | Produção ok p/ `agent_model_usage` (já aplicada); `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
+| S15 (CRM/LGPD) | ✅ handoff | — | ✅ | — | — (migration já na produção) |
+| S16 (performance) | ✅ handoff (`docs/S16_HANDOFF.md`) | — | ✅ | — | Produção de `keyset_pagination_indexes` |
+| S6.1 (CSP/logs) | ✅ handoff | — | ✅ | — | Destino externo de logs (opcional) |
+| S4 (domínio) | Etapas 1–2b (#54, #55); faltam 2c–2g e handoff | — | — | Sem atividade desde 19/11 23:00 UTC | — |
+| S11 (Mercado Livre) | Conector parcial mergeado (#57, #59); paginação histórica em #60 | #60 (Draft) | — | Staging à frente (2 migrations do #60) | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
+| Integração | Execução 7: CI e validação local verdes | #56 | aguardando | Merge do #56 | — |
+
+Handoffs: ✅ S14, ✅ S15, ✅ S16, ✅ S6.1 · ⏳ S4. Relatório final ao Owner só quando S4 tiver handoff.
+
+### Autorizações para produção (acumulado)
+1. Migrations na produção na ordem acima (keyset + 5 S11, e as do #60 após merge).
+2. Merge na `main` com plano de release — a integração está muito à frente de `main` e 6 commits atrás; não promover sem reconciliar.
+3. Vercel: `SUPABASE_SECRET_KEY`, OIDC/AI Gateway, `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED`; credenciais OAuth e chave de criptografia do Mercado Livre; opcional `LOG_DRAIN_URL`/`LOG_DRAIN_TOKEN`.
+4. Segurança (revisão antes da promoção): `rate_limit_consume` executável por anon (intencional), 31 SECURITY DEFINER para authenticated, leaked-password protection desativada (configuração de Auth).
+
 ## 1. CI da branch de integração (push)
 
 | Commit | Run | Resultado |

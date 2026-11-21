@@ -27,15 +27,15 @@ test("Financeiro: estados das comissões separados e sem valores inventados", as
   await snap(page, "40-financeiro");
 });
 
-test("Membros: lista do workspace (ou aviso claro sem a migration S5.1)", async ({ page }) => {
+test("Membros: lista do workspace com o próprio usuário", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Membros", exact: true })).toBeVisible();
+  // A migration S5.1 (20261119070000_workspace_members) já está aplicada no staging:
+  // o aviso de migration ausente não é mais aceito.
+  await expect(page.getByText("20261119070000_workspace_members")).toHaveCount(0);
   const list = page.getByRole("list", { name: "Membros do workspace" });
-  const pending = page.getByText("20261119070000_workspace_members");
-  await expect(list.or(pending)).toBeVisible();
-  if (await list.isVisible()) {
-    // O próprio usuário aparece na lista.
-    await expect(list.getByText("· você").first()).toBeVisible();
-  }
+  await expect(list).toBeVisible();
+  // O próprio usuário aparece na lista.
+  await expect(list.getByText("· você").first()).toBeVisible();
   await snap(page, "31-admin-membros");
 });
