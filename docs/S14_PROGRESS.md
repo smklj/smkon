@@ -345,10 +345,20 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
 
 - **Código:** etapas 1–9 integradas em `feature/smkon-production-readiness` pelos PRs #35–#42 e #46. Preview da head `011accdb` está READY. S14 não está na `main`; Production permanece no commit S7.2 C.
 - **Banco:** migrations lógicas `agent_draft_content`, `agent_claim_queue` e `agent_model_usage` presentes em staging e produção. `agent_model_usage` tem 0 linhas nos dois ambientes.
-- **Uso real:** staging tem 78 execuções encerradas com `kill_switch`, sem `agent_steps`; produção tem 0 execuções. Nenhuma chamada real ao AI Gateway foi comprovada.
+- **Uso real:** staging tem 81 execuções, sem `agent_steps`; produção tem 0 execuções. Nenhuma chamada real ao AI Gateway foi comprovada.
 - **Vercel:** provider, modelo Haiku 5.5, modo OIDC, flag do executor e teto interno de US$ 5 estão presentes em Preview e Production. `CRON_SECRET` está cadastrado como sensitive, mas seu comprimento não foi validado. `SUPABASE_SECRET_KEY` está ausente. Não foi encontrado budget externo do AI Gateway para o projeto.
 - **Segurança do consumo:** RLS habilitado; anon não lê nem executa RPCs; membros leem sob policy; gravação e agregação de consumo são exclusivas de `service_role`. INSERT direto na tabela permanece revogado.
-- **CI atual:** no commit de integração `011accdb`, typecheck/lint e banco passaram; um teste unitário temporal falhou na primeira tentativa, mas o rerun (`44867365527`, attempt 2) terminou success. A correção determinística está no PR #58, commit `28dc192d9481d739ab65c7c283ce3e8852390203`; CI do PR (`44868819971`, attempt 3, commit `576c932`) terminou **success** em typecheck, lint, unit tests, build e SQL. Os commits posteriores até `d4055dae` alteraram apenas documentação. Preview do head atual READY; E2E do Preview (`44868983047`) está em andamento.
+- **CI atual:** no commit de integração `011accdb`, typecheck/lint e banco passaram; um teste unitário temporal falhou na primeira tentativa, mas o rerun (`44867365527`, attempt 2) terminou success. A correção determinística está no PR #58, commit `28dc192d9481d739ab65c7c283ce3e8852390203`; CI do PR (`44868819971`, attempt 3, commit `576c932`) terminou **success** em typecheck, lint, unit tests, build e SQL. Os commits posteriores até `d4055dae` alteraram apenas documentação. Preview do head atual READY; E2E do Preview (`44868983047`) terminou **success**.
 - **Próxima ação:** Owner cadastra `SUPABASE_SECRET_KEY` em Preview, confirma `CRON_SECRET` e o budget externo; depois executar uma única `operations_review` no staging e conferir chamada OIDC + registro de consumo. Sem merge em `main` ou alterações de produção nesta etapa.
 
 - **Hardening de custo:** `onUsage` persiste depois da resposta 2xx; se a RPC falhar, o custo do provedor já pode ter ocorrido sem linha correspondente. O budget externo do AI Gateway é obrigatório antes do primeiro uso real. `AGENT_EXECUTOR_ENABLED=true` já consta em Production, mas a rota S14 ainda não está em `main`; manter a flag Production desligada antes de qualquer release até fechar os gates.
+
+
+## Auditoria complementar — 21/11/2026, 03:00 BRT
+
+- **PR #58:** aberto e Draft; branch de correção 12 commits à frente e 0 atrás da base de integração. CI `44868819971` e Playwright E2E `44868983047` terminaram **success**. Preview `d4055dae` READY.
+- **Vercel:** provider `vercel-ai-gateway`, modelo `anthropic/claude-haiku-5.5`, auth `oidc`, flag `AGENT_EXECUTOR_ENABLED=true` e teto interno de US$ 5 presentes em Preview e Production. `CRON_SECRET` está como sensitive em ambos; valor não lido e comprimento não validado. `SUPABASE_SECRET_KEY` ausente. `AI_GATEWAY_API_KEY` ausente, esperado no modo OIDC.
+- **AI Gateway:** lista de budgets específicos vazia; defaults vazios; uso do projeto nos últimos 7 dias sem linhas. Nenhuma chamada real ou custo está comprovado.
+- **Supabase, leitura somente:** staging 25 migrations, 81 agent_runs, 0 agent_steps, 0 agent_model_usage e 0 rascunhos de agente; produção 20 migrations e 0 linhas nas quatro contagens.
+- **Bloqueio:** não realizar teste real até cadastrar a secret key de staging e criar budget externo do AI Gateway. A flag Production está true, mas a rota S14 ainda não está em main; desligá-la antes de qualquer release. Sem merge, migration, escrita de dados ou alteração de produção nesta rodada.
+- **Cron:** `/api/agents/worker` diário às 11:17 UTC; Vercel Cron não executa em Preview.
