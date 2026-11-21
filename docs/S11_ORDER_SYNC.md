@@ -119,3 +119,12 @@ O fluxo manual agora usa cursor server-side em mercado_livre_order_sync_state, �
 Estados: ready, running, completed e blocked. blocked é usado quando o offset máximo do provedor é atingido. A tabela é server-side only: RLS ligado, sem grants para anon/authenticated, e RPCs SECURITY DEFINER com search_path vazio concedidas somente a service_role.
 
 A migration e o teste SQL estão em revisão no PR #60. Não aplicar no Staging/Production antes do CI verde e de reconciliar o histórico remoto de migrations. O cursor não é ainda um sync incremental: a próxima etapa é dividir automaticamente janelas quando o offset atingir o teto e acompanhar date_last_updated.
+
+
+## Validação do checkpoint durável — 21/11/2026
+
+CI #456 passou nos dois jobs no head b898c5c7ff4741bdfe4a196b2fe6bc32ff17507e. A migration mercado_livre_order_sync_state foi aplicada no smkon-staging e registrada pelo Supabase como 20261121090433. Os quatro testes SQL S11 (credentials, OAuth completion, order sync e order sync state) foram executados em rollback-only e terminaram sem exceções.
+
+A verificação do ambiente confirmou RLS ligado, nenhum SELECT direto por anon/authenticated, leitura por service_role e as três RPCs novas com SECURITY DEFINER/search_path vazio e EXECUTE somente para service_role. Não há checkpoint real, pois nenhuma conta Mercado Livre está conectada.
+
+Production continua com 20 migrations e sem tabelas/RPCs S11. Não houve alteração de produção. O Preview READY disponível ainda corresponde ao commit intermediário 98ca20c, não ao head validado; a quota Vercel bloqueia novo deployment. A configuração OAuth e SUPABASE_SECRET_KEY ainda estão ausentes.
