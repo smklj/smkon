@@ -149,40 +149,40 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 
 ## Reconciliação operacional — 21/11/2026 14:05 BRT
 
-Esta seção substitui os estados anteriores quando houver divergência. Consulta somente de leitura, sem exposição de secrets.
+Esta seção substitui estados anteriores quando houver divergência. Consultas somente de leitura; nenhum secret foi exibido.
 
 ### GitHub e branches
-- PR #76 continua Draft, aberta e sem reviews/threads, mas a comparação real com a base atual é **diverged: 5 commits à frente / 2 atrás**; base atual `feature/smkon-production-readiness` em `79ff06be`. O head da PR é `a75a5f3f`; não mergear.
-- A base avançou desde o merge-base `99a9ac8` por dois commits que alteram apenas `docs/INTEGRATION_STATUS.md`. As quatro alterações de código/testes S14 não conflitam com esses commits.
-- Correções de timeout e ledger reaplicadas numa branch limpa baseada em `79ff06be`: `fix/s14-timeout-ledger-rebased-20261121-1405`. A nova PR deve permanecer Draft até CI/E2E e gates operacionais; a PR #76 será encerrada como substituída somente depois da abertura da substituta.
-- `feature/smkon-production-readiness` está 130 commits à frente e 6 atrás de `main`; não promover a integração inteira. A candidata `release/s14-mainline-integration-20261121` está 34 à frente/0 atrás de `main`, sem merge; manter apenas como referência isolada.
-- PRs de splits S14 (#35–#42 e #46) permanecem integradas na branch de preparação; PRs #60 (S11), #70 (S17), #72/#75 (S4) são frentes distintas, não devem ser misturadas ao fechamento S14.
+- PR #76 segue Draft, aberta e sem reviews/threads, mas a comparação real com a base atual é **diverged: 5 commits à frente / 2 atrás**; base `feature/smkon-production-readiness` em `79ff06be`. Head `a75a5f3f`; não mergear.
+- A base avançou desde o merge-base `99a9ac8` por dois commits apenas em `docs/INTEGRATION_STATUS.md`; não há conflito de código nos quatro arquivos S14 reaplicados.
+- Correções reaplicadas em branch limpa `fix/s14-timeout-ledger-rebased-20261121-1405`, criada diretamente de `79ff06be`. A PR substituta permanece Draft; a #76 só será encerrada depois da abertura da nova PR.
+- Integração: 130 commits à frente e 6 atrás de `main`; não promover a branch inteira. Candidata `release/s14-mainline-integration-20261121`: 34 à frente/0 atrás, não mergeada.
+- PRs #60 (S11), #70 (S17), #72/#75 (S4) são frentes distintas; não misturar ao S14.
 
 ### CI, Preview e E2E
-- CI #44923342292: dois jobs GitHub Actions concluídos com sucesso no SHA de código `41ee45e2`; 278/278 unitários, audit, typecheck, lint, build, migrations e SQL.
-- CI #44923537721: dois jobs concluídos com sucesso no SHA documental `7c76fa16`; não atribuir automaticamente aos commits documentais posteriores da PR #76.
+- CI #44923342292: dois jobs GitHub Actions com sucesso no SHA de código `41ee45e2`; 278/278 unitários, audit, typecheck, lint, build, migrations e SQL.
+- CI #44923537721: dois jobs com sucesso no SHA documental `7c76fa16`; não atribuir automaticamente aos commits documentais posteriores da PR #76.
 - E2E #44922532633: Playwright 36/36 no Preview da base de integração SHA `99a9ac8`, não no head da PR #76.
-- Check Vercel do SHA de código `41ee45e2` falhou por `build-rate-limit`; não há deployment para a branch da PR #76. A consulta de deployments filtrada pela branch também retornou zero. Não atribuir Previews de outras branches a este código.
+- Check Vercel do SHA `41ee45e2` falhou por `build-rate-limit`; não há deployment para a branch #76. Não atribuir Preview de outra branch a este código.
 
 ### Supabase — estado real
 - Staging `xoyasrizivadxnpmzzno`: 29 migrations; 110 `agent_runs`, todas `killed`; 0 steps, 0 usage, US$ 0 no ledger, 0 tool grants e 0 drafts ligados a runs.
-- Produção `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, 0 steps, 0 usage, US$ 0 no ledger, 0 tool grants e 0 drafts ligados a runs.
-- Os nomes das três migrations S14 existem nos dois bancos, mas os **version IDs divergem**: staging usa `20261119101353`, `20261119101414`, `20261119114718`; produção usa `20261119040000`, `20261119050000`, `20261119060000`. Não executar repair/db push sem reconciliação do conteúdo e backup.
+- Produção `hpplboyysmfcjsnjrdmw`: 20 migrations; 0 runs, 0 steps, 0 usage, US$ 0 no ledger, 0 grants e 0 drafts ligados a runs.
+- Os nomes das três migrations S14 existem nos dois bancos, mas os **version IDs divergem**: staging `20261119101353`, `20261119101414`, `20261119114718`; produção `20261119040000`, `20261119050000`, `20261119060000`. Não executar repair/db push sem reconciliação do conteúdo e backup.
 - RLS ativo: `agent_runs`, `agent_steps`, `agent_model_usage`, `agent_tool_grants`, `agent_settings` (1 policy cada); `content_items` (4). As seis RPCs de claim, step, draft, usage, spend e reap consultadas concedem EXECUTE apenas a `service_role`.
 - Settings staging: `kill_switch=false`, `max_runs_per_day=500`, `max_steps_per_run=12`; workspace auditado segue sem grants.
 
 ### Vercel, OIDC, AI Gateway e Cron
 - Inventário não secreto: provider `vercel-ai-gateway`, auth `oidc`, modelo `anthropic/claude-haiku-5.5`, teto interno `US$ 5` e `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
-- `SUPABASE_SECRET_KEY` ausente no inventário. `CRON_SECRET` existe como sensitive em Preview e Production, mas seu valor não foi lido; comprimento mínimo de 32 e ausência de whitespace não validados.
-- O código lê `x-vercel-oidc-token` e fallback `VERCEL_OIDC_TOKEN`; o handler passa o header ao resolver. A disponibilidade do token no runtime ainda não foi comprovada por uma chamada real.
+- `SUPABASE_SECRET_KEY` ausente. `CRON_SECRET` existe como sensitive em Preview e Production, mas o valor não foi lido; comprimento mínimo de 32 e ausência de whitespace não validados.
+- Código lê `x-vercel-oidc-token` e fallback `VERCEL_OIDC_TOKEN`; handler passa o header ao resolver. A disponibilidade do token no runtime ainda não foi comprovada.
 - AI Gateway: nenhum budget de team/project/user/API key nem default; uso agregado do projeto nos últimos 7 dias sem linhas (0 requests/tokens/custo). Catálogo contém o modelo configurado. `agent_model_usage` vazio; nenhuma chamada real comprovada.
-- Uma chamada recente a `/api/agents/worker` nos logs era de deployment da branch `feature/s4-audience-domain` e terminou em `unauthorized`; não é execução S14 nem evidência de Gateway.
-- `vercel.json` e a rota do worker existem na integração, mas não em `main`; o Cron diário `17 11 * * *` não está ativo em produção. O worker exige primeiro flag, Cron secret válido, Bearer, modelo, budget e service key; sem `SUPABASE_SECRET_KEY` retorna `503 service_not_configured` antes de criar o cliente/claim.
+- Log recente de `/api/agents/worker` era de deployment da branch `feature/s4-audience-domain` e terminou em `unauthorized`; não é execução S14.
+- `vercel.json` e a rota do worker existem na integração, mas não em `main`; Cron diário `17 11 * * *` não está ativo em produção. Sem `SUPABASE_SECRET_KEY`, worker autenticado retorna `503 service_not_configured` antes de criar cliente/claim.
 
-### Controles financeiros e bloqueios
-- O limite interno é soft: consulta gasto antes de cada claim, sem reserva atômica por chamada. Não há outbox/reservation durável para reconciliar cobrança caso a RPC falhe após a resposta.
-- Não executar teste real enquanto faltar service key exclusiva de staging, grants mínimos, budget externo de escopo isolado e validação segura do Cron secret. Não ler nem registrar valores de secrets.
-- Próximo gate: CI da branch limpa; Preview do SHA exato; E2E no Preview; provisionamento controlado de staging; uma única `operations_review`; conferir request no Gateway, steps/verifier e ledger por run; reconciliar custo/tokens com agregado do Gateway.
+### Orçamento e bloqueios
+- Limite interno é soft: gasto consultado antes de cada claim, sem reserva atômica por chamada. Não há outbox/reservation durável para reconciliar cobrança se a RPC falhar após resposta.
+- Não executar teste real enquanto faltarem service key exclusiva de staging, grants mínimos, budget externo isolado e validação segura do Cron secret.
+- Próximo gate: CI da branch limpa; Preview do SHA exato; E2E nesse Preview; provisionamento de staging; uma única `operations_review`; conferir request no Gateway, steps/verifier e ledger por run; reconciliar custo/tokens com agregado do Gateway.
 
 ### Segurança
 Nenhum merge, alteração em `main`/Production, migration remota, secret, grant ou chamada paga foi executada nesta rodada.
