@@ -61,9 +61,9 @@ declare
   v_lease_id uuid;
 begin
   if p_connection_id is null or p_organization_id is null
-     or p_action not in ('next', 'restart')
+     or p_action is null or p_action not in ('next', 'restart')
      or p_now is null or p_now > now() + interval '5 minutes'
-     or p_lease_seconds not between 30 and 600 then
+     or p_lease_seconds is null or p_lease_seconds not between 30 and 600 then
     raise exception 'invalid_order_sync_claim' using errcode = '22023';
   end if;
 
