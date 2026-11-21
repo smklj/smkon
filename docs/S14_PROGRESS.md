@@ -356,9 +356,9 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
 ## 21/11/2026 13:16 BRT — PR #76 e validação atual
 
 - PR #71 fechada sem merge (24 ahead/8 behind); PR #76 é a substituta limpa, 2 ahead/0 behind, mergeable=true, Draft.
-- Head PR #76: 41ee45e2. CI #44923342292 success; 278/278 unit tests, typecheck, lint, build, dependency audit, migrations e SQL tests aprovados.
+- Head documental PR #76: 7c76fa16d6b069925d703d35ddb8cd1c2990f5bf; código/testes validados no SHA 41ee45e2fb80dd05613fc4bae0d1f3a129824b78; 3 commits à frente / 0 atrás, mergeable=true. CI #44923342292 success; 278/278 unit tests, typecheck, lint, build, dependency audit, migrations e SQL tests aprovados. O commit documental posterior não altera código.
 - E2E #44922532633: 36/36 Playwright passaram no Preview da integração SHA 99a9ac8616e07f85417f51772c175cc11a023712, incluindo agents.spec. Não foi executado no head PR #76.
-- Preview do head PR #76 não foi criado: Vercel recusou o deployment por api-deployments-free-per-day. Não usar Preview anterior como evidência deste SHA.
+- Preview do head documental PR #76 não foi criado: Vercel recusou o deployment por api-deployments-free-per-day. Não usar Preview anterior como evidência deste SHA.
 - Supabase: staging 108 runs killed, 0 steps/usage/grants/agent-linked content; produção zero dados S14. Migrations S14 em ambos; RLS ativo. Staging kill_switch=false, 500 runs/dia, 12 steps/run.
 - OIDC/modelo/provider configurados; orçamento interno US$ 5; SUPABASE_SECRET_KEY ausente; CRON_SECRET sensitive presente mas comprimento não validado; AGENT_EXECUTOR_ENABLED=true em Preview e Production.
 - AI Gateway sem budgets nem requests/tokens/custo em 24h/7d; agent_model_usage vazio. Não há chamada real comprovada.
