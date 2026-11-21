@@ -44,6 +44,7 @@ export async function refreshMercadoLivreConnection(connectionId: string): Promi
   const claim = await claimMercadoLivreRefresh(connectionId);
   if (!claim) return false;
 
+  let persisted = false;
   try {
     const context = {
       organizationId: claim.organizationId,
@@ -70,9 +71,17 @@ export async function refreshMercadoLivreConnection(connectionId: string): Promi
       expiresAt: refreshed.expiresAt,
     });
     if (!saved) throw new Error("Mercado Livre refresh lease expired before credentials were saved.");
+    persisted = true;
     return true;
   } finally {
-    // The lease id makes this safe even if another worker has since acquired a new lease.
-    await releaseMercadoLivreRefresh(connectionId, claim.leaseId);
+    // A successful CAS already clears the lease. On failure, release only this
+    // worker's lease; do not let cleanup failure mask the original refresh error.
+    if (!persisted) {
+      try {
+        await releaseMercadoLivreRefresh(connectionId, claim.leaseId);
+      } catch {
+        // The lease expires automatically; never replace the primary failure.
+      }
+    }
   }
 }
