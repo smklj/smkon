@@ -1,3 +1,17 @@
+## Reconciliação S14 — 21/11/2026 20:00 BRT
+
+- Os nove splits S14 (#35–#42 e #46) estão integrados. Não há split de implementação original pendente.
+- Correções de timeout/ledger S14 estão no histórico de `main`.
+- A linha oficial é `main`. `feature/smkon-production-readiness` está congelada (2 ahead/36 behind; somente diff documental observado); não promover.
+- `release/s14-mainline-integration-20261121` está obsoleta (34 ahead/289 behind); não promover.
+- A PR #102 está aberta, sem reviews e divergente (5 ahead/10 behind); será substituída por uma atualização documental baseada no HEAD atual.
+- Estado operacional: código e Cron S14 estão presentes no deployment Production READY `86bd67c`, mas o deployment está 7 commits atrás do HEAD atual `84afe632`. A rota não tem invocação real comprovada.
+- Homologação permanece bloqueada: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` não validado; OIDC sem prova runtime; zero grants de leitura no staging; nenhum budget externo; zero requests no Gateway e zero linhas no ledger.
+- Não fazer merge, deploy, alterações de Production, migrations remotas, secrets, grants ou budgets sem autorização específica.
+
+
+---
+
 # SMKON — Roadmap de execução em splits
 
 **Origem:** Auditoria Técnica v1 (18/11/2026).
