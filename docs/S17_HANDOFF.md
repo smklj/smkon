@@ -32,8 +32,13 @@ O repositório já tinha a base de conectores de receita do S11: `source_connect
 - `typecheck`, `lint`, `build`: sem erros.
 - E2E e validação visual: não executados nesta sessão (ficam para o Preview).
 
+## Staging
+Migration aplicada em `xoyasrizivadxnpmzzno` em 21/11 (autorização do Owner). MD5 das 9 funções e das 35 constraints idêntico ao banco local migrado pelo repositório. RLS ligada nas duas tabelas; `anon` sem acesso; `claim`/`finish` fora do alcance de `authenticated`. Advisors de segurança: só o aviso esperado de RPC `security definer` executável por `authenticated` nas 3 funções de pedido/decisão/cancelamento (mesmo padrão dos demais módulos).
+
+Achados anteriores ao S17, registrados para tratar à parte: `rate_limit_consume` executável por `anon`, e proteção contra senhas vazadas desligada no Supabase Auth.
+
 ## Pendências
-- **Migration não aplicada** em staging nem produção: exige autorização do Owner.
+- **Produção:** migration `20261121180000` não aplicada; exige autorização do Owner.
 - Ainda não há fluxo de conexão: as contas sociais entram quando o adapter do Metricool existir (S19).
 - Tela de aprovação das ações externas: entra junto com o S19, quando existirem pedidos reais.
 - Hotmart: uma mesma conta pode ser produtora e afiliada, mas `source_connections` tem `unique (organization_id, provider, external_account_id)`. O S18 precisa decidir entre duas conexões com identificadores distintos ou uma conexão que gere eventos nos dois domínios.

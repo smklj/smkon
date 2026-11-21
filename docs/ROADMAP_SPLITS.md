@@ -66,7 +66,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 
 | Split | Escopo |
 |---|---|
-| **S17** · implementado e testado (`docs/S17_HANDOFF.md`); migration `20261121180000` aguardando autorização | Hub de Conectores: Hotmart/Shopify/Stripe em `source_connections`, `social_accounts`, `external_action_requests` com aprovação por hash, catálogo e painel em `/admin` |
+| **S17** · implementado e testado (`docs/S17_HANDOFF.md`); migration `20261121180000` no staging; produção aguardando autorização | Hub de Conectores: Hotmart/Shopify/Stripe em `source_connections`, `social_accounts`, `external_action_requests` com aprovação por hash, catálogo e painel em `/admin` |
 | **S18** | Webhook da Hotmart → `external_events` → ledger 🔐 segredos |
 | **S19** | Adaptador Metricool para todas as redes + tela de aprovação de ações 🔐 plano/conta |
 | **S20** | Brand Kit de Perfil |
