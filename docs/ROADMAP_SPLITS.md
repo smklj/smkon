@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 executor e 9 etapas integrados na branch de preparação; as 3 migrations (agent_draft_content, agent_claim_queue, agent_model_usage) estão em staging e produção; PR #61 (timeout + contabilização conservadora de falha de body) em validação, PR #58 divergido/substituído; CI #44883123910 e E2E #44883164342 passaram no head anterior; novo head aguarda CI/E2E; não operacional: SUPABASE_SECRET_KEY ausente em Preview, sem budget externo, sem tool grants e sem chamada real ao Gateway 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 executor e 9 etapas integrados na branch de preparação; as 3 migrations (agent_draft_content, agent_claim_queue, agent_model_usage) estão em staging e produção; PR #61 (timeout + contabilização conservadora de falha de body) em validação, PR #58 fechado sem merge como superseded; CI #44887809941 passou no commit de código d9ff3869, E2E anterior passou em e0faaa29, mas Vercel Preview do patch novo está bloqueado por build-rate-limit; não operacional: SUPABASE_SECRET_KEY ausente em Preview, sem budget externo, sem tool grants e sem chamada real ao Gateway 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
