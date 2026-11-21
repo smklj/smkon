@@ -4,6 +4,7 @@ create table public.mercado_livre_oauth_attempts (
   state_hash text not null unique check (state_hash ~ '^[a-f0-9]{64}$'),
   organization_id uuid not null references public.organizations(id) on delete cascade,
   connection_id uuid not null,
+  domain public.smkon_revenue_domain not null default 'owned_sales' check (domain = 'owned_sales'),
   created_by uuid not null references auth.users(id) on delete cascade,
   encrypted_verifier jsonb not null
     check (jsonb_typeof(encrypted_verifier) = 'object')
@@ -11,7 +12,7 @@ create table public.mercado_livre_oauth_attempts (
   expires_at timestamptz not null,
   consumed_at timestamptz,
   created_at timestamptz not null default now(),
-  foreign key (connection_id, organization_id, 'owned_sales'::public.smkon_revenue_domain)
+  foreign key (connection_id, organization_id, domain)
     references public.source_connections(id, organization_id, domain) on delete cascade
 );
 
