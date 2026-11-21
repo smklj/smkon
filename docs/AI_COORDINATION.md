@@ -229,3 +229,13 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - **Bloqueios do Owner:** criar/selecionar app no DevCenter, cadastrar credenciais e chave de criptografia no Preview; autorizar conta de teste quando o fluxo estiver pronto. Nenhum valor secreto deve ser enviado pelo chat.
 - **Limites mantidos:** nenhuma migration hospedada, alteração de secrets, conta conectada, sync recorrente, merge ou deploy de produção nesta execução.
 - **Próxima ação:** revisar o fluxo de UI e os estados de conexão no PR #57; depois validar OAuth real em Preview com conta de teste, sem habilitar sincronização financeira automática.
+
+## S11 — preparação one-click avançada (21/11/2026 UTC)
+
+- **PR:** [#57](https://github.com/smklj/smkon/pull/57), branch `feature/s11-mercado-livre-adapter`, Draft.
+- **Implementado no branch:** ação de conexão na Administração; endpoint que deriva workspace da sessão e cria/reutiliza conexão pendente sob owner/admin; início OAuth integrado; retorno do callback para Administração; verificação da identidade com `/users/me`; smoke test read-only limitado a 50 pedidos via `/orders/search`, com refresh serializado quando necessário e resumo agregado sem persistência.
+- **Ainda não pronto para operação:** não existe ainda pipeline de ingestão persistente/idempotente, checkpoint incremental, reconciliação de pagamentos/estornos/taxas, desconexão/recuperação completa ou execução recorrente. O preview de leitura não grava dados e não deve alimentar o Finance Center como se fosse sincronização concluída.
+- **Bloqueios externos:** app/credenciais Mercado Livre e secrets server-side em Vercel Preview ainda precisam ser configurados pelo Owner; conta ainda não autorizada; migrations permanecem apenas no PR.
+- **CI/deploy:** pipeline acionado após commits do incremento; consultar o último head e aguardar Vercel Preview antes de declarar validado/publicado.
+- **Limites:** nenhum secret/conta real, migration hospedada, merge ou deploy de produção nesta execução.
+- **Próxima ação técnica:** revisar/validar CI; concluir sync persistente com upsert idempotente e checkpoint, conciliação baseada em dados oficiais e testes SQL/unit/E2E em staging; só depois habilitar sync manual operacional. Agendamento recorrente depende de evidência de estabilidade e aprovação do Owner.
