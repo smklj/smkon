@@ -87,7 +87,7 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
       const paginationMessage = next !== null
         ? `Próxima página disponível (offset ${next}).`
         : result.paginationLimitReached
-          ? "Limite de navegação atingido; divida a janela temporal em intervalos menores para continuar."
+          ? "Limite de offset (10.000) atingido; a divisão em janelas menores ainda não está disponível nesta interface."
           : result.hasMore
             ? "Há mais pedidos, mas o provedor não retornou uma página utilizável."
             : "Fim da janela.";
