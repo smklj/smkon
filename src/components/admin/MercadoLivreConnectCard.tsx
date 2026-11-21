@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { MercadoLivreOrderSyncWindow } from "@/lib/integrations/mercado-livre/order-sync-window";
 
 type ConnectResponse = {
   error?: string;
@@ -10,11 +11,25 @@ type ConnectResponse = {
   connectionId?: string;
 };
 
+type SyncResponse = {
+  error?: string;
+  pageOffset?: number;
+  pageSize?: number;
+  persistedCount?: number;
+  providerTotal?: number | null;
+  nextOffset?: number | null;
+  createdFrom?: string;
+  createdTo?: string;
+  message?: string;
+};
+
 export function MercadoLivreConnectCard({ connected, canManage }: { connected: boolean; canManage: boolean }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [syncWindow, setSyncWindow] = useState<MercadoLivreOrderSyncWindow | null>(null);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -42,16 +57,34 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
     }
   }
 
-  async function runSync() {
+  async function runSync(offset = 0, window: MercadoLivreOrderSyncWindow | null = null) {
     setBusy(true);
     setMessage(null);
     setPreview(null);
     setSyncResult(null);
+    if (offset === 0) {
+      setSyncWindow(null);
+      setNextOffset(null);
+    }
     try {
-      const response = await fetch("/api/integrations/mercado-livre/sync", { method: "POST", cache: "no-store" });
-      const result = await response.json() as { error?: string; pageSize?: number; persistedCount?: number; message?: string };
-      if (!response.ok || result.persistedCount === undefined) throw new Error(result.error ?? "Não foi possível importar os pedidos.");
-      setSyncResult(`${result.persistedCount} snapshot(s) processado(s) de ${result.pageSize ?? 0} pedido(s). ${result.message ?? "Sem lançamentos de liquidação."}`);
+      const response = await fetch("/api/integrations/mercado-livre/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offset, ...(window ?? {}) }),
+        cache: "no-store",
+      });
+      const result = await response.json() as SyncResponse;
+      if (!response.ok || result.persistedCount === undefined || !result.createdFrom || !result.createdTo) {
+        throw new Error(result.error ?? "Não foi possível importar os pedidos.");
+      }
+
+      const next = typeof result.nextOffset === "number" ? result.nextOffset : null;
+      const pageNumber = Math.floor((result.pageOffset ?? offset) / 50) + 1;
+      setSyncWindow({ createdFrom: result.createdFrom, createdTo: result.createdTo });
+      setNextOffset(next);
+      setSyncResult(
+        `Página ${pageNumber}: ${result.persistedCount} snapshot(s) processado(s) de ${result.pageSize ?? 0} pedido(s). Total na janela: ${result.providerTotal ?? "indisponível"}. ${next !== null ? `Próxima página disponível (offset ${next}).` : "Fim da janela."} ${result.message ?? "Sem lançamentos de liquidação."}`,
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha na importação.");
     } finally {
@@ -114,15 +147,22 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
           <button className="button" type="button" onClick={runPreview} disabled={busy || !canManage}>
             Testar leitura
           </button>
-          <button className="button button-primary" type="button" onClick={runSync} disabled={busy || !canManage}>
-            {busy ? "Importando…" : "Importar até 50 pedidos"}
+          <button className="button button-primary" type="button" onClick={() => runSync(0)} disabled={busy || !canManage}>
+            {busy ? "Importando…" : "Importar histórico (50 por página)"}
           </button>
+          {nextOffset !== null && syncWindow ? (
+            <button className="button" type="button" onClick={() => runSync(nextOffset, syncWindow)} disabled={busy || !canManage}>
+              Importar próxima página
+            </button>
+          ) : null}
         </div>
       ) : null}
       {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}
       {preview ? <p className="feedback" role="status">{preview}</p> : null}
       {syncResult ? <p className="feedback" role="status">{syncResult}</p> : null}
-      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : "A importação é manual, limitada a 50 pedidos e não cria lançamentos financeiros."}</p>
+      <p className="row-meta">
+        A importação percorre os últimos 12 meses disponíveis em páginas de até 50 pedidos. A busca de vendedor pode filtrar pedidos cancelados; repetir uma página é idempotente. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : "Nenhum lançamento financeiro ou valor liquidado é criado nesta etapa."}
+      </p>
     </div>
   );
 }
