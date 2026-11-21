@@ -5,8 +5,8 @@ import {
   createOAuthAttempt,
   isOAuthAttemptValid,
   safeEqualState,
-} from "../../src/lib/integrations/mercado-livre/oauth-state";
-import { buildAuthorizationUrl } from "../../src/lib/integrations/mercado-livre/oauth-url";
+} from "../../src/lib/integrations/mercado-livre/oauth-state.ts";
+import { buildAuthorizationUrl } from "../../src/lib/integrations/mercado-livre/oauth-url.ts";
 
 test("OAuth attempt creates high-entropy state and PKCE verifier", () => {
   const attempt = createOAuthAttempt(1_000);
