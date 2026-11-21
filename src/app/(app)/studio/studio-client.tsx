@@ -31,6 +31,10 @@ import {
   generateAutonomousDraft,
   type ContentPresetType,
 } from "@/lib/content/autonomous-generator";
+import {
+  generateAutonomousPost,
+  type PostKind,
+} from "@/lib/content/smart-post-generator";
 
 type Filter = "Todos" | ContentStatusLabel;
 
@@ -106,6 +110,35 @@ export default function StudioClient() {
     setViralHook(generated.hook);
     if (generated.promoCode) setPromoCode(generated.promoCode);
     setNotice(`Conteúdo autônomo gerado com sucesso! Revise no player 9:16 e clique em "Aprovar esta versão".`);
+  }, []);
+
+  const handleGenerateAutonomousPost = useCallback((kind: PostKind) => {
+    const defaultTopics: Record<PostKind, string> = {
+      "carousel-tips": "5 Achados Secretos da Shopee",
+      "feed-single": "Mini Aspirador Portátil Sem Fio",
+      "battle-poll": "Headset Gamer Sem Fio vs Earbuds",
+      "question-box": "Qual o seu maior arrependimento de compra?",
+      "offer-alert": "Oferta Relâmpago Shopee",
+    };
+    const post = generateAutonomousPost(kind, defaultTopics[kind]);
+    setDraft((prev) => ({
+      ...prev,
+      title: post.title,
+      product: post.topic,
+      script: post.slides
+        .map(
+          (s) =>
+            `[SLIDE ${s.slideNumber}/${s.totalSlides}]: ${s.headline} (${s.highlightText || ""})\n${s.bodyText}${
+              s.bulletPoints ? `\n• ` + s.bulletPoints.join("\n• ") : ""
+            }`
+        )
+        .join("\n\n"),
+      caption: post.caption,
+      cta: post.cta,
+      hashtags: post.hashtags,
+      channels: post.suggestedChannels,
+    }));
+    setNotice(`Post autônomo (${post.title}) gerado com sucesso! Revise os slides e a legenda na aba "Posts & Carrosséis" abaixo.`);
   }, []);
 
   // O filtro vale para todas as recargas (salvar, aprovar, excluir) sem recriar loadItems.
@@ -436,6 +469,22 @@ export default function StudioClient() {
               title="Gerar rascunho de Infoproduto Digital Kiwify"
             >
               📚 Gerar Infoproduto
+            </button>
+            <button
+              className="button button-secondary"
+              onClick={() => handleGenerateAutonomousPost("carousel-tips")}
+              disabled={saving}
+              title="Gerar carrossel completo de 5 slides para Instagram com gancho e CTA"
+            >
+              🎠 Post Carrossel
+            </button>
+            <button
+              className="button button-secondary"
+              onClick={() => handleGenerateAutonomousPost("battle-poll")}
+              disabled={saving}
+              title="Gerar post de batalha/enquete para pico de engajamento e comentários"
+            >
+              ⚔️ Batalha / Enquete
             </button>
             <button className="button button-primary" onClick={newDraft} disabled={saving}>Novo conteúdo</button>
           </>
