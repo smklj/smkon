@@ -144,3 +144,15 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - **Produção:** 20 migrations registradas; falta `20261119232441_keyset_pagination_indexes` e as quatro S11. Não há evidência verificável de backup/restauração no conector. O PR #57 tem como base a branch de integração, não `main`; a branch de integração está divergente de `main` (92 commits à frente e 6 atrás). Nenhuma migration/deploy de produção ou merge em `main` foi executado.
 - **Configuração:** Vercel não tem `SUPABASE_SECRET_KEY` nem as variáveis de OAuth/criptografia Mercado Livre. OAuth real e importação de dados reais continuam bloqueados.
 - **Classificação:** S11 parcialmente implementado e validado em staging; não está operacional como conector financeiro completo.
+
+## S11 — estado após merge do PR #57 (21/11/2026 UTC)
+
+- PR #57 foi mergeado por squash na branch `feature/smkon-production-readiness`, commit `8c73cbc87575ae49dd102c493deada17c19c9123`; não houve merge em `main`.
+- CI #412 passou nos dois jobs no head `399e08b0119018df1294688b332bab9025956a09`: typecheck, lint, unit tests, build, dependency audit e migrations/SQL tests.
+- Playwright E2E #193 passou no job `Playwright · Staging`. Os dois commits após o Preview READY `af27230` foram apenas documentação e fixture SQL; o código de runtime validado no Preview é o mesmo do head.
+- Os três testes SQL S11 foram reexecutados no Supabase staging em rollback-only e terminaram sem exceções.
+- Vercel bloqueou novos deployments pelo limite `api-deployments-free-per-day`; Preview S11 anterior continua READY, mas o merge commit ainda não tem Preview próprio.
+- Staging: quatro migrations S11 presentes por nome; os versions do histórico (20261121050108/110/114/631) diferem dos prefixos dos arquivos no Git (20261121130000/140000/150000/160000). Alinhar o histórico antes de qualquer novo `supabase db push` no staging.
+- Produção: 20 migrations; faltam keyset pagination e as quatro migrations S11. Sem evidência verificável de backup/restauração. Não foram aplicadas migrations nem feito deploy.
+- Vercel ainda sem `SUPABASE_SECRET_KEY` e sem credenciais OAuth/criptografia Mercado Livre; OAuth real não validado.
+- S11 continua **parcial**: importação manual de até 50 pedidos, sem paginação histórica, checkpoint, reconciliação financeira ou sync recorrente. Nenhuma liquidação/ledger é inferida.
