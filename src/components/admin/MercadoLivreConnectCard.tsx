@@ -18,6 +18,8 @@ type SyncResponse = {
   persistedCount?: number;
   providerTotal?: number | null;
   nextOffset?: number | null;
+  hasMore?: boolean;
+  paginationLimitReached?: boolean;
   createdFrom?: string;
   createdTo?: string;
   message?: string;
@@ -82,8 +84,15 @@ export function MercadoLivreConnectCard({ connected, canManage }: { connected: b
       const pageNumber = Math.floor((result.pageOffset ?? offset) / 50) + 1;
       setSyncWindow({ createdFrom: result.createdFrom, createdTo: result.createdTo });
       setNextOffset(next);
+      const paginationMessage = next !== null
+        ? `Próxima página disponível (offset ${next}).`
+        : result.paginationLimitReached
+          ? "Limite de navegação atingido; divida a janela temporal em intervalos menores para continuar."
+          : result.hasMore
+            ? "Há mais pedidos, mas o provedor não retornou uma página utilizável."
+            : "Fim da janela.";
       setSyncResult(
-        `Página ${pageNumber}: ${result.persistedCount} snapshot(s) processado(s) de ${result.pageSize ?? 0} pedido(s). Total na janela: ${result.providerTotal ?? "indisponível"}. ${next !== null ? `Próxima página disponível (offset ${next}).` : "Fim da janela."} ${result.message ?? "Sem lançamentos de liquidação."}`,
+        `Página ${pageNumber}: ${result.persistedCount} snapshot(s) processado(s) de ${result.pageSize ?? 0} pedido(s). Total na janela: ${result.providerTotal ?? "indisponível"}. ${paginationMessage} ${result.message ?? "Sem lançamentos de liquidação."}`,
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha na importação.");
