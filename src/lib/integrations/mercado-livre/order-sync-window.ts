@@ -2,6 +2,8 @@ import type { MercadoLivreOrderInput } from "./order-snapshot.ts";
 
 export const MERCADO_LIVRE_ORDER_PAGE_SIZE = 50;
 export const MERCADO_LIVRE_ORDER_MAX_OFFSET = 10_000;
+// `paging.total` is persisted into a PostgreSQL `integer` column/RPC argument.
+export const MERCADO_LIVRE_ORDER_MAX_PROVIDER_TOTAL = 2_147_483_647;
 
 export type MercadoLivreOrderSyncWindow = {
   createdFrom: string;
@@ -141,7 +143,12 @@ export function parseMercadoLivreOrderSearchPage(
     }
     if (Object.prototype.hasOwnProperty.call(paging, "total")) {
       const total = paging.total;
-      if (typeof total !== "number" || !Number.isSafeInteger(total) || total < 0) {
+      if (
+        typeof total !== "number" ||
+        !Number.isSafeInteger(total) ||
+        total < 0 ||
+        total > MERCADO_LIVRE_ORDER_MAX_PROVIDER_TOTAL
+      ) {
         return { ok: false, error: "Mercado Livre order search total is invalid." };
       }
       providerTotal = total;
