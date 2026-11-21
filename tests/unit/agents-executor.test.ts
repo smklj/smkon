@@ -363,3 +363,21 @@ test("verifier: evidência de outro produto e ausência de observações reprova
   const wrongTool = [{ seq: 2, tool: "read_products", status: "ok" as const, output: { items: evidenceRows } }];
   assert.equal(verifyRun(ctx, wrongTool, { text: "x", claims: [{ text: "y", productId: PRODUCT, evidenceIds: [EVIDENCE] }] }).ok, false);
 });
+
+
+test("prazo total classifica timeout do Planner como worker_timeout sem depender do timer", async () => {
+  const { store, ctx } = setup();
+  const hanging: AgentModel = { plan: () => new Promise(() => {}), summarize: async () => ({}) };
+  let clock = 0;
+  const result = await runAgent(ctx, {
+    model: hanging,
+    store,
+    tools: tools(),
+    limits: { maxRunMs: 5, stepTimeoutMs: 1_000 },
+    now: () => clock++,
+    logger: quiet,
+  });
+
+  assert.deepEqual(result, { status: "failed", code: "worker_timeout", steps: 1 });
+  assert.equal(store.steps[0].detail, "worker_timeout");
+});
