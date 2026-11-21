@@ -162,3 +162,47 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 4. Owner: fornecer autorização separada quando estiver pronto para conectar usuário de teste, configurar secrets ou aplicar migration.
 
 **Estado:** decisão de produto tomada; plano documentado; implementação ainda não iniciada; integração operacional não comprovada.
+
+
+## 10. Fluxo de conexão Mercado Livre no produto — 21/11/2026 UTC
+
+A conexão deve existir como etapa futura do produto, sem exigir que Samuel configure o provedor agora e sem bloquear o restante do SMKON.
+
+### Jornada planejada
+
+1. **Desconectado:** área de integrações apresenta Mercado Livre como disponível para conectar, com explicação curta das permissões e finalidade.
+2. **Configuração do provedor:** Owner cria/seleciona o app no DevCenter, configura a redirect URI exata e cadastra as variáveis apenas em Vercel Preview. Segredos não são enviados pelo chat.
+3. **Autorização:** usuário com papel permitido inicia o OAuth pelo servidor; redirecionamento ao Mercado Livre; callback valida sessão iniciadora, state de uso único, PKCE, organização, role, provider, domínio e identidade externa.
+4. **Conectado:** mostrar identificação da conta autorizada, status e horário da última validação; nunca mostrar access/refresh token.
+5. **Validação de dados:** primeiro executar leitura limitada e dry-run manual; apresentar contagens, totais e divergências sem lançar valores no Finance Center.
+6. **Reconexão/desconexão:** oferecer ações explícitas, tratar refresh expirado e revogação quando suportada, limpar credenciais com segurança e registrar auditoria sem segredos.
+7. **Operação posterior:** sincronização persistente/recorrente só depois de mapper, idempotência, checkpoint, reconciliação e testes multi-tenant, com aprovação separada do Owner.
+
+### Estados de interface exigidos
+
+- Não configurado (app/credenciais ausentes).
+- Desconectado / pronto para conectar.
+- Aguardando autorização.
+- Conectado e validado.
+- Conectado com atenção (token próximo de expirar ou reautorização necessária).
+- Falha de conexão com mensagem segura e ação recomendada.
+- Desconectando / desconectado.
+
+A interface deve distinguir “OAuth autorizado” de “dados sincronizados” e de “financeiro reconciliado”. Não usar um único selo “conectado” para sugerir que a ingestão financeira está operacional.
+
+### Escopo que permanece fora
+
+- Nenhuma conexão real foi feita nesta atualização.
+- Não configurar secrets, não aplicar migrations hospedadas, não habilitar sync recorrente, não gravar lançamentos financeiros, não fazer merge ou deploy de produção.
+- A UI de conexão não deve ser declarada pronta até existir implementação e teste no PR.
+- O primeiro teste externo deve usar conta de teste do Mercado Livre, Preview e leitura/dry-run.
+
+### Critérios de aceite da jornada
+
+- OAuth iniciado por usuário autorizado e callback vinculado à mesma sessão/organização.
+- State inválido, expirado ou reutilizado rejeitado; PKCE S256 validado.
+- Tokens armazenados somente cifrados server-side; ausência em browser, logs e telemetria.
+- Identidade externa verificada e isolamento entre organizações demonstrado.
+- Reconexão, refresh concorrente e desconexão testados.
+- Dry-run apresenta origem, período, contagens e divergências; nenhuma escrita financeira automática.
+- Documentação e status distinguem implementado, validado, publicado e operacional.
