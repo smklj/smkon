@@ -349,3 +349,12 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
 - Supabase: staging 26 migrations, 88 runs killed, 0 steps/usage/drafts/grants, kill switch false, limites 500/dia e 12 passos. Production 20 migrations, sem runs/steps/usage/drafts/grants e sem linha de settings. As três migrations S14 estão nos dois projetos.
 - Cron: agenda em vercel.json é diária às 11:17 UTC; rota do worker e vercel.json não existem em main, portanto Cron S14 não está ativo em Production.
 - Operação: nenhum teste real com IA: faltam secret de serviço em Preview, budget externo e tool grants. Nenhuma escrita remota, secret alterada, migration aplicada, merge ou mudança de Production nesta rodada.
+
+
+## Auditoria operacional — 21/11/2026 07:04 BRT
+- PR #61 Draft, 14 ahead / 0 behind; head `790da1a25c51c7e0c1d07f84de209d592afa0a1b`. CI #44888214340 success nos dois jobs. E2E anterior #44883164342 passou em `e0faaa29`; não há E2E comprovado para o head atual. Preview do head atual não foi publicado por build-rate-limit da Vercel.
+- Supabase staging: 28 migrations; 89 runs `killed/kill_switch`, 0 steps, 0 usage, 0 grants e 0 conteúdos com `agent_run_id`; kill switch atualmente false, 500 runs/dia, 12 passos/run. Production: 20 migrations e zero runs/steps/usage/grants/conteúdo vinculado/settings.
+- Confirmados nos dois bancos: coluna `agent_runs.claimed_at`, coluna `content_items.agent_run_id`, RLS/policy de leitura de `agent_model_usage` e RPCs de claim, draft e registro de consumo.
+- Vercel: provider/model/OIDC e teto interno US$ 5 configurados; `AGENT_EXECUTOR_ENABLED=true` nos dois targets; `CRON_SECRET` presente como sensitive, mas o valor permaneceu redacted e seu comprimento não foi revalidado; `SUPABASE_SECRET_KEY` ausente.
+- AI Gateway sem budgets nem defaults e sem uso nos últimos 7 dias. Nenhuma chamada real comprovada. Cron diário 11:17 UTC existe apenas na branch de integração; rota e `vercel.json` ausentes em `main`.
+- Bloqueios para smoke test: service key de staging em Preview, budget externo, grants mínimos e Preview/E2E do head atual. Nenhum merge, secret, grant, migration remota ou alteração de Production nesta rodada.
