@@ -111,3 +111,18 @@ Auditoria de referência realizada por ChatGPT, consultando GitHub, Vercel e Sup
 ## Regra de continuidade
 
 Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo e, quando aplicável, `docs/INTEGRATION_STATUS.md`, abrir/atualizar PR e deixar a próxima ação explícita. O próximo agente deve continuar do estado registrado, não recomeçar a análise nem presumir que trabalho não documentado foi concluído.
+
+
+## Reconstrução histórica S1–S16 — 20/11/2026
+
+- **Agente:** ChatGPT
+- **Objetivo:** reconstruir a linha do tempo dos 16 splits a partir do GitHub, PRs, roadmap, status de integração e handoffs.
+- **Branch:** `feature/smkon-production-readiness`
+- **Documento criado:** `docs/HISTORICO_SPLITS_S1_S16.md`
+- **Commit:** `2b0f6367b7e176047a94e9cf8e577aa91f548d48`
+- **Escopo:** separa os três domínios de receita dos 16 splits de execução; registra PRs #1–#56, status por split, cronologia, diferenças entre implementado/validado/staging/produção e pendências.
+- **Descoberta importante:** S4 não está totalmente pendente: PRs #54 e #55 integraram etapas 1–2b; restam 2c–2g e handoff, conforme a atualização do PR #56. O status antigo do documento de integração dizia “não iniciada” e ficou desatualizado.
+- **Estado consultado:** PR #56 aberto; PR #7 e #3 também aparecem abertos. O PR #56 registra CI e testes locais verdes (238/238 unitários, 19/19 arquivos SQL, typecheck/lint/build) e staging 21/21 migrations; preview READY não significa Production.
+- **Limites:** reconstrução baseada em PRs, roadmap e handoffs; a busca de commits vazia do conector não retornou uma exportação completa de commits. O estado de produção e as pendências de autorização precisam ser revalidados antes de qualquer release.
+- **Ações externas:** nenhuma migration, alteração de segredo, merge em `main` ou promoção de produção executada.
+- **Próxima ação:** usar o histórico como base para fechar S4, revisar PRs abertos e resolver as pendências de segurança/produção com autorização do Owner.
