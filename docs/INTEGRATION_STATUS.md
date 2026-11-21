@@ -3,75 +3,97 @@
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
 `feature/smkon-production-readiness`. Correções desta frente usam `fix/integration-*`.
 
-**Última verificação:** 21/11/2026 ~17:35 UTC (execução 12) · commit `2455806` (Merge #72, S4 etapa 2f)
+**Última verificação:** 21/11/2026 ~19:45 UTC (execução 13) · commit `96580f3` (Frente B, push direto)
 
-## 0. Quadro atual — execução 12 (21/11/2026 ~17:35 UTC)
+## 0. Quadro atual — execução 13 (21/11/2026 ~19:45 UTC)
 
 > Esta seção é o estado vigente. As seções 1–6 são o histórico da execução 5; as seções 7+ são auditorias S11 de 20–21/11.
 
-**Base verificada:** `2455806`. Desde a execução 11 entraram #77 (Integração, só docs) e #72 (S4 etapa 2f — camada de
-domínio de audiência/CRM; 11 arquivos, sem migrations novas).
+**Base verificada:** `96580f3`. Desde a execução 12 entraram: #70 (S17 hub de conectores, com S18 Hotmart e S19
+Metricool), #82 (S14 timeout/ledger — substitui o #78), #60 (S11 paginação histórica) e `96580f3` (Frente B:
+reconciliação/desconexão/ledger do Mercado Livre — **commit direto na branch de integração, sem PR**).
 
 ### CI da integração (push)
-- Último run: [CI #576](https://github.com/smklj/smkon/actions/runs/44927975873) em `2455806` — ✅ success.
-  Anterior: [#573](https://github.com/smklj/smkon/actions/runs/44925401272) (`79ff06b`) ✅. Nenhuma quebra; nenhuma correção de código necessária.
+- Último run: [CI #608](https://github.com/smklj/smkon/actions/runs/44940668272) em `96580f3` — ✅ success.
+  [#607](https://github.com/smklj/smkon/actions/runs/44940196474) (`aa27579`, #82) ✅; #606 (`190b352`, #70) cancelado por concorrência.
 
-### Validação local (Postgres 16 descartável) — `2455806`
+### Validação local (Postgres 16 descartável) — `96580f3`
 | Etapa | Resultado real |
 |---|---|
 | `npm ci` | ✅ |
 | `npm run typecheck` | ✅ |
 | `npm run lint` | ✅ |
-| `npm run test:unit` | ⚠️ 1ª execução: 284 ok / **1 falha**; 5 execuções seguintes: ✅ 285/285 (0 pulados). Eram 275 (+10 de audiência do #72) |
+| `npm run test:unit` | ✅ 341/341 (0 falhas, 0 pulados) — eram 285 |
 | `npm run build` | ✅ |
-| `npm run test:db` (26 migrations) | ✅ 23/23 arquivos de teste |
+| `npm run test:db` (31 migrations) | ✅ 28/28 arquivos de teste |
 
-**Teste intermitente (S14):** `agents-model.test.ts` → "prazo total: chamada lenta perto do fim do prazo falha com
-worker_timeout (não step_timeout)" devolveu `step_timeout` uma vez em 6 execuções. Causa raiz: `timeoutCode` em
-`src/lib/agents/executor/run.ts` decide entre `worker_timeout`/`step_timeout` comparando `now() >= deadline` com o relógio
-real após o disparo do timer (30 ms), o que depende da precisão do timer. A correção já está no PR #78 da frente S14
-(`stepBudget()` passa a informar se o passo foi limitado pelo prazo total). Não corrigido aqui (escopo S14); o CI
-ainda não falhou por isso, mas pode falhar esporadicamente até o merge do #78.
+O teste intermitente de timeout do S14 (execução 12) foi corrigido pelo #82.
 
-### Migrations (comparação por nome; `list_migrations` em 21/11 ~17:30 UTC) — sem mudança desde a execução 10
-- Repositório (integração): 26 migrations, até `20261121170000_mercado_livre_fk_indexes`.
-- **Staging** (`xoyasrizivadxnpmzzno`): **29** — as 26 do repositório **mais 3 que não estão na integração**:
-  - `mercado_livre_order_sync_state` (`20261121090433`) e `mercado_livre_order_versioning` (`20261121091235`) — só no PR #60 (S11, Draft).
-  - `integration_hub` (`20261121123713`) — só no PR #70 (S17, aberto; arquivo `20261121180000_integration_hub.sql`).
-  - ⚠️ Desvio: staging à frente da integração. No merge de #60/#70, confirmar que o conteúdo é idêntico ao aplicado
-    (ou corrigir por migration nova). Para S17: o teste `040_integration_hub.test.sql` repete o prefixo `040_`.
-- **Falta no staging:** nada da integração.
-- **Produção** (`hpplboyysmfcjsnjrdmw`): 20 (sem mudança). Faltam (🔐 Owner), em ordem: `20261119120000_keyset_pagination_indexes`,
-  `20261121130000_mercado_livre_credentials`, `20261121140000_mercado_livre_oauth_attempts`,
-  `20261121150000_mercado_livre_order_sync`, `20261121160000_mercado_livre_oauth_atomic_completion`,
-  `20261121170000_mercado_livre_fk_indexes` (+ as 2 do #60 e `integration_hub` do #70 quando mergeadas).
-- Observação: version IDs diferem entre staging e produção para as mesmas migrations (nomes iguais); não usar `db push`/repair sem reconciliação.
+### 🔧 Conflito semântico corrigido nesta execução — versões de migration duplicadas (PR `fix/integration-run13-migration-versions`)
+Após os merges de #60 e #70 havia **duas versões repetidas** em `supabase/migrations`:
+- `20261121180000`: `integration_hub` (S17) **e** `mercado_livre_order_sync_state` (S11);
+- `20261121200000`: `metricool_credentials` (S19) **e** `mercado_livre_order_versioning` (S11).
+
+O CI não detectava (o `test:db` aplica os arquivos por nome completo), mas o Supabase CLI usa a versão como chave
+primária de `schema_migrations`: `supabase db push`/`db reset` falhariam, e a ordem relativa ficava ambígua.
+Correção (só renomeação, conteúdo idêntico — `git diff -M` 100%):
+- `20261121180000_mercado_livre_order_sync_state.sql` → `20261121171000_mercado_livre_order_sync_state.sql`
+- `20261121200000_mercado_livre_order_versioning.sql` → `20261121172000_mercado_livre_order_versioning.sql`
+
+A nova ordem do repositório é exatamente a ordem em que o staging aplicou (fk_indexes → order_sync_state →
+order_versioning → integration_hub → hotmart_webhook → metricool_credentials). Nenhum banco remoto foi alterado
+(staging e produção registram versões próprias; comparação é por nome). `scripts/test-db.sh` passou a **falhar se
+houver versões duplicadas** (guarda testada com um arquivo duplicado temporário: sai com código 1).
+⚠️ Frentes S11/S19: ao continuar nesses arquivos, usem os nomes novos.
+
+### Migrations (comparação por nome; `list_migrations` em 21/11 ~19:35 UTC)
+- Repositório (integração): **31** migrations, até `20261121200000_metricool_credentials`.
+- **Staging** (`xoyasrizivadxnpmzzno`): **31** — idêntico por nome ao repositório. ✅ Desvio da execução 12 resolvido
+  (#60 e #70 mergeados). `hotmart_webhook` (`20261121184427`) e `metricool_credentials` (`20261121185150`) foram aplicadas
+  no staging por outra frente ~30 min antes do merge do #70.
+- **Falta no staging:** nada.
+- **Produção** (`hpplboyysmfcjsnjrdmw`): 20 (sem mudança). Faltam (🔐 Owner), nesta ordem:
+  1. `20261119120000_keyset_pagination_indexes`
+  2. `20261121130000_mercado_livre_credentials`
+  3. `20261121140000_mercado_livre_oauth_attempts`
+  4. `20261121150000_mercado_livre_order_sync`
+  5. `20261121160000_mercado_livre_oauth_atomic_completion`
+  6. `20261121170000_mercado_livre_fk_indexes`
+  7. `20261121171000_mercado_livre_order_sync_state`
+  8. `20261121172000_mercado_livre_order_versioning`
+  9. `20261121180000_integration_hub`
+  10. `20261121190000_hotmart_webhook`
+  11. `20261121200000_metricool_credentials`
+- Version IDs diferem entre repositório, staging e produção (nomes iguais); não usar `db push`/repair sem reconciliação.
 
 ### S5.1 (desta frente) — ✅ concluído
-- `workspace_members` aplicada no staging (`20261119232430`); grants/RLS/advisors conferidos (execução 6).
-- E2E de admin endurecido (#56, mergeado; CI #483 verde): "Membros" exige a lista com o próprio usuário.
+- `workspace_members` aplicada no staging (`20261119232430`) e na produção; grants/RLS/advisors conferidos (execução 6).
+- E2E de admin endurecido (#56, mergeado): "Membros" exige a lista com o próprio usuário.
 - 🔐 Decisão do Owner (não alterada): `ensure_workspace` cria workspace vazio para usuário removido de todos os workspaces.
 
 ### Quadro das frentes
 | Frente | Etapa atual | PR aberto | CI | Pendências | Autorizações do Owner |
 |---|---|---|---|---|---|
-| S14 (agentes) | ✅ handoff; correção de timeout/ledger em #78 (substitui #76, fechado sem merge) | #78 (Draft) | ✅ CI #44928370010; E2E do Preview pendente (quota Vercel) | merge do #78 (resolve o teste intermitente acima) | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
+| S14 (agentes) | ✅ handoff; correção de timeout/ledger mergeada (#82) | — | ✅ | — | `SUPABASE_SECRET_KEY`/OIDC/AI Gateway, `CRON_SECRET`, gasto com modelo |
 | S15 (CRM/LGPD) | ✅ handoff | — | ✅ | — | — (migration já na produção) |
 | S16 (performance) | ✅ handoff | — | ✅ | — | Produção de `keyset_pagination_indexes` |
 | S6.1 (CSP/logs) | ✅ handoff | — | ✅ | — | Destino externo de logs (opcional) |
-| S4 (domínio) | Etapas 1–2f mergeadas (2f = #72); 2g (agentes) em revisão | #75 | em revisão | 2g e handoff | — |
-| S11 (Mercado Livre) | Conector parcial mergeado (#57, #59); paginação histórica em #60 | #60 (Draft) | — | Staging à frente (2 migrations); não operacional | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
-| S17 (hub de conectores) | Hub de contas sociais/ações externas aprovadas por hash | #70 | — | Migration já no staging antes do merge; prefixo de teste `040_` duplicado | Produção de `integration_hub`; credenciais das redes |
-| Docs (governança) | PR #79 contra `main` (Draft) — só documentação | #79 | — | Fora da integração; decisão do Owner | Merge na `main` |
-| Integração | Execução 12: CI verde; validação local verde exceto 1 intermitência S14 | este PR | — | — | — |
+| S4 (domínio) | Etapas 1–2f mergeadas; 2g (agentes) em revisão | #75 | — | 2g e handoff (`docs/S4_PROGRESS.md`) | — |
+| S11 (Mercado Livre) | #60 mergeado; Frente B (`96580f3`) adicionou reconciliação/desconexão/ledger sync | — | ✅ | Migrations renomeadas nesta execução; `96580f3` entrou sem PR/revisão | Produção das migrations S11; segredos OAuth/cripto ML; `SUPABASE_SECRET_KEY` |
+| S17/S18/S19 (hub, Hotmart, Metricool) | Mergeados (#70, #83, #84) | — | ✅ | Prefixo de teste `040_` duplicado (cosmético) | Produção de `integration_hub`, `hotmart_webhook`, `metricool_credentials`; credenciais Hotmart/Metricool/redes |
+| Docs (governança) | PR #79 contra `main` (Draft) — só documentação | #79 | — | Fora da integração | Merge na `main` |
+| Integração | Execução 13: CI e validação local verdes; versões duplicadas corrigidas | este PR | — | — | — |
 
 Handoffs: ✅ S14, ✅ S15, ✅ S16, ✅ S6.1 · ⏳ S4. Relatório final ao Owner só quando S4 tiver handoff.
 
-### Autorizações para produção (acumulado, sem mudança)
-1. Migrations na produção na ordem acima (keyset + 5 S11, e as do #60 e `integration_hub` do #70 após merge).
+### Autorizações para produção (acumulado)
+1. Migrations na produção na ordem acima (11 arquivos).
 2. Merge na `main` com plano de release — a integração está muito à frente de `main`; não promover sem reconciliar.
-3. Vercel: `SUPABASE_SECRET_KEY`, OIDC/AI Gateway, `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED`; credenciais OAuth e chave de criptografia do Mercado Livre; opcional `LOG_DRAIN_URL`/`LOG_DRAIN_TOKEN`.
-4. Segurança (revisão antes da promoção): `rate_limit_consume` executável por anon (intencional), 31 SECURITY DEFINER para authenticated, leaked-password protection desativada (configuração de Auth).
+3. Vercel: `SUPABASE_SECRET_KEY`, OIDC/AI Gateway, `CRON_SECRET`, `AGENT_EXECUTOR_ENABLED`; credenciais OAuth e chave de
+   criptografia do Mercado Livre; credenciais Hotmart (webhook) e Metricool; opcional `LOG_DRAIN_URL`/`LOG_DRAIN_TOKEN`.
+4. Segurança (revisão antes da promoção): `rate_limit_consume` executável por anon (intencional), funções SECURITY DEFINER
+   para authenticated, leaked-password protection desativada (configuração de Auth).
+5. Governança: commits diretos na branch de integração (ex.: `96580f3`) contornam PR/revisão; recomendável proteger a branch.
 
 ## 1. CI da branch de integração (push)
 
