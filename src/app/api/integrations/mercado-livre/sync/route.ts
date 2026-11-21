@@ -7,6 +7,10 @@ import { decryptMercadoLivreTokens, loadMercadoLivreTokenKeyring } from "@/lib/i
 import { refreshMercadoLivreConnection } from "@/lib/integrations/mercado-livre/refresh";
 import { mercadoLivreGet } from "@/lib/integrations/mercado-livre/client";
 import { normalizeMercadoLivreOrder, type MercadoLivreOrderInput } from "@/lib/integrations/mercado-livre/order-snapshot";
+import {
+  MERCADO_LIVRE_ORDER_PAGE_SIZE,
+  parseMercadoLivreOrderSyncPageRequest,
+} from "@/lib/integrations/mercado-livre/order-sync-window";
 import type { MercadoLivreTokenSet } from "@/lib/integrations/mercado-livre/types";
 
 export const runtime = "nodejs";
@@ -28,8 +32,22 @@ function parseTokenSet(value: string): MercadoLivreTokenSet {
   return parsed as MercadoLivreTokenSet;
 }
 
-/** Manual, bounded snapshot import. It stores no raw provider payload or PII and creates no ledger entries. */
-export async function POST() {
+/** Manual, resumable 12-month import. Each page is atomic, bounded and replay-safe. */
+export async function POST(request: Request) {
+  let payload: unknown = {};
+  try {
+    const raw = await request.text();
+    if (raw.trim()) payload = JSON.parse(raw) as unknown;
+  } catch {
+    return NextResponse.json({ error: "Invalid sync request." }, { status: 400 });
+  }
+
+  const parsedRequest = parseMercadoLivreOrderSyncPageRequest(payload);
+  if (!parsedRequest.ok) {
+    return NextResponse.json({ error: parsedRequest.error }, { status: 400 });
+  }
+  const { offset, createdFrom, createdTo } = parsedRequest.value;
+
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -105,9 +123,11 @@ export async function POST() {
 
     const page = await mercadoLivreGet<OrderSearch>(tokens.accessToken, "/orders/search", {
       seller: connection.external_account_id,
-      limit: 50,
-      offset: 0,
+      limit: MERCADO_LIVRE_ORDER_PAGE_SIZE,
+      offset,
       sort: "date_desc",
+      "order.date_created.from": createdFrom,
+      "order.date_created.to": createdTo,
     });
     const orders = Array.isArray(page.results) ? page.results : [];
     const snapshots = orders.map(normalizeMercadoLivreOrder);
@@ -122,15 +142,27 @@ export async function POST() {
       throw new Error("Atomic Mercado Livre order snapshot persistence failed.");
     }
 
+    const providerTotal = typeof page.paging?.total === "number" && Number.isSafeInteger(page.paging.total)
+      ? page.paging.total
+      : null;
+    const nextOffset = orders.length === MERCADO_LIVRE_ORDER_PAGE_SIZE &&
+      (providerTotal === null || offset + orders.length < providerTotal)
+      ? offset + orders.length
+      : null;
+
     return NextResponse.json({
-      mode: "manual_snapshot_import",
+      mode: "manual_historical_snapshot_import",
       accountValidated: true,
+      pageOffset: offset,
       pageSize: orders.length,
-      providerTotal: page.paging?.total ?? null,
+      providerTotal,
+      nextOffset,
+      createdFrom,
+      createdTo,
       persistedCount: processed,
       persisted: true,
       ledgerEntriesCreated: 0,
-      message: "Snapshots normalizados gravados atomicamente. Sem PII, sem payload bruto e sem liquidação inferida.",
+      message: "Página persistida atomicamente. Sem PII, sem payload bruto e sem liquidação inferida.",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Mercado Livre snapshot import failed. Check connection, authorization and server configuration." }, {
