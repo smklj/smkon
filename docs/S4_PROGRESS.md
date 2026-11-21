@@ -12,7 +12,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
 | 2c | Mídia e licenças | ✅ feito | #63 |
-| 2d | Financeiro (comissões) | ✅ código pronto na branch `feature/s4-finance-domain` (empilhada sobre a 2c; PR depois do merge do #63) | — |
+| 2d | Financeiro (comissões) | ✅ feito | (PR desta etapa) |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
 | 2f | Audiência / CRM | ⏳ | — |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
@@ -95,4 +95,4 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - `financeiro/page.tsx` passa a usar o service; mesma ordem (auth → workspace → dados), mesmos estados de tela e log `page.financeiro`.
 - Diferença mínima e documentada: a guarda de estado usava `value in COMMISSION_LABEL` (aceitaria nomes do protótipo, como `toString`); agora é a lista fechada. Para os valores possíveis no banco (check constraint com os seis estados) o resultado é idêntico.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **260/260** (256 anteriores sem edição + 4 novos em `finance-domain.test.ts`, com cliente falso conferindo filtro por workspace, ordem e limite), `npm run build` ✅, `npm run test:db` **23/23 arquivos**.
-- **Bloqueio do merge da 2c (#63):** typecheck/lint/build e SQL verdes no CI, mas o Preview da Vercel foi recusado com "Deployment rate limited — retry in 24 hours", então o "Playwright · Staging" (disparado por `deployment_status`) não rodou. O PR fica aberto até o E2E rodar; a próxima execução retoma.
+- PR #63 (2c) mergeado em 21/11 com CI verde: typecheck/lint/build, SQL e "Playwright · Staging" (run 44896997728, no commit 8646f80 com todo o código; o commit seguinte só trocou o número do PR neste arquivo e teve o Preview recusado pela Vercel por limite diário do plano gratuito, "api-deployments-free-per-day").
