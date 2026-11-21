@@ -6,35 +6,18 @@ import {
   type CommissionStatus,
   formatMoney,
 } from "@/lib/finance/commissions";
+import { isCommissionStatus } from "@/lib/finance/schema";
+import { loadCommissionOverview } from "@/lib/finance/service";
+import type { CommissionHistoryRow, CommissionSummary } from "@/lib/finance/types";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
 import { findWorkspace } from "@/lib/tenancy/workspace";
 
 export const metadata: Metadata = { title: "Financeiro" };
 
-type Summary = {
-  currency: string | null;
-  conversions: number | null;
-  forecast_amount: number | null;
-  approved_amount: number | null;
-  settled_amount: number | null;
-  paid_amount: number | null;
-  cancelled_amount: number | null;
-  reversed_amount: number | null;
-};
+type Data = { state: "no-workspace" } | { state: "error" } | { state: "ok"; summaries: CommissionSummary[]; history: CommissionHistoryRow[] };
 
-type HistoryRow = {
-  id: number;
-  to_status: string;
-  from_status: string | null;
-  commission_amount: number | null;
-  currency: string;
-  changed_at: string;
-};
-
-type Data = { state: "no-workspace" } | { state: "error" } | { state: "ok"; summaries: Summary[]; history: HistoryRow[] };
-
-const STATE_COLUMNS: Array<{ status: CommissionStatus; key: keyof Summary }> = [
+const STATE_COLUMNS: Array<{ status: CommissionStatus; key: keyof CommissionSummary }> = [
   { status: "pending", key: "forecast_amount" },
   { status: "approved", key: "approved_amount" },
   { status: "settled", key: "settled_amount" },
@@ -52,10 +35,6 @@ const TONE: Record<CommissionStatus, "neutral" | "info" | "ok" | "warn" | "dange
   reversed: "danger",
 };
 
-function isCommissionStatus(value: string): value is CommissionStatus {
-  return value in COMMISSION_LABEL;
-}
-
 async function load(): Promise<Data> {
   try {
     const supabase = await createClient();
@@ -64,21 +43,8 @@ async function load(): Promise<Data> {
     const workspace = await findWorkspace(supabase, user.id);
     if (!workspace) return { state: "no-workspace" };
 
-    const [summary, history] = await Promise.all([
-      supabase
-        .from("affiliate_commission_summary")
-        .select("currency,conversions,forecast_amount,approved_amount,settled_amount,paid_amount,cancelled_amount,reversed_amount")
-        .eq("organization_id", workspace.organizationId),
-      supabase
-        .from("affiliate_commission_status_history")
-        .select("id,to_status,from_status,commission_amount,currency,changed_at")
-        .eq("organization_id", workspace.organizationId)
-        .order("changed_at", { ascending: false })
-        .limit(10),
-    ]);
-    if (summary.error) throw summary.error;
-    if (history.error) throw history.error;
-    return { state: "ok", summaries: summary.data ?? [], history: history.data ?? [] };
+    const { summaries, history } = await loadCommissionOverview(supabase, workspace.organizationId);
+    return { state: "ok", summaries, history };
   } catch (error) {
     log("error", "page.financeiro", errorFields(error));
     return { state: "error" };

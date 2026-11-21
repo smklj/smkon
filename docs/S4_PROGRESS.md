@@ -12,7 +12,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
 | 2c | Mídia e licenças | ✅ feito | #63 |
-| 2d | Financeiro (comissões) | ⏳ | — |
+| 2d | Financeiro (comissões) | ✅ feito (merge aguarda E2E) | #65 |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
 | 2f | Audiência / CRM | ⏳ | — |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
@@ -87,3 +87,12 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - Divergência preservada: a mídia continua aceitando só texto (`readString`), não número do JSON (`readScalar`) como produtos.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **256/256** (250 existentes sem edição + 6 novos em `media-schema.test.ts`), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
 - Observação: numa das execuções o teste do S14 "prazo total: chamada lenta perto do fim do prazo falha com worker_timeout" falhou uma vez e passou nas duas repetições seguintes (sensível a tempo sob carga; o PR #61 do S14 trata a classificação de timeout). Não é do escopo do S4.
+
+### Etapa 2d — financeiro / comissões (21/11/2026)
+
+- `src/lib/finance/`: `commissions.ts` (regras puras do ciclo de vida, já existia, inalterado), `types.ts` (`CommissionSummary`, `CommissionHistoryRow`, antes locais em `financeiro/page.tsx`), `schema.ts` (`isCommissionStatus` sobre `isOneOf` central), `repository.ts` (`listCommissionSummaries`, `listRecentCommissionChanges`, colunas e limite de 10 como constantes; filtro `organization_id` em ambas) e `service.ts` (`loadCommissionOverview`, as duas consultas em paralelo; se ambas falharem propaga o erro do resumo, como a página fazia).
+- O módulo é somente leitura: transições e ledger continuam no banco (`commission_lifecycle`). Vendas próprias e mídia paga seguem fora deste módulo (domínios separados).
+- `financeiro/page.tsx` passa a usar o service; mesma ordem (auth → workspace → dados), mesmos estados de tela e log `page.financeiro`.
+- Diferença mínima e documentada: a guarda de estado usava `value in COMMISSION_LABEL` (aceitaria nomes do protótipo, como `toString`); agora é a lista fechada. Para os valores possíveis no banco (check constraint com os seis estados) o resultado é idêntico.
+- Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **260/260** (256 anteriores sem edição + 4 novos em `finance-domain.test.ts`, com cliente falso conferindo filtro por workspace, ordem e limite), `npm run build` ✅, `npm run test:db` **23/23 arquivos**.
+- PR #63 (2c) mergeado em 21/11 com CI verde: typecheck/lint/build, SQL e "Playwright · Staging" (run 44896997728, no commit 8646f80 com todo o código; o commit seguinte só trocou o número do PR neste arquivo e teve o Preview recusado pela Vercel por limite diário do plano gratuito, "api-deployments-free-per-day").
