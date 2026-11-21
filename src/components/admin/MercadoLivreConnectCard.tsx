@@ -10,7 +10,7 @@ type ConnectResponse = {
   connectionId?: string;
 };
 
-export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
+export function MercadoLivreConnectCard({ connected, canManage }: { connected: boolean; canManage: boolean }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);\n  const [preview, setPreview] = useState<string | null>(null);\n\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search);\n    if (params.get("mercadoLivre") === "connected") {\n      setMessage("Conta Mercado Livre conectada com sucesso.");\n      window.history.replaceState({}, "", window.location.pathname);\n    }\n  }, []);
 
@@ -60,12 +60,12 @@ export function MercadoLivreConnectCard({ connected }: { connected: boolean }) {
               : "Conecte sua conta para autorizar a leitura dos dados de vendas."}
           </p>
         </div>
-        <button className="button button-primary" type="button" onClick={connect} disabled={busy}>
+        <button className="button button-primary" type="button" onClick={connect} disabled={busy || !canManage}>
           {busy ? "Preparando…" : connected ? "Reconectar" : "Conectar Mercado Livre"}
         </button>
       </div>
       {message ? <p className="feedback feedback-error" role="alert">{message}</p> : null}\n      {preview ? <p className="feedback" role="status">{preview}</p> : null}
-      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. A leitura de vendas será liberada após a validação da conexão.</p>
+      <p className="row-meta">A autorização acontece no Mercado Livre. O SMKON não recebe sua senha. A leitura de vendas será liberada após a validação da conexão. {!canManage ? "Somente Owner ou Admin pode gerenciar esta integração." : ""}</p>
     </div>
   );
 }
