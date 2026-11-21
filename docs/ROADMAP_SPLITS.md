@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 nove etapas implementadas na integração, ainda não operacional. PR #67 divergida (2 à frente/8 atrás); PR #71 reaplicação limpa (7 à frente/0 atrás, Draft/mergeable), head `c2454be`; CI anterior #44906510584 falhou no typecheck por escopo de variáveis de timeout, corrigido em `c2454be` e aguardando CI próprio. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. Três migrations S14 nos dois ambientes. OIDC configurado; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Preview/E2E bloqueados pela quota Vercel. Cron não ativo em produção: rota e `vercel.json` ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas implementadas na integração; correções de timeout/ledger na PR #71 (Draft, mergeable; 10 à frente/0 atrás). CI #44906765030 passou nos dois jobs no mesmo code SHA `4524a723` da PR #71; commits documentais posteriores não alteram código. PR #67 divergida/substituída; PR #73 duplicata de validação. Preview/E2E bloqueados por quota Vercel. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. Três migrations S14 nos dois ambientes. OIDC configurado; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron não ativo em produção; rota e `vercel.json` ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -100,3 +100,33 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - Corrigi o escopo no commit `c2454be`, declarando cada budget antes do `try`. Esse commit ainda aguarda uma execução CI própria; não atribuir a ele o resultado do run anterior.
 - O check Vercel segue falhando por `api-deployments-free-per-day`; o inventário de deployments da branch #71 continua vazio (nenhum Preview criado). E2E do head atual não executado.
 - PR #67 continua aberta em Draft, mas a comparação atual é divergente (2 commits à frente/8 atrás, mergeable=false). Mantida como fallback até o CI atual da #71 concluir.
+
+
+## Fechamento de validação desta rodada — 21/11/2026, 10:05 BRT
+
+### CI do código
+- CI #44906765030: **success** nos dois jobs. O job de qualidade passou por dependency audit, typecheck, lint, testes unitários e build; o job de banco passou por migrations e testes SQL em Postgres descartável.
+- O run foi disparado pela PR de revalidação #73, mas testou o mesmo head SHA `4524a723f359cfc1b1e2c053eb8f7da208100fa6` da PR principal #71. Os commits posteriores nesta branch são somente documentação; nenhum código/teste mudou depois do SHA validado.
+- PR #71 permanece a PR principal: Draft, mergeable, 10 commits à frente e 0 atrás da integração no momento da comparação. PR #73 é apenas duplicata de validação e será fechada; PR #67 é substituída pela #71.
+
+### Verificação de arquitetura S14
+- `read_*` recebe `organizationId` do RunContext, nunca do modelo; colunas são allowlisted, máximo 50 itens e 60 KB de saída.
+- `draft_content` chama somente a RPC `agent_draft_content` e rejeita qualquer resultado cujo status não seja `draft`; não aprova, agenda ou publica.
+- Verifier determinístico exige evidência `verified` observada na execução para afirmações sobre produto.
+- Worker limita cada tick a 3 runs, orçamento de 120 s e hard limit de 270 s; a rota declara maxDuration de 300 s. O teto financeiro é verificado antes de cada reserva, portanto continua sendo um limite suave por execução, não uma reserva atômica por chamada.
+- A tabela local de preço para `anthropic/claude-haiku-5.5` coincide com o catálogo atual do Gateway na faixa até 100.000 tokens; o código adiciona margem de 10%.
+
+### Supabase Security Advisors — achados adicionais (não alterados)
+- Staging: 4 tabelas com RLS sem policy (`mercado_livre_credentials`, `mercado_livre_oauth_attempts`, `mercado_livre_order_sync_state`, `rate_limit_buckets`); Production: 1 (`rate_limit_buckets`). Nenhuma delas é uma das quatro tabelas S14 auditadas.
+- Ambos os ambientes: `rate_limit_consume` é SECURITY DEFINER executável por `anon`; advisor também lista SECURITY DEFINER executáveis por `authenticated` (34 staging / 31 produção). Os controles S14 listados (`agent_start_run`, `agent_cancel_run`, `agent_set_kill_switch`, `agent_set_tool`, `agent_update_limits`) foram inspecionados na migration e chamam `agent_require_role` com papéis owner/admin adequados. Os warnings genéricos ainda devem ser revisados no hardening global; não foram alterados neste escopo.
+- Leaked Password Protection do Supabase Auth está desabilitado em staging e produção; achado geral, não específico do S14.
+- As quatro tabelas S14 auditadas têm RLS nos dois bancos; `anon` não tem SELECT, `authenticated` lê sob RLS, e as RPCs de claim/draft/usage consultadas só permitem EXECUTE a `service_role`.
+
+### Bloqueios que continuam
+- Preview da branch #71 não foi criado: check Vercel falha com `api-deployments-free-per-day`; E2E do head atual não executado.
+- `SUPABASE_SECRET_KEY` continua ausente no inventário Vercel; `CRON_SECRET` está sensitive em Preview e Production, mas seu valor não é disponibilizado para validar tamanho/whitespace.
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; sem alteração. Manter Production desabilitada antes de qualquer release do S14.
+- Sem budget externo do AI Gateway; sem requests, tokens ou custo nos últimos 7 dias; `agent_model_usage` continua vazio nos dois bancos. Não há chamada real comprovada.
+- Staging tem 0 grants de ferramenta; por isso não há teste real de `operations_review` nem de leitura/rascunho.
+- `vercel.json` e rota do worker não existem em `main`; Cron S14 não ativo em Production.
+- Nenhuma alteração de Production, migration remota, secret, grant ou chamada paga foi executada.
