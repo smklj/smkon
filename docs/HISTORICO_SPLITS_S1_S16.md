@@ -123,3 +123,13 @@ O roadmap `docs/ROADMAP_SPLITS.md` organiza o trabalho técnico S1–S16 em P0�
 - [Handoff S14](https://github.com/smklj/smkon/blob/feature/smkon-production-readiness/docs/S14_HANDOFF.md)
 - [Handoff S15](https://github.com/smklj/smkon/blob/feature/smkon-production-readiness/docs/S15_HANDOFF.md)
 - [Handoff S16](https://github.com/smklj/smkon/blob/feature/smkon-production-readiness/docs/S16_HANDOFF.md)
+
+
+## 21/11/2026 — S11 Mercado Livre: PR #57 e follow-up de performance
+
+- PR #57 foi mergeado por squash na branch de integração (`feature/smkon-production-readiness`), commit `8c73cbc`; não houve merge em `main` nem release de produção.
+- O incremento inclui OAuth server-side, AES-256-GCM, refresh lease/CAS, conexão one-click, importação manual limitada a 50 pedidos e persistência transacional/idempotente de snapshots sem PII.
+- CI #412 passou nos jobs Quality e Database/SQL; E2E #193 foi reportado como aprovado contra staging/Preview. O Preview READY corresponde ao commit de runtime `af27230`, não ao merge commit.
+- Quatro migrations S11 estão registradas no Staging; produção continua com 20 migrations e sem S11/keyset. Nenhuma migration/deploy de produção foi executada.
+- Auditoria identificou quatro índices de FK S11 ausentes no Staging. Follow-up criado em `fix/s11-performance-hardening` com migration aditiva e teste estrutural; aguarda CI/PR e aplicação controlada em staging.
+- OAuth real, backfill, paginação histórica e reconciliação de pagamentos/taxas/estornos/repasses continuam pendentes.
