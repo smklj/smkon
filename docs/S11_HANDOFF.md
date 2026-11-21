@@ -486,3 +486,10 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 - Variáveis de Mercado Livre e SUPABASE_SECRET_KEY não estão configuradas no Vercel. OAuth real e leitura de pedidos reais continuam bloqueados.
 - PR #60 segue Draft, aberto contra feature/smkon-production-readiness; não foi mergeado. A branch de integração não foi promovida para main.
 - Limites restantes: divisão automática de janelas após offset 10.000, sync incremental por date_last_updated, OAuth real, reconciliação financeira e backup/restauração verificáveis antes de qualquer release.
+
+
+## Inventário Vercel — correção do Preview intermediário (21/11/2026)
+
+A listagem de deployments identificou quatro Preview READY da branch. O mais recente é o commit 58093005de9807d0c41a74bbd2e0c0c3d7e1eb93, disponível em https://smkon-9ms5o5dgg-smkon.vercel.app. Esse commit contém somente o parser server-owned; não contém a rota/UI do cursor durável. Não existe Preview do head 206fa3bb0e6cef219d498e52f979deb4d33b45c4.
+
+A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-free-per-day, retryAfter 86400. O ambiente não tem Vercel CLI nem checkout local para fallback. Não houve contorno de quota, upgrade ou alteração de billing. O último Production deployment continua em main, commit 01677bad697ed412bffe58d6b8dd7eabec8d6183.
