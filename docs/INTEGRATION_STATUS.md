@@ -121,3 +121,13 @@ Handoffs finais: ✅ S14, ✅ S6.1, ✅ S15 · pendentes: S16, S4.
 - Preview Vercel do commit `e5ea42629ed76bf1454f7b4891aa373574894e5a`: READY em ambiente Preview; não é deploy de produção nem validação de OAuth.
 - Nenhuma migration aplicada em Supabase hospedado; nenhuma credencial/secret configurada; nenhuma conta Mercado Livre conectada; nenhum merge ou deploy de produção.
 - Próxima ação: aguardar o CI do head mais recente e registrar os jobs/resultado. Se houver falha, inspecionar logs, corrigir no mesmo branch e repetir. Só então considerar encerrada a validação de banco.
+
+
+### Fechamento da validação automatizada S11 — 21/11/2026 UTC
+
+- Workflow GitHub Actions **CI #364**: [execução #364](https://github.com/smklj/smkon/actions/runs/44866546044), commit testado `e5ea42629ed76bf1454f7b4891aa373574894e5a` (posterior aos commits do fixture e da correção do delimitador).
+- Job **Typecheck, lint and build**: success. Passaram npm ci, auditoria de dependências de produção (high+), typecheck, lint, unit tests e build.
+- Job **Database migrations and SQL tests**: success. O step `bash scripts/test-db.sh shim` passou em PostgreSQL 17 descartável, aplicando as migrations e executando os arquivos SQL de teste, incluindo `mercado_livre_credentials.test.sql` com fixture de lease/CAS.
+- **Conclusão:** validação automatizada do banco descartável e quality gate do CI fechados com sucesso no commit acima. Os runs #358, #360 e #362 foram cancelados por pushes subsequentes e não são considerados falhas de teste; #364 é a evidência final válida.
+- Escopo não coberto por esse CI: OAuth real com conta de teste Mercado Livre, configuração de secrets, migrations em Supabase hospedado, sincronização e reconciliação financeira.
+- Estado protegido: PR #57 continua Draft; nenhum merge, migration hospedada ou deploy de produção foi realizado.
