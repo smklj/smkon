@@ -60,7 +60,7 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 |---|---|---|
 | `20261119040000_agent_draft_content` | ✅ | ✅ |
 | `20261119050000_agent_claim_queue` | ✅ | ✅ |
-| `20261119060000_agent_model_usage` | ✅ | ⏳ pendente (precisa de autorização) |
+| `20261119060000_agent_model_usage` | ✅ | ✅ |
 
 ## Pendências e autorizações do Owner
 
@@ -87,3 +87,47 @@ As execuções `queued` criadas no S13 passam a ser executadas por um worker do 
 Com as autorizações 1–3, rodar uma execução real de `operations_review` no staging, conferir o detalhe e o consumo,
 e só então pedir o merge na `main`. Depois: geração de roteiro/legenda com evidência obrigatória sobre o
 `draft_content` e, quando autorizado, publicação via APIs oficiais só com hash aprovado.
+
+
+## Reconciliação operacional — 21/11/2026, 09:55 BRT
+
+Esta seção supersede os estados anteriores de configuração e banco que divergirem dos dados consultados nesta auditoria.
+
+### GitHub e validação
+- A PR #67 (head `d6b5880c0bff0cf14f402755106d930022ca760d`) está aberta em Draft, mas a comparação atual com `feature/smkon-production-readiness` retorna `diverged`: 2 commits à frente e 8 atrás; `mergeable=false`. O corpo da PR está desatualizado e não deve ser usado como prova de mergeability.
+- A PR #71 foi criada como reaplicação limpa sobre a head da integração `16bd6b009a64884fadccbfa5afc47d40ccb11eae`. Branch `fix/s14-timeout-ledger-rebase-20261121-0955`: 3 commits à frente, 0 atrás; comparação `ahead`, sem divergência; Draft e mergeable. CI #44906510584 estava em execução no momento desta auditoria. Não há resultado de CI herdado de outra PR.
+- A #67 permanece aberta como fallback até o CI da #71 concluir; nenhuma PR foi mergeada.
+
+### Código reaplicado na #71
+- `executor/run.ts`: captura se o timeout por passo ou o deadline total limitou cada chamada antes de iniciar a operação; a classificação não depende do relógio observado após o disparo do timer.
+- `executor/model-gateway.ts`: em resposta HTTP 2xx com falha de leitura do body, tenta gravar o custo conservador de pior caso antes de falhar; preserva o erro do AbortSignal se o registro concluir.
+- `tests/unit/agents-budget.test.ts`: dois testes sem rede para falha de stream e abort durante a leitura.
+- Nenhuma chamada real ao modelo foi feita pelos testes.
+
+### Supabase — consultas somente de leitura
+- Staging `xoyasrizivadxnpmzzno`: 29 migrations. As migrations `agent_draft_content`, `agent_claim_queue` e `agent_model_usage` constam no histórico.
+- Produção `hpplboyysmfcjsnjrdmw`: 20 migrations. As mesmas três migrations S14 também constam no histórico; a migration de usage não está pendente em produção.
+- Staging: 100 `agent_runs`, todas `killed` com `kill_switch`; 0 `agent_steps`, 0 `agent_model_usage`, 0 `agent_tool_grants` e 0 conteúdos com `agent_run_id`.
+- Produção: 0 runs, steps, usage, tool grants e drafts vinculados a agentes.
+- Em staging, RLS está habilitado nas tabelas `agent_runs`, `agent_steps`, `agent_model_usage` e `agent_tool_grants`. `anon` não tem SELECT; `authenticated` tem SELECT sob RLS; `service_role` não tem INSERT/UPDATE/DELETE direto. As RPCs de claim, draft e usage consultadas só permitem EXECUTE a `service_role`.
+
+### Vercel e AI Gateway
+- Inventário do projeto `smkon`: `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5` e `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `SUPABASE_SECRET_KEY` não aparece no inventário de variáveis do projeto. O worker não pode criar o cliente de serviço no Preview sem essa variável.
+- `CRON_SECRET` está cadastrado como sensitive em Preview e Production. O conector não fornece o valor descriptografado, então comprimento mínimo de 32 caracteres e ausência de whitespace não foram validados.
+- OIDC: a configuração está explícita e o código lê `x-vercel-oidc-token` da Request. A documentação oficial da Vercel confirma que Functions recebem o token nesse header; isso valida o mecanismo de integração, não uma autenticação real neste deployment. Não houve invocação autenticada que comprovasse o token em runtime.
+- AI Gateway: nenhum budget do projeto e nenhum default configurado; uso agregado do projeto nos últimos 7 dias sem requests, tokens ou custo. O catálogo atual contém `anthropic/claude-haiku-5.5`.
+- O teto interno de US$ 5 é verificado antes das reservas, não é budget externo do provedor. Ainda não há reservation/outbox durável para reconciliar cobrança se a RPC do ledger falhar após a resposta.
+
+### Cron e operação
+- A integração contém `vercel.json` com `17 11 * * *` e a rota `/api/agents/worker`; ambos não existem em `main`. O Cron configurado via `crons` não está ativo em produção. A Vercel documenta que Cron Jobs executam somente em deployments de produção.
+- `AGENT_EXECUTOR_ENABLED=true` continua em Preview e Production; nenhuma alteração de configuração foi feita. Antes de qualquer release, Production deve permanecer desabilitada até a aprovação operacional.
+- Nenhuma chamada real ao AI Gateway foi comprovada. Os zeros de uso agregado e de `agent_model_usage` são consistentes com ausência de chamadas, mas não validam o fluxo pós-cobrança.
+- Não houve migration remota, concessão de grants, alteração de secrets, mudança de configuração de Production ou merge.
+
+### Bloqueios para o primeiro teste real
+1. Cadastrar a chave de serviço exclusiva do projeto de staging em Preview como sensitive.
+2. Configurar budget externo limitado no AI Gateway (sem alterar o escopo de Production sem autorização).
+3. Validar `CRON_SECRET` sem revelar o valor.
+4. Conceder grants mínimos de leitura para `operations_review` em staging.
+5. Obter Preview do head #71, executar E2E e somente então fazer uma execução real controlada; conferir resposta, steps, verifier e ledger.
