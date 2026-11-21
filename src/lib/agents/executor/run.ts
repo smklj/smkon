@@ -69,9 +69,13 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
   const deadline = now() + Math.max(limits.maxRunMs, 0);
   let steps = 0;
 
-  /** Tempo do próximo passo: o menor entre o timeout por passo e o que resta do prazo total. */
-  function stepBudget(): number {
-    return Math.max(1, Math.min(limits.stepTimeoutMs, deadline - now()));
+  /** Tempo do próximo passo e qual limite o restringiu (sem depender da precisão do timer). */
+  function stepBudget(): { ms: number; runDeadlineLimited: boolean } {
+    const remaining = deadline - now();
+    return {
+      ms: Math.max(1, Math.min(limits.stepTimeoutMs, remaining)),
+      runDeadlineLimited: remaining <= limits.stepTimeoutMs,
+    };
   }
 
   async function stopped(): Promise<Halt> {
@@ -132,8 +136,8 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
     return failRun(code);
   }
 
-  const timeoutCode = (error: unknown, fallback: ExecutorErrorCode): ExecutorErrorCode =>
-    error instanceof StepTimeoutError ? (now() >= deadline ? "worker_timeout" : "step_timeout") : fallback;
+  const timeoutCode = (error: unknown, fallback: ExecutorErrorCode, runDeadlineLimited: boolean): ExecutorErrorCode =>
+    error instanceof StepTimeoutError ? (runDeadlineLimited ? "worker_timeout" : "step_timeout") : fallback;
 
   try {
     if (!model) return await failRun("model_not_configured");
@@ -146,13 +150,14 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
 
     let rawPlan: unknown;
     try {
-      rawPlan = await withTimeout(stepBudget(), (signal) =>
+      const planTimeout = stepBudget();
+      rawPlan = await withTimeout(planTimeout.ms, (signal) =>
         model.plan({ goal: ctx.goal, agent: ctx.agent, tools: ctx.grantedTools, maxCalls }, signal),
       );
     } catch (error) {
       if (error instanceof Halt) throw error;
       logger("warn", SCOPE, { event: "model_plan_error", runId: ctx.runId, message: String((error as Error)?.message ?? error) });
-      return await failStep({ phase: "plan", tool: null, input: planInput }, timeoutCode(error, "model_error"));
+      return await failStep({ phase: "plan", tool: null, input: planInput }, timeoutCode(error, "model_error", planTimeout.runDeadlineLimited));
     }
     const calls = parsePlan(rawPlan, maxCalls);
     if (!calls) return await failStep({ phase: "plan", tool: null, input: planInput }, "invalid_plan");
@@ -193,11 +198,12 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
 
       let output: JsonObject;
       try {
-        output = await withTimeout(stepBudget(), (signal) => handler(ctx, call.input, signal));
+        const toolTimeout = stepBudget();
+        output = await withTimeout(toolTimeout.ms, (signal) => handler(ctx, call.input, signal));
       } catch (error) {
         if (error instanceof Halt) throw error;
         logger("warn", SCOPE, { event: "tool_error", runId: ctx.runId, tool: call.tool, message: String((error as Error)?.message ?? error) });
-        return await failStep({ phase: "execute", tool: call.tool, input: call.input }, timeoutCode(error, "tool_error"));
+        return await failStep({ phase: "execute", tool: call.tool, input: call.input }, timeoutCode(error, "tool_error", toolTimeout.runDeadlineLimited));
       }
       if (!output || typeof output !== "object" || Array.isArray(output)) {
         return await failStep({ phase: "execute", tool: call.tool, input: call.input }, "tool_error");
@@ -214,13 +220,14 @@ export async function runAgent(ctx: RunContext, deps: ExecutorDeps): Promise<Run
     const verifyInput: JsonObject = { observed: observations.map(({ seq, tool, status }) => ({ seq, tool, status })) };
     let rawSummary: unknown;
     try {
-      rawSummary = await withTimeout(stepBudget(), (signal) =>
+      const summaryTimeout = stepBudget();
+      rawSummary = await withTimeout(summaryTimeout.ms, (signal) =>
         model.summarize({ goal: ctx.goal, agent: ctx.agent, observations }, signal),
       );
     } catch (error) {
       if (error instanceof Halt) throw error;
       logger("warn", SCOPE, { event: "model_summary_error", runId: ctx.runId, message: String((error as Error)?.message ?? error) });
-      return await failStep({ phase: "verify", tool: null, input: verifyInput }, timeoutCode(error, "model_error"));
+      return await failStep({ phase: "verify", tool: null, input: verifyInput }, timeoutCode(error, "model_error", summaryTimeout.runDeadlineLimited));
     }
     const summary = parseSummary(rawSummary);
     if (!summary) return await failStep({ phase: "verify", tool: null, input: verifyInput }, "invalid_summary");
