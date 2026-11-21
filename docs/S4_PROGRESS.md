@@ -11,7 +11,7 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2 | Validação centralizada `src/lib/validation/fields.ts` + testes | ✅ feito | #54 |
 | 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
-| 2c | Mídia e licenças | ✅ feito | (PR desta etapa) |
+| 2c | Mídia e licenças | ✅ feito | #63 |
 | 2d | Financeiro (comissões) | ⏳ | — |
 | 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
 | 2f | Audiência / CRM | ⏳ | — |
