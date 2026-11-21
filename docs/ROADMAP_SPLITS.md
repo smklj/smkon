@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 nove etapas implementadas na integração; correções de timeout/ledger na PR #71 (Draft, mergeable; 10 à frente/0 atrás). CI #44906765030 passou nos dois jobs no mesmo code SHA `4524a723` da PR #71; commits documentais posteriores não alteram código. PR #67 divergida/substituída; PR #73 duplicata de validação. Preview/E2E bloqueados por quota Vercel. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. Três migrations S14 nos dois ambientes. OIDC configurado; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron não ativo em produção; rota e `vercel.json` ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas implementadas na integração; correções de timeout/ledger na PR #71 (Draft, mergeable; 10 à frente/0 atrás). CI #44906765030 passou nos dois jobs no mesmo code SHA `4524a723` da PR #71; commits documentais posteriores não alteram código. PR #67 divergida/substituída; PR #73 fechada como duplicata de validação. Preview/E2E bloqueados por quota Vercel. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. Três migrations S14 nos dois ambientes. OIDC configurado; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron não ativo em produção; rota e `vercel.json` ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -107,7 +107,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 ### CI do código
 - CI #44906765030: **success** nos dois jobs. O job de qualidade passou por dependency audit, typecheck, lint, testes unitários e build; o job de banco passou por migrations e testes SQL em Postgres descartável.
 - O run foi disparado pela PR de revalidação #73, mas testou o mesmo head SHA `4524a723f359cfc1b1e2c053eb8f7da208100fa6` da PR principal #71. Os commits posteriores nesta branch são somente documentação; nenhum código/teste mudou depois do SHA validado.
-- PR #71 permanece a PR principal: Draft, mergeable, 10 commits à frente e 0 atrás da integração no momento da comparação. PR #73 é apenas duplicata de validação e será fechada; PR #67 é substituída pela #71.
+- PR #71 permanece a PR principal: Draft, mergeable, 10 commits à frente e 0 atrás da integração no momento da comparação. PR #73 foi fechada como duplicata de validação; PR #67 é substituída pela #71.
 
 ### Verificação de arquitetura S14
 - `read_*` recebe `organizationId` do RunContext, nunca do modelo; colunas são allowlisted, máximo 50 itens e 60 KB de saída.
