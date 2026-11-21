@@ -164,3 +164,11 @@ Ao terminar qualquer tarefa, o agente responsável deve atualizar este protocolo
 - **Validação:** testes, typecheck e lint ainda não executados; PR permanece Draft.
 - **Ambientes:** nenhuma chamada ao Mercado Livre; nenhuma conta ou credencial; nenhuma migration ou alteração em staging/produção.
 - **Próxima ação:** CI e revisão do PR; depois desenhar state one-time e armazenamento seguro com base em capacidade real do ambiente, antes de callbacks OAuth.
+
+
+### S11 — correção após CI inicial (21/11/2026 UTC)
+
+- Primeira execução CI do PR #57: typecheck/lint OK; testes SQL/migrations OK; unit tests 238/239 (um arquivo falhou ao resolver imports ESM sem extensão); build foi pulado por falha anterior.
+- Corrigido import dos testes com extensão explícita `.ts`, conforme padrão existente; corrigida normalização de scopes OAuth e validação de `token_type=bearer`.
+- Último commit de código: `63eee98244f57772bd1e08f8a0e46fdf39495d52`.
+- Nova execução CI ainda não confirmada. PR continua Draft, sem merge/deploy.
