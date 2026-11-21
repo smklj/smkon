@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 nove etapas implementadas na integração; correções de timeout/ledger na PR #71 (Draft, mergeable; 10 à frente/0 atrás). CI #44906765030 passou nos dois jobs no mesmo code SHA `4524a723` da PR #71; commits documentais posteriores não alteram código. PR #67 divergida/substituída; PR #73 fechada como duplicata de validação. Preview/E2E bloqueados por quota Vercel. Staging: 29 migrations, 100 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, sem runs/steps/usage/grants/drafts. Três migrations S14 nos dois ambientes. OIDC configurado; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron não ativo em produção; rota e `vercel.json` ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas implementadas na integração; PR #71 Draft aberta (head `3f382561`, 16 à frente/0 atrás); CI #44907103115 passou nos dois jobs no head atual. PRs #67/#73 fechadas sem merge. Preview/E2E do head bloqueados por quota Vercel. Staging: 29 migrations, 101 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, 0 runs/steps/usage/grants/drafts. As três migrations S14 estão nos dois ambientes. OIDC/modelo configurados; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron e rota ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -130,3 +130,15 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - Staging tem 0 grants de ferramenta; por isso não há teste real de `operations_review` nem de leitura/rascunho.
 - `vercel.json` e rota do worker não existem em `main`; Cron S14 não ativo em Production.
 - Nenhuma alteração de Production, migration remota, secret, grant ou chamada paga foi executada.
+
+
+## Reconciliação operacional S14 — 21/11/2026, 11:03 BRT
+
+- PR #71: aberta em Draft, branch `fix/s14-timeout-ledger-rebase-20261121-0955`, head `3f3825612237d42c9693078f1072bb4e007e76eb`, 16 commits à frente/0 atrás da integração. Código validado no SHA `4524a723`; commits posteriores são apenas documentação. CI #44907103115 passou nos dois jobs no head atual.
+- PRs #67 e #73 fechadas sem merge. Vercel check da #71 falha por quota `api-deployments-free-per-day`; não há Preview para o head atual e E2E correspondente ainda não foi executado.
+- Supabase: 29 migrations em staging e 20 em produção; as três migrations S14 estão aplicadas nos dois bancos. Staging: 101 runs `killed/kill_switch`, 0 steps/usage/tool grants/drafts. Produção: 0 runs/steps/usage/grants/drafts.
+- RLS ativo nas cinco tabelas S14 auditadas nos dois ambientes; uma policy por tabela. `anon` sem SELECT; `authenticated` com SELECT sob RLS; `service_role` sem DML direto. RPCs de claim, draft, usage e reap restritas a `service_role`.
+- Vercel: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive em Preview/Production, comprimento não validado; `AGENT_EXECUTOR_ENABLED=true` nos dois ambientes; provider/model/OIDC e teto interno de US$ 5 presentes.
+- AI Gateway: modelo disponível no catálogo; nenhum budget de projeto/default e nenhum request/token/custo nos últimos 7 dias. `agent_model_usage` vazio, consistente com ausência de chamadas reais.
+- `vercel.json` e rota do worker estão na integração, mas ausentes em `main`; Cron não ativo em produção. Staging tem 0 grants de ferramentas, então o teste controlado continua bloqueado.
+- Sem alteração de secrets, grants, banco remoto, Production ou merge.
