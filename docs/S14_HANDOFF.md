@@ -204,3 +204,14 @@ Esta seção supersede as contagens e os estados operacionais anteriores quando 
 - Staging tem zero tool grants; não há autorização para executar ferramentas `read_*` nem `draft_content` no workspace auditado.
 - Bloqueios restantes: cadastrar a secret key exclusiva do staging como sensitive em Preview; definir budget externo restrito sem afetar Production; validar `CRON_SECRET` por verificação segura sem revelar o valor; conceder grants mínimos aprovados para `operations_review`; obter Preview READY e E2E do head atual; então executar uma única operação real e conferir resposta, steps, verifier e ledger.
 - Nenhuma secret foi lida/descriptografada, criada ou alterada; nenhum grant foi concedido; nenhuma chamada paga foi feita; nenhuma migration remota, alteração de Production ou merge foi executado.
+
+
+## Preview publicado — 21/11/2026, 11:10 BRT
+
+- Deployment Vercel `dpl_7Y2X2ASZNDATjjH9GShEqTTLUVNt` ficou **READY** para o commit `ae38e7fce4d8631f7d7cd0dfb56f7e8caa43bcd0`, branch `fix/s14-timeout-ledger-rebase-20261121-0955`.
+- URL: https://smkon-rkuyrnpoz-smkon.vercel.app (alias de branch: https://smkon-git-fix-s14-timeout-ledger-rebase-20261121-0955-smkon.vercel.app).
+- Build: Next.js 16.4.6, compilação concluída; npm install auditou 363 pacotes e reportou 0 vulnerabilidades. O check Vercel no commit `ae38e7f` passou.
+- CI [#44912351788](https://github.com/smklj/smkon/actions/runs/44912351788): success nos dois jobs no mesmo SHA `ae38e7f` (typecheck, lint, unit tests, build, migrations e SQL).
+- O workflow E2E está configurado para disparar em `deployment_status` quando o Preview fica READY, mas não foi encontrado um resultado E2E associado a este deployment/head nesta consulta. Logs de runtime do deployment estavam vazios no momento da auditoria; portanto, não afirmar que o E2E rodou.
+- O Preview usa a URL do Supabase de staging. A prontidão do build não significa que o worker está operacional: `SUPABASE_SECRET_KEY` continua ausente, staging tem zero tool grants e não há budget externo do AI Gateway.
+- Nenhuma chamada ao worker/modelo, alteração de Production, secret, grant, migration remota ou merge foi executado nesta etapa.
