@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · ✅ etapas 1–9 integradas e Preview READY (`docs/S14_HANDOFF.md`); migrations de rascunho, fila e consumo presentes em staging e produção; **sem chamada real ao AI Gateway**; bloqueado por `SUPABASE_SECRET_KEY` ausente, budget externo não encontrado e smoke test real pendente; fora da `main` 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · ✅ etapas 1–9 integradas; correção determinística de timeout no PR #58 com CI e E2E verdes; Preview READY; migrations presentes em staging e produção; **sem chamada real ao AI Gateway**; bloqueado por `SUPABASE_SECRET_KEY` ausente e budget externo inexistente; fora da `main` 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
