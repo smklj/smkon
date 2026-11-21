@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isUuid } from "@/lib/content/server";
-import { dbErrorMessage } from "@/lib/http/errors";
+import { ValidationError, dbErrorMessage } from "@/lib/http/errors";
 import { errorFields, log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
-import { changeMemberRole, removeMember } from "@/lib/tenancy/admin";
-import { ROLE_LABEL, canManageMembers, isMemberRole } from "@/lib/tenancy/members";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { ROLE_LABEL, canManageMembers } from "@/lib/tenancy/members";
+import { parseMemberId, parseMemberRoleChange, type MemberRoleChangeInput } from "@/lib/tenancy/schema";
+import { changeMemberRole, findWorkspace, removeMember } from "@/lib/tenancy/service";
+import { formDataToRaw } from "@/lib/validation/fields";
 
 export type MemberState = { error?: string; ok?: string; at?: number } | null;
 
@@ -22,10 +22,14 @@ async function owner() {
 }
 
 export async function changeMemberRoleAction(_prev: MemberState, formData: FormData): Promise<MemberState> {
-  const userId = String(formData.get("user_id") ?? "");
-  const role = String(formData.get("role") ?? "");
-  if (!isUuid(userId)) return { error: "Membro inválido." };
-  if (!isMemberRole(role)) return { error: "Papel inválido." };
+  let input: MemberRoleChangeInput;
+  try {
+    input = parseMemberRoleChange(formDataToRaw(formData));
+  } catch (error) {
+    if (error instanceof ValidationError) return { error: error.message };
+    throw error;
+  }
+  const { userId, role } = input;
   const { supabase, workspace } = await owner();
   if (!workspace) return { error: "Apenas o owner altera papéis." };
   let changed: boolean;
@@ -41,8 +45,13 @@ export async function changeMemberRoleAction(_prev: MemberState, formData: FormD
 }
 
 export async function removeMemberAction(_prev: MemberState, formData: FormData): Promise<MemberState> {
-  const userId = String(formData.get("user_id") ?? "");
-  if (!isUuid(userId)) return { error: "Membro inválido." };
+  let userId: string;
+  try {
+    userId = parseMemberId(formDataToRaw(formData));
+  } catch (error) {
+    if (error instanceof ValidationError) return { error: error.message };
+    throw error;
+  }
   const { supabase, workspace, userId: actorId } = await owner();
   if (!workspace) return { error: "Apenas o owner remove membros." };
   try {

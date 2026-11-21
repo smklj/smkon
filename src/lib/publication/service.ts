@@ -3,7 +3,7 @@
  * Regra permanente: tudo aqui roda em dry-run. Agendar exige conteúdo aprovado na
  * versão exata (conferido pelo banco) e nenhum caminho publica em rede social.
  */
-import { canEditContent } from "@/lib/tenancy/workspace";
+import { canEditContent } from "@/lib/tenancy/service";
 import { cancelPublication, runDryRun, schedulePublication, type SupabaseClient } from "./repository";
 import type { CancelRequest, ScheduleRequest } from "./schema";
 import type { PublicationStatus } from "./types";

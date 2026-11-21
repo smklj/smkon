@@ -11,7 +11,7 @@ import { parseApproveInput } from "./schema";
 import type { ContentStatusApi } from "./types";
 
 /** Criar, editar, excluir conteúdo e operar o calendário: owner ou admin (definição em tenancy). */
-export { canEditContent } from "@/lib/tenancy/workspace";
+export { canEditContent } from "@/lib/tenancy/service";
 
 /**
  * Página da biblioteca. Na primeira página (sem cursor) também devolve as contagens
