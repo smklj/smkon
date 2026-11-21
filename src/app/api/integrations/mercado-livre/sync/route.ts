@@ -273,7 +273,7 @@ export async function POST(request: Request) {
         p_organization_id: activeLease.organizationId,
         p_lease_id: activeLease.leaseId,
         p_error_code: "sync_failed",
-      }).catch(() => undefined);
+      }).then(() => undefined, () => undefined);
     }
     return NextResponse.json({ error: "Mercado Livre snapshot import failed. Check connection, authorization and server configuration." }, {
       status: 502,
