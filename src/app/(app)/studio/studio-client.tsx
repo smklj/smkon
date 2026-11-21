@@ -17,6 +17,15 @@ import {
   migrationKey,
   rowToItem,
 } from "@/lib/content/types";
+import { ReelsPreviewPlayer } from "@/components/studio/ReelsPreviewPlayer";
+import { CreativeInspector } from "@/components/studio/CreativeInspector";
+import { type SubtitleStyle } from "@/lib/media/subtitles";
+import {
+  DEFAULT_WATERMARK_CONFIG,
+  VIRAL_HOOKS,
+  type ViralHook,
+  type WatermarkConfig,
+} from "@/lib/media/video-composition";
 
 type Filter = "Todos" | ContentStatusLabel;
 
@@ -52,6 +61,24 @@ export default function StudioClient() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [counts, setCounts] = useState<StatusCounts | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Estados do Content Studio Pro (S20 & S22 · CapCut / Canva REA)
+  const [subtitleStyle, setSubtitleStyle] = useState<SubtitleStyle>("hormozi");
+  const [viralHook, setViralHook] = useState<ViralHook>(VIRAL_HOOKS[0]);
+  const [watermark, setWatermark] = useState<WatermarkConfig>(DEFAULT_WATERMARK_CONFIG);
+  const [promoCode, setPromoCode] = useState<string>("");
+
+  const handleApplyHookToScript = useCallback((hookText: string) => {
+    setDraft((prev) => {
+      const existing = prev.script.trim();
+      const newScript = existing
+        ? `[HOOK]: ${hookText}\n\n${existing}`
+        : `[HOOK]: ${hookText}\n\n[DESENVOLVIMENTO]\nConfira todos os detalhes deste produto exclusivo.\n\n[CTA]\nGaranta o seu com desconto no link da bio!`;
+      return { ...prev, script: newScript };
+    });
+    setNotice("Gancho viral injetado no roteiro!");
+  }, []);
+
   // O filtro vale para todas as recargas (salvar, aprovar, excluir) sem recriar loadItems.
   const filterRef = useRef<Filter>("Todos");
   // Respostas de uma lista que já foi trocada (filtro mudou, recarga mais nova) são descartadas.
@@ -458,10 +485,41 @@ export default function StudioClient() {
         </section>
       </div>
 
+      <section className="studio-creative-section" aria-label="Content Studio Pro Vídeo 9:16">
+        <div className="studio-editor-head">
+          <div>
+            <p className="eyebrow">Engenharia Reversa (REA) · CapCut &amp; Canva</p>
+            <h2>Player 9:16 &amp; Legendas Dinâmicas Karaokê</h2>
+          </div>
+          <span className="studio-step">02 / 03 · Estúdio Criativo</span>
+        </div>
+        <div className="studio-creative-suite">
+          <ReelsPreviewPlayer
+            script={draft.script || draft.title || "Confira este produto incrível que acabou de chegar. O link com desconto exclusivo está disponível agora na bio e nos comentários!"}
+            subtitleStyle={subtitleStyle}
+            hook={viralHook}
+            watermark={watermark}
+            promoCode={promoCode}
+          />
+          <CreativeInspector
+            subtitleStyle={subtitleStyle}
+            onSubtitleStyleChange={setSubtitleStyle}
+            selectedHookId={viralHook.id}
+            onHookSelect={setViralHook}
+            watermark={watermark}
+            onWatermarkChange={setWatermark}
+            promoCode={promoCode}
+            onPromoCodeChange={setPromoCode}
+            onApplyHookToScript={handleApplyHookToScript}
+            disabled={saving}
+          />
+        </div>
+      </section>
+
       <section className="studio-preview">
         <div className="studio-editor-head">
           <div><p className="eyebrow">Adaptação por canal</p><h2>Prévia de publicação</h2></div>
-          <span className="studio-step">02 / 03 · Revisão</span>
+          <span className="studio-step">03 / 03 · Revisão de Canais</span>
         </div>
         <div className="studio-preview-grid">
           {draft.channels.map((channel) => (
@@ -480,7 +538,7 @@ export default function StudioClient() {
         <div><p className="eyebrow">Próximas etapas</p><h2>Da pauta à publicação</h2></div>
         <div className="studio-pipeline">
           <div className="done"><span>01</span><strong>Briefing e roteiro</strong><small>Disponível neste workspace</small></div>
-          <div><span>02</span><strong>Edição de vídeo</strong><small>Próxima etapa: timeline, cortes, legendas e exportação</small></div>
+          <div className="done"><span>02</span><strong>Edição 9:16 &amp; Legendas</strong><small>CapCut REA: Karaokê, ganchos e marca d&apos;água</small></div>
           <div><span>03</span><strong>Distribuição conectada</strong><small>OAuth, upload e publicação via APIs oficiais</small></div>
         </div>
       </section>
