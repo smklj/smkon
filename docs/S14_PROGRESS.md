@@ -134,8 +134,7 @@ custo, ~US$ 0,002 por execução), teto US$ 5/mês por ambiente, Preview e Produ
 - ✅ Vercel (projeto `smkon`, Production e Preview): `CRON_SECRET` (sensitive, valores diferentes por ambiente),
   `AGENT_EXECUTOR_ENABLED=true`, `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL=anthropic/claude-haiku-5.5`,
   `AGENT_MODEL_AUTH=oidc` (token OIDC do deployment, sem chave guardada) e `AGENT_MONTHLY_BUDGET_USD=5`.
-- ✅ Migration `20261119060000_agent_model_usage.sql` aplicada no staging (conferido com `list_migrations` em 19/11/2026).
-  🔐 Produção: pendente, só com autorização do Owner.
+- ✅ Migration `20261119060000_agent_model_usage.sql` aplicada no staging e na produção; conferido com list_migrations em 21/11/2026. O estado antigo que indicava pendência em Production foi supersedido pela auditoria remota.
 - 🔐 **Falta (só o Owner)**: criar a chave secreta do Supabase (Dashboard → Project Settings → API Keys → *secret key*)
   em cada projeto e cadastrá-la na Vercel como `SUPABASE_SECRET_KEY` (tipo *sensitive*): a de staging em Preview, a de
   produção em Production. Não colar a chave no chat. Sem ela o worker responde `503 service_not_configured`.
@@ -339,3 +338,14 @@ Respostas: `503 executor_disabled` (flag), `503 worker_not_configured` (segredo)
     restrito a owner/admin em execução ativa. Ações revalidam `/agentes` como layout (inclui o detalhe).
 - **19/11/2026 — etapa 9.** `docs/S14_HANDOFF.md` e linha do S14 no `docs/ROADMAP_SPLITS.md`. Frente concluída no código;
   pendências do Owner no handoff.
+
+
+## Auditoria operacional — 21/11/2026, 06:01 BRT
+
+- PR #61: branch limpa, 4 commits ahead / 0 behind, Draft e mergeable. PR #58 permanece divergido (19 ahead / 10 behind) e será substituído após CI/E2E do #61.
+- Validação anterior: CI #44883123910 passou integralmente; E2E #44883164342 passou em staging isolado no commit de código e0faaa29. Os commits mais recentes 3f2a9bb e d9ff3869 ainda aguardam CI/E2E próprios.
+- Correção de consumo: resposta 2xx com falha ao ler body agora registra estimativa conservadora de pior caso antes de lançar gateway_body_read_failed; teste sem rede adicionado em agents-budget.test.ts. Se a RPC Supabase de registro falhar após cobrança do provedor, ainda falta reservation/outbox para reconciliação durável.
+- Vercel: provider Gateway, modelo Haiku 5.5, auth OIDC, teto interno US$ 5 e flag AGENT_EXECUTOR_ENABLED=true estão configurados em Preview e Production. CRON_SECRET presente nos dois ambientes e validado internamente como >=32 caracteres sem whitespace nas pontas; valor não exposto. SUPABASE_SECRET_KEY ausente. Nenhum budget externo/default; uso do Gateway nos últimos 7 dias = zero.
+- Supabase: staging 26 migrations, 88 runs killed, 0 steps/usage/drafts/grants, kill switch false, limites 500/dia e 12 passos. Production 20 migrations, sem runs/steps/usage/drafts/grants e sem linha de settings. As três migrations S14 estão nos dois projetos.
+- Cron: agenda em vercel.json é diária às 11:17 UTC; rota do worker e vercel.json não existem em main, portanto Cron S14 não está ativo em Production.
+- Operação: nenhum teste real com IA: faltam secret de serviço em Preview, budget externo e tool grants. Nenhuma escrita remota, secret alterada, migration aplicada, merge ou mudança de Production nesta rodada.
