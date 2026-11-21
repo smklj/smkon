@@ -285,3 +285,14 @@ Qualquer migration de staging será submetida como alteração revisável, com S
 
 - Correção de sintaxe do bloco PL/pgSQL de fixture: delimitador nomeado `$s11_lease_test$` (commit `04681e354ea7131c511b00e9fcb67f47cf752372`). O arquivo foi relido após a correção e o bloco abre/fecha com o mesmo delimitador.
 - A consulta de workflows ainda não retornou execução associada ao commit do teste corrigido. Portanto, o teste está commitado, mas sua execução automatizada permanece **não comprovada** até o pipeline mais recente terminar.
+
+
+### Fechamento da validação automatizada — 21/11/2026 UTC
+
+- **CI #364:** [execução GitHub Actions](https://github.com/smklj/smkon/actions/runs/44866546044), commit `e5ea42629ed76bf1454f7b4891aa373574894e5a`, posterior ao fixture comportamental e à correção do delimitador PL/pgSQL.
+- Job `Typecheck, lint and build`: success — npm ci, auditoria de dependências de produção high+, typecheck, lint, testes unitários e build.
+- Job `Database migrations and SQL tests`: success — `bash scripts/test-db.sh shim` em PostgreSQL 17 descartável; o step de migrations + SQL tests concluiu com sucesso, incluindo o teste de lease/CAS.
+- **Resultado:** validação automatizada de banco descartável e quality gate de CI aprovados. Runs #358, #360 e #362 foram cancelados por pushes concorrentes; #364 é a execução concluída e bem-sucedida usada como evidência.
+- **Fora do escopo aprovado/validado:** OAuth real contra conta de teste do Mercado Livre, secrets, migration em Supabase hospedado, sync, dry-run financeiro e reconciliação. Não declarar S11 operacional.
+- PR #57 continua Draft. Nenhum merge, migration hospedada, credencial real ou deploy de produção.
+- Status compartilhado atualizado em `docs/INTEGRATION_STATUS.md`.
