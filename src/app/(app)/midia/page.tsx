@@ -16,7 +16,7 @@ import {
 import { errorFields, log } from "@/lib/observability/log";
 import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { createClient } from "@/lib/supabase/server";
-import { canEditContent, findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { canEditContent, findWorkspace, type Workspace } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Mídia e licenças" };
 

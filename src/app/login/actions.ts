@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/http/safe-redirect";
 import { clientIp, consumeRateLimit, rateLimitSubject } from "@/lib/http/rate-limit";
 import { log } from "@/lib/observability/log";
-import { ensureWorkspace } from "@/lib/tenancy/workspace";
+import { ensureWorkspace } from "@/lib/tenancy/service";
 
 // Acesso somente por convite (decisão do Owner): não existe cadastro público.
 

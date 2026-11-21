@@ -3,7 +3,7 @@ import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { listMedia } from "@/lib/media/repository";
 import { licenseStatus, todayInBrazil } from "@/lib/media/types";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 const SELECTOR_PAGE_SIZE = 200;
 

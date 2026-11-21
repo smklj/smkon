@@ -10,7 +10,7 @@ import {
 import { WORKSPACE_TIMEZONE } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
 import { errorFields, log } from "@/lib/observability/log";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 type Row = {
   id: string;

@@ -8,7 +8,7 @@ import { errorFields, log } from "@/lib/observability/log";
 import { updateProductStatus } from "@/lib/products/repository";
 import { isProductStatus } from "@/lib/products/schema";
 import { canAddEvidence, canEditProducts, decideEvidence, registerProduct, submitEvidence } from "@/lib/products/service";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 import { formDataToRaw as fields, isUuid } from "@/lib/validation/fields";
 
 export type FormState = { error?: string; ok?: string; at?: number } | null;

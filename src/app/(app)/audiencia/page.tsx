@@ -35,7 +35,7 @@ import { todayInBrazil } from "@/lib/media/types";
 import { errorFields, log } from "@/lib/observability/log";
 import { InvalidCursorError } from "@/lib/pagination/keyset";
 import { createClient } from "@/lib/supabase/server";
-import { findWorkspace, type Workspace } from "@/lib/tenancy/workspace";
+import { findWorkspace, type Workspace } from "@/lib/tenancy/service";
 import { isUuid } from "@/lib/validation/fields";
 
 export const metadata: Metadata = { title: "Audiência e CRM" };

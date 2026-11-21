@@ -12,8 +12,8 @@ Branches `feature/s4-*` · **sem migrations** · sem dependências novas.
 | 2a | Produtos | ✅ feito | #54 |
 | 2b | Conteúdo (Studio) e publicação/calendário | ✅ feito | #55 |
 | 2c | Mídia e licenças | ✅ feito | #63 |
-| 2d | Financeiro (comissões) | ✅ feito (merge aguarda E2E) | #65 |
-| 2e | Tenancy (workspace, membros, convites) | ⏳ | — |
+| 2d | Financeiro (comissões) | ✅ feito | #65 |
+| 2e | Tenancy (workspace, membros, convites) | ✅ feito | #68 |
 | 2f | Audiência / CRM | ✅ feito | #72 |
 | 2g | Agentes (por último; `docs/S14_HANDOFF.md` já existe na integração) | ⏳ | — |
 | 3 | `docs/S4_HANDOFF.md` + linha do S4 no ROADMAP | ⏳ | — |
@@ -97,6 +97,18 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **260/260** (256 anteriores sem edição + 4 novos em `finance-domain.test.ts`, com cliente falso conferindo filtro por workspace, ordem e limite), `npm run build` ✅, `npm run test:db` **23/23 arquivos**.
 - PR #63 (2c) mergeado em 21/11 com CI verde: typecheck/lint/build, SQL e "Playwright · Staging" (run 44896997728, no commit 8646f80 com todo o código; o commit seguinte só trocou o número do PR neste arquivo e teve o Preview recusado pela Vercel por limite diário do plano gratuito, "api-deployments-free-per-day").
 
+### Etapa 2e — tenancy: workspace, membros e convites (21/11/2026)
+
+- `src/lib/tenancy/`: `members.ts` (regras puras e tipos, já existia, inalterado), `schema.ts` (`parseWorkspaceId`, `parseMemberId`, `parseMemberRoleChange` sobre `isUuid` central; mesmas mensagens e ordem membro → papel das Server Actions), `repository.ts` (memberships, preferência em `user_active_workspace`, RPCs `ensure_workspace`, `list_workspace_members`, `change_member_role`, `remove_member`, `set_active_workspace`; sem log e sem regra) e `service.ts` (`canEditContent`, `canManageInvitations`, `listWorkspaces`, `loadWorkspaceContext`, `findWorkspace`, `ensureWorkspace`, `setActiveWorkspace`, `listMembers` com a classificação `unavailable`/`forbidden`, `changeMemberRole`, `removeMember`). `admin.ts` removido (nenhum teste importava).
+- `workspace.ts` ficou como **fachada de reexport** do service, documentada no próprio arquivo, só para chamadores de módulos que ainda não passaram pelo S4 (audiência, agentes) ou que são de outra frente (rotas do Mercado Livre, S11). Os chamadores de produtos, conteúdo, mídia, publicação, financeiro, admin, convite, shell, login e visão geral passaram a importar `@/lib/tenancy/service`. Os de audiência e agentes trocam nas etapas 2f e 2g; os do Mercado Livre ficam com a fachada para não mexer em arquivos do S11.
+- `src/lib/invitations/`: `token.ts` (inalterado; o teste existente importa dele), `schema.ts` (`parseInvitationRequest` com `InvitationInputError`, subclasse de `ValidationError` que carrega os códigos `invalid_email`/`invalid_role` da API; `parseInvitationId`; `parseAcceptToken`), `repository.ts` (`listInvitations` sem `token_hash`, limite 100; RPCs `create_invitation`, `revoke_invitation`, `accept_invitation`) e `service.ts` (`createInvitation` gera o token e só envia o hash; devolve o token apenas quando o convite é novo; `revokeInvitation`; `acceptInvitation`).
+- `api/invitations/route.ts`: mesma ordem (auth → papel → corpo JSON → e-mail → papel do convite → rate limit → criação), mesmos códigos e status (400 `invalid_input`/`invalid_email`/`invalid_role`, 401, 403, 429, 200/201). No DELETE, o id inválido agora sai como `ValidationError` e `toErrorResponse` devolve o mesmo 400 `invalid_input` "Identificador inválido." (sem log, como antes).
+- `convite/actions.ts`, `(app)/actions.ts` e `admin/actions.ts` usam schema/service; validação continua antes da autenticação, com as mesmas mensagens.
+- Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **275/275** (260 anteriores sem edição + 15 novos em `tenancy-domain.test.ts` e `invitations-domain.test.ts`, com cliente falso conferindo filtros por usuário/workspace, RPCs, hash do token e classificação de erros), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
+- Observação: o teste do S14 "prazo total: chamada lenta perto do fim do prazo falha com worker_timeout" voltou a falhar de forma intermitente (1 de 3 execuções; sensível a tempo sob carga). É tratado pelo PR #64 do S14, fora do escopo do S4.
+- PR #65 (2d) mergeado em 21/11 com CI verde (typecheck/lint/build, SQL e "Playwright · Staging" run 44901601605 no head `fc240e7`).
+- PR #68 (2e) mergeado em 21/11 com CI verde (typecheck/lint/build, SQL e "Playwright · Staging" run 44921974724 no head `feb19cc`).
+
 ### Etapa 2f — audiência / CRM (21/11/2026)
 
 - `src/lib/audience/`: `validation.ts` → `schema.ts` sobre as primitivas centrais (`readString`, `oneOf`, `parseUuid`, `DATE_ONLY`, `WORKSPACE_OFFSET`, `workspaceDate`); o `oneOf` e o `parseUuid` locais, a regex de UUID e o cálculo de "hoje" duplicados saíram. Novo `missingDeletionConfirmation(raw)` (a guarda que estava inline na Server Action de resolver pedido). `validation.ts` ficou só como reexport (os testes `audience.test.ts` e `audience-contacts-page.test.ts` importam dele). E-mail e telefone (E.164) continuam no schema do módulo: só a audiência usa.
@@ -105,5 +117,6 @@ Produtos (menor e com testes de validação) → conteúdo/publicação → míd
 - `findWorkspace` continua vindo de `@/lib/tenancy/workspace`, que existe tanto na integração quanto, como fachada, no PR #68 (2e). Assim a 2f não depende do merge da 2e; depois dele, o import pode ir para `@/lib/tenancy/service`.
 - Divergências preservadas: só texto (`readString`), UUID de formulário pelo formato.
 - Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **270/270** (260 existentes sem edição + 10 novos em `audience-domain.test.ts`: reexport, UUID, data no fuso do workspace, guarda da exclusão, papéis, filtro por workspace nas leituras com cliente falso, recusa antes de RPC, argumentos da RPC e propagação do erro do banco), `npm run build` ✅, `npm run test:db` **23/23 arquivos** (Postgres 16 local).
-- PR #68 (2e) segue aberto com typecheck/lint/build e SQL verdes; o "Playwright · Staging" não rodou porque a Vercel recusou o Preview por limite diário do plano gratuito (`api-deployments-free-per-day`). Integração mesclada na branch da 2e (78b5c0b) para nova tentativa quando a cota voltar.
+- PR #68 (2e) segue aberto com typecheck/lint/build e SQL verdes; o "Playwright · Staging" não rodou porque a Vercel recusou o Preview por limite diário do plano gratuito (`api-deployments-free-per-day`). Integração mesclada na branch da 2e (78b5c0b) para nova tentativa quando a cota voltar. — superado: mergeado depois, ver registro da 2e acima.
 
+- Após o merge da 2e (#68) na integração: integração mesclada na branch da 2f; `audiencia/actions.ts`, `audiencia/page.tsx` e `api/audience/contacts/[id]/export/route.ts` passam a importar `findWorkspace`/`Workspace` de `@/lib/tenancy/service` (a fachada `workspace.ts` é reexport puro, sem mudança de comportamento; fica só para agentes e para a integração Mercado Livre). Validação local: `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:unit` **285/285** (275 da integração sem edição + 10 da 2f), `npm run build` ✅, `npm run test:db` **23/23 arquivos**.

@@ -5,7 +5,7 @@ import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/fields";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 /** Exportação (JSON) de tudo o que o workspace guarda sobre um titular. Só owner/admin; registrada no audit_log. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {

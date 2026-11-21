@@ -14,7 +14,7 @@ import {
 } from "@/lib/publication/types";
 import { createClient } from "@/lib/supabase/server";
 import { canOperateCalendar } from "@/lib/publication/service";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 export const metadata: Metadata = { title: "Calendário" };
 

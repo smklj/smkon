@@ -2,7 +2,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import type { WorkspaceOption } from "@/components/shell/WorkspaceSwitcher";
 import { errorFields, log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
-import { loadWorkspaceContext } from "@/lib/tenancy/workspace";
+import { loadWorkspaceContext } from "@/lib/tenancy/service";
 import { signOut } from "./actions";
 
 // Área autenticada: o Proxy já bloqueia anônimos; aqui só lemos o usuário e os workspaces para o shell.

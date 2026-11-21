@@ -17,7 +17,7 @@ import { dbErrorMessage } from "@/lib/http/errors";
 import { errorFields, log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
 import { formDataToRaw as fields } from "@/lib/validation/fields";
-import { findWorkspace } from "@/lib/tenancy/workspace";
+import { findWorkspace } from "@/lib/tenancy/service";
 
 export type AudienceState = { error?: string; ok?: string; at?: number } | null;
 
