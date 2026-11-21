@@ -1,3 +1,20 @@
+## Checkpoint de integração — 21/11/2026 20:00 BRT
+
+- HEAD atual de `main`: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
+- Production Vercel READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente. O diff posterior contém workflows/dependências/CSS, sem arquivos S14.
+- `vercel.json` e rota `/api/agents/worker` estão no SHA implantado. Cron diário `17 11 UTC` (08:17 BRT). Sem runtime logs na janela consultada de 50 min.
+- `feature/smkon-production-readiness`: 2 ahead/36 behind, diff apenas em `docs/INTEGRATION_STATUS.md`; branch congelada. `release/s14-mainline-integration-20261121`: 34 ahead/289 behind; não promover.
+- CI anterior #44954944211: 406/406 no commit `41fb60ab`; não é CI do HEAD atual. E2E anterior #44953753229: 35/36, falha CSP em `/studio`; reexecutar após a correção CSP da PR #106 no HEAD atual.
+- Staging e Production Supabase: 31 nomes de migrations em ambos; version IDs diferem em todos os 31. Não executar repair/db push sem reconciliação.
+- Staging: 136 runs, todas killed; 0 steps, usage e grants; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: 0 runs/steps/usage/grants/settings.
+- ACL/RLS auditada em 6 tabelas nos dois ambientes: RLS true; cinco tabelas S14 com 1 policy cada; content_items com 4; anon sem SELECT; authenticated/service_role com SELECT; 19 funções agent_* com EXECUTE anon=0, authenticated=6, service_role=12.
+- Vercel env: `SUPABASE_SECRET_KEY` ausente em Preview/Production; `CRON_SECRET` Sensitive presente nos dois, sem validar comprimento; `AGENT_EXECUTOR_ENABLED=true` nos dois; Gateway/OIDC/modelo/US$5 internos configurados.
+- AI Gateway: 7 dias sem linhas de uso; budget de projeto/default ausente; regras de roteamento ausentes; modelo disponível no catálogo. `agent_model_usage` 0 linhas nos dois bancos. Nenhuma chamada real comprovada.
+- Próximo gate: chave exclusiva de staging, validação segura do cron secret, OIDC runtime, grants mínimos, budget externo do projeto, E2E atual e uma única run controlada. Não alterar Production.
+
+
+---
+
 # SMKON — Status da integração
 
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
