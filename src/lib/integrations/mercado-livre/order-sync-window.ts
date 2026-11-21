@@ -37,6 +37,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function isMercadoLivreOrderInput(value: unknown): value is MercadoLivreOrderInput {
+  if (!isRecord(value)) return false;
+  if (
+    (typeof value.id !== "string" && typeof value.id !== "number") ||
+    typeof value.status !== "string" ||
+    typeof value.currency_id !== "string" ||
+    typeof value.total_amount !== "number" ||
+    typeof value.date_created !== "string"
+  ) return false;
+  if (
+    value.date_last_updated !== undefined &&
+    value.date_last_updated !== null &&
+    typeof value.date_last_updated !== "string"
+  ) return false;
+  if (value.order_items !== undefined) {
+    if (!Array.isArray(value.order_items)) return false;
+    if (!value.order_items.every((item) => {
+      if (!isRecord(item)) return false;
+      const validFee = item.sale_fee === undefined || item.sale_fee === null || typeof item.sale_fee === "number";
+      const validQuantity = item.quantity === undefined || item.quantity === null || typeof item.quantity === "number";
+      return validFee && validQuantity;
+    })) return false;
+  }
+  return true;
+}
+
 function floorToHour(value: Date): Date {
   const result = new Date(value);
   result.setUTCMinutes(0, 0, 0);
@@ -97,7 +123,7 @@ export function parseMercadoLivreOrderSearchPage(
   if (input.results.length > pageSize) {
     return { ok: false, error: "Mercado Livre returned more orders than the requested page size." };
   }
-  if (!input.results.every(isRecord)) {
+  if (!input.results.every(isMercadoLivreOrderInput)) {
     return { ok: false, error: "Mercado Livre order search contains a malformed order." };
   }
 
