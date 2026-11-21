@@ -54,7 +54,7 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 | Split | Escopo |
 |---|---|
 | **S13** · ✅ em produção (`docs/S13_HANDOFF.md`); migration `20261119020000` no staging e na produção; executor no S14 | Infra de jobs + `agent_runs`/`agent_steps` (Planner → Executor → Verifier), limites, kill switch, allowlist |
-| **S14** · 🟡 nove etapas implementadas na integração; PR #71 Draft aberta (head `3f382561`, 16 à frente/0 atrás); CI #44907103115 passou nos dois jobs no head atual. PRs #67/#73 fechadas sem merge. Preview/E2E do head bloqueados por quota Vercel. Staging: 29 migrations, 101 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, 0 runs/steps/usage/grants/drafts. As três migrations S14 estão nos dois ambientes. OIDC/modelo configurados; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron e rota ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
+| **S14** · 🟡 nove etapas implementadas na integração; PR #71 Draft aberta (head `eeb1c5df`, 20 à frente/0 atrás); CI #44912576360 passou nos dois jobs. Preview do head READY; E2E ainda sem resultado confirmado. PRs #67/#73 fechadas sem merge. Staging: 29 migrations, 101 runs `killed/kill_switch`, 0 steps/usage/grants/drafts; Production: 20 migrations, 0 runs/steps/usage/grants/drafts. As três migrations S14 estão nos dois ambientes. OIDC/modelo configurados; sem budget externo/uso no Gateway; `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` sensitive sem validação de comprimento. Cron e rota ausentes em `main`. 🔐 | Geração de roteiro/legenda com evidência obrigatória; publicação via APIs oficiais só com hash aprovado 🔐 |
 
 ## Experiência (proposto)
 
@@ -142,3 +142,12 @@ As branches divergentes (`feature/admin-dashboard-mvp`, `feat/fila-status-machin
 - AI Gateway: modelo disponível no catálogo; nenhum budget de projeto/default e nenhum request/token/custo nos últimos 7 dias. `agent_model_usage` vazio, consistente com ausência de chamadas reais.
 - `vercel.json` e rota do worker estão na integração, mas ausentes em `main`; Cron não ativo em produção. Staging tem 0 grants de ferramentas, então o teste controlado continua bloqueado.
 - Sem alteração de secrets, grants, banco remoto, Production ou merge.
+
+
+## Atualização S14 — Preview e CI — 21/11/2026, 11:12 BRT
+
+- PR #71 Draft, head `eeb1c5dfaaee22be2cfabee147b70dec16eff0a8`, 20 commits à frente e 0 atrás da integração.
+- CI #44912576360 passou nos dois jobs; 262 testes unitários, typecheck, lint, build, migrations e testes SQL aprovados.
+- Preview Vercel READY: https://smkon-dsttybwnb-smkon.vercel.app. O check Vercel está verde. E2E do head ainda sem resultado confirmado.
+- Preview usa Supabase staging. A operação real continua bloqueada por `SUPABASE_SECRET_KEY` ausente, zero tool grants e ausência de budget externo do AI Gateway.
+- Sem merge, sem mudança de Production, sem secrets/grants, sem migration remota e sem chamada paga.
