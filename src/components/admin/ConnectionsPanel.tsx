@@ -56,7 +56,7 @@ export async function ConnectionsPanel() {
   const mercadoLivreConnected = rows.some((row) => row.provider === "mercado_livre" && row.status === "connected");
 
   return (
-    <div className="stack-md">
+    <div>
       <MercadoLivreConnectCard connected={mercadoLivreConnected} />
       {rows.length > 0 ? (
         <ul className="rows">
