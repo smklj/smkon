@@ -34,8 +34,16 @@ Estado em 21/11/2026: staging e produção com as 31 migrations do repositório;
 - Lista completa e situação: `docs/SEGREDOS.md`.
 
 ## Dependências
-Dependabot semanal (npm) e mensal (GitHub Actions), agrupado por família. Saltos de versão
+Dependabot semanal (npm) e mensal (GitHub Actions), agrupado por família. Branches
+`dependabot/**` não geram Preview na Vercel (`vercel.json` → `git.deploymentEnabled`): o CI
+valida typecheck, testes e build sem gastar a cota diária de deploys. Saltos de versão
 maior (por exemplo `actions/checkout` 4 → 7) só entram depois de ler as notas de mudança.
 
 ## Removido
 `scheduled-deploy.yml` fazia commits vazios na `main` duas vezes por dia para driblar o limite diário de deploys do plano gratuito da Vercel. O limite continua existindo; o caminho correto é o plano Pro ou espaçar merges.
+
+## Cota de deploys da Vercel
+O plano Hobby aceita 100 deploys em 24 horas corridas, somando Preview e produção. Cada push em
+qualquer branch gera um Preview. Quando a cota acaba, o push na `main` recebe o status
+"Deployment rate limited" e a produção não é atualizada; é preciso disparar o deploy de novo
+quando a janela libera. O E2E com build local não depende dessa cota.
