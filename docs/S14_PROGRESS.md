@@ -574,3 +574,19 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 - Staging: 148 runs, todas killed; 0 steps/grants/usage/linked content; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14. 31 nomes de migrations em cada ambiente, 0/31 version IDs iguais.
 - AI Gateway 7d: 0 requests/tokens/custo; budgets de projeto/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo em ambos. Nenhuma chamada real comprovada.
 - Não executar teste real até provisionar chave service exclusiva de staging, grants mínimos, budget externo isolado e comprovar OIDC. Nenhum merge, mudança Production, secret, grant, budget, migration remota ou chamada paga nesta rodada.
+
+---
+
+## Checkpoint S14 — 22/11/2026 03:00 BRT
+
+- PR #113 permanece aberta, Draft e mergeable; head auditado `2513d971`, 20 ahead / 0 behind. Patch contém somente os cinco documentos S14.
+- CI #44987586564 no head exato: 2/2 jobs success, 418/418 unit tests; typecheck, lint, audit, build e 28 arquivos SQL aprovados.
+- E2E #44987586635 foi cancelado no job local e teve Staging skipped. Último E2E de deployment_status aprovado #44983114589: 36/36 no SHA `7d957275`, artifact #14738303182; código da aplicação equivalente porque os commits posteriores da PR são docs-only.
+- Preview do head #113 READY: `dpl_9oZkfe9pm5D1oXa5RuuVbpmBLFcS`. Production READY: `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, main `84afe632`; nenhuma alteração Production nesta rodada.
+- Cron `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. A execução de 22/11 às 08:17 ainda é futura no checkpoint de 03:00. Sem runtime logs Production nos 50 min consultados.
+- Inventário sem decrypt: AGENT_EXECUTOR_ENABLED=true em Preview/Production; Gateway/OIDC/Haiku 5.5; teto interno US$ 5. CRON_SECRET Sensitive por target. SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY e AI_GATEWAY_API_KEY ausentes.
+- Handler valida flag, CRON_SECRET, Bearer, modelo/OIDC, budget/preço e cliente service_role antes do claim. service.ts exige SUPABASE_SECRET_KEY. OIDC runtime não comprovado; sem chave de serviço não há claim/model call.
+- Staging: 150 runs, todas killed; 0 steps/grants/usage/linked content. Production sem dados S14. RLS 6/6 em ambos; cinco policies S14 e quatro em content_items; EXECUTE agent_* authenticated=6, service_role=12, postgres=19.
+- 31 nomes de migrations em ambos os bancos; 0/31 version IDs iguais. Não executar repair/db push sem reconciliação formal.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets team/project/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos. Nenhuma chamada real comprovada.
+- Gate permanece: chave exclusiva de staging, grants mínimos, budget externo isolado, validação de CRON_SECRET e prova de OIDC. Não executar operations_review real antes desses controles.

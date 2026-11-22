@@ -146,3 +146,16 @@ Inventário Vercel consultado com decrypt=false. Nenhum valor Sensitive foi lido
 Às 04:49:13Z, a rota Production /api/agents/worker registrou unauthorized. Pelo fluxo do handler, a requisição passou pela flag e pelo validador de formato do CRON_SECRET, mas o Bearer não correspondeu. Isso não comprova Cron autenticado nem OIDC.
 
 Sem SUPABASE_SECRET_KEY, o cliente service_role não é criado; o worker não chega ao claim nem à chamada paga. A recomendação é o Owner manter AGENT_EXECUTOR_ENABLED=false em Production até homologação. Nenhuma variável foi alterada nesta auditoria.
+
+---
+
+## Inventário S14 — 22/11/2026 03:00 BRT (sem descriptografar)
+
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5`.
+- `CRON_SECRET`: Sensitive presente separadamente em Preview e Production; valores não lidos. Não há validação de comprimento/whitespace de Production comprovada nesta janela.
+- `SUPABASE_SECRET_KEY` e `SUPABASE_SERVICE_ROLE_KEY`: ausentes no inventário. `AI_GATEWAY_API_KEY`: ausente; OIDC é o caminho configurado.
+- O handler valida OIDC/modelo antes de criar cliente de serviço; `src/lib/supabase/service.ts` usa especificamente `SUPABASE_SECRET_KEY`. Sem token OIDC válido, o bloqueio pode ser `model_not_configured`; se OIDC passar, a chave ausente bloqueia com `service_not_configured` antes de claim.
+- Cron Production: `/api/agents/worker`, 17:11 UTC = 08:17 BRT. Às 03:00 BRT a execução diária ainda era futura; não houve invocação manual.
+- Recomendação: Owner manter `AGENT_EXECUTOR_ENABLED=false` em Production até homologação. Nenhuma variável foi alterada nesta auditoria.
+- Nenhum valor secreto foi lido, copiado ou registrado.

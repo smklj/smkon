@@ -441,3 +441,27 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - Supabase staging: 148 runs, todas killed; 0 steps, 0 tool grants, 0 usage, 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14. agent_model_usage soma 0 linhas/tokens/custo em ambos. Os dois bancos têm 31 nomes de migrations e 0/31 version IDs iguais.
 - AI Gateway 7d: 0 requests/tokens/custo; budget específico de projeto e defaults ausentes; regras de roteamento ausentes. Ledger zero é consistente, mas não valida reconciliação de cobrança.
 - Gate: não executar operations_review real até haver chave service exclusiva de staging, grants mínimos, budget externo isolado e prova de OIDC. Nenhum merge, mudança de Production, migration, secret, grant, budget ou chamada paga nesta rodada.
+
+---
+
+## S14 — reconciliação operacional 22/11/2026 03:00 BRT
+
+### GitHub e deploy
+- PR #113 aberta/Draft/mergeable, head `2513d971`, 20 ahead / 0 behind; diff verificado com apenas cinco arquivos documentais. Main `84afe632`.
+- CI #44987586564: 418/418 e 2/2 jobs success no head exato. E2E desse head cancelado; último E2E Staging aprovado #44983114589, 36/36 no SHA de aplicação `7d957275` (mesmo código, PR docs-only).
+- Preview atual do head: `dpl_9oZkfe9pm5D1oXa5RuuVbpmBLFcS`, READY. Production: `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, READY em main `84afe632`.
+- Cron no deployment Production: `/api/agents/worker`, `17 11 * * *` UTC (08:17 BRT). Sem runtime logs Production na janela recente de 50 min; a execução das 08:17 de 22/11 ainda era futura às 03:00 BRT.
+
+### Ambiente e segurança
+- Sem decrypt: `AGENT_EXECUTOR_ENABLED=true` nos dois targets; provider `vercel-ai-gateway`, auth `oidc`, modelo `anthropic/claude-haiku-5.5`, teto interno US$ 5.
+- `CRON_SECRET` Sensitive separado em Preview/Production; valores não lidos. `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `AI_GATEWAY_API_KEY` ausentes.
+- Handler: flag → CRON_SECRET mínimo 32 e trim → Bearer em tempo constante → modelo/OIDC → budget/preço → cliente de serviço → claim. O cliente usa SUPABASE_SECRET_KEY. OIDC runtime não comprovado; sem chave service o worker não alcança claim/model call.
+- Recomenda-se ao Owner desabilitar a flag em Production até homologação; nenhuma variável alterada.
+
+### Supabase e Gateway
+- Staging: 150 runs, todas killed; 0 steps, 0 grants, 0 usage e 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run.
+- Production: zero dados S14. agent_model_usage zerado em ambos.
+- RLS 6/6 em ambos; uma policy em cada tabela S14 e quatro em content_items. Funções agent_*: authenticated=6, service_role=12, postgres=19; nenhuma EXECUTE anon observada.
+- 31 nomes de migrations correspondentes, 0/31 version IDs iguais; não executar repair/db push sem reconciliação.
+- AI Gateway 7d: 0 requests, tokens e custo. Budgets de team/projeto/default e regras: nenhum. Nenhuma chamada real comprovada.
+- Limite interno US$ 5 é soft; sem reserva atômica por chamada ou outbox durável para reconciliar cobrança se a gravação falhar.
