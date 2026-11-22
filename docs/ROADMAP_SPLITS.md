@@ -1,3 +1,34 @@
+## Fechamento S14 — checkpoint 22/11/2026 00:00 BRT
+
+### Implementação integrada
+- [x] Planner (#35), Executor core (#36), read tools (#37), draft RPC (#38), claim queue (#39), worker (#40), model adapter (#41), budget/OIDC (#42) e run detail (#46): 9/9 PRs confirmadas individualmente como merged.
+- [x] Correções de timeout/ledger no histórico da main.
+- [x] CI no head exato e5ba869f: 418/418, migrations e SQL tests aprovados.
+- [x] E2E no Preview/Staging exato e5ba869f: Playwright · Staging 36/36, 0 falhas; artifact #14735191696. O run PR #44974732762 teve o job Staging skipped, mas o deployment_status #44974751006 executou Staging com sucesso.
+- [x] Preview do head e5ba869f READY. Production READY em SHA 86bd67c, sete commits atrás da main, sem alterações S14 no diff.
+- [x] Auditoria read-only de RLS/ACL: 6/6 tabelas com RLS, 19 funções agent_* e grants anon=0/authenticated=6/service_role=12.
+
+### Homologação ainda aberta
+- [ ] Provisionar SUPABASE_SECRET_KEY exclusiva do Supabase staging somente no target Preview.
+- [ ] Validar CRON_SECRET sem ler/expor o valor (mínimo 32 caracteres, sem whitespace nas pontas).
+- [ ] Comprovar emissão e aceitação do token OIDC em runtime.
+- [ ] Aprovar somente grants mínimos de leitura para operations_review no staging.
+- [ ] Criar budget externo de AI Gateway restrito ao projeto; o teto interno de US$ 5 é soft e não reserva atomicamente.
+- [ ] Reconciliar formalmente o histórico de migrations: 31 nomes correspondentes, 0/31 version IDs iguais; sem db repair/db push automático.
+- [ ] Reforçar orçamento com reserva atômica por chamada e outbox durável para reconciliação.
+- [ ] Executar uma única operations_review real em staging e reconciliar request/modelo/tokens/custo com agent_model_usage, validando draft e Verifier.
+
+### Evidência financeira
+- AI Gateway últimos 7 dias: 0 requests, 0 tokens, US$0; sem budgets específicos/default e sem regras.
+- agent_model_usage: 0 linhas e somas zero em staging e Production. Consistente com uso zero, não comprova reconciliação após cobrança.
+- Staging: 144 runs históricas, todas killed; 0 steps/grants/usage/linked content. Production: zero dados S14.
+
+### Segurança
+Sem merge, alteração em main/Production, deploy Production, migrations remotas, alteração de secrets, grants, budgets ou chamada paga nesta rodada.
+
+
+---
+
 ## Checkpoint de fechamento S14 — 21/11/2026 22:00 BRT
 
 ### Implementação integrada
