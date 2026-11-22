@@ -494,3 +494,39 @@ Somente consultas, inspeção de código e documentação nesta rodada. Sem merg
 - Staging: 160 runs, todas killed; 0 steps/grants/usage; kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14. `agent_model_usage` zero linhas/tokens/custo em ambos.
 - AI Gateway 7d: rows/series vazias; budget específico e defaults ausentes; rules ausentes. Modelo consta no catálogo, mas não há request real comprovado.
 - Limite interno de US$ 5 é soft; sem reserva atômica/outbox durável. Não executar `operations_review` real até provisionar chave service de staging, grants mínimos, budget externo isolado e comprovar OIDC/CRON.
+
+---
+
+## Checkpoint operacional final — 22/11/2026 08:58 BRT
+
+### GitHub, CI e Preview/Staging
+- Repositório `smklj/smkon`; `main` permanece em `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
+- PR #113 permanece aberta, Draft e mergeable; HEAD `d27e4bf00aeed9e00c5f42ccd67dbecb31a55e0e`, 31 commits ahead / 0 behind, somente os cinco documentos S14 no diff. É a única PR aberta observada.
+- Splits #35–#42 e #46, além de #82/#97, estão merged; #102 está fechada sem merge. Não promover branches históricas divergentes.
+- CI #45015586749 no HEAD exato: 2/2 jobs success; logs confirmam 418 testes, 418 pass, 0 fail, 0 skipped. Typecheck, lint, dependency audit, build e job de migrations/SQL tests passaram.
+- E2E deployment_status #45015607358 no HEAD exato: Playwright · Staging success, 36 passed (3,2 min), artifact #14751981957. E2E PR #45015586850: browser tests locais success; job Staging desse evento foi skipped.
+- Preview exato: deployment `dpl_LjhcXBhgV1W4hqwZV2UyXyg6hbD7`, READY, https://smkon-azxjb9mcp-smkon.vercel.app. Production: `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, READY, main `84afe632`. Nenhum deploy, alias ou dado de Production foi alterado.
+
+### Worker, Cron e credenciais
+- `vercel.json` declara `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT.
+- Inventário Vercel com `decrypt=false`: `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; `AGENT_MODEL_PROVIDER=vercel-ai-gateway`; `AGENT_MODEL_AUTH=oidc`; `AGENT_MODEL=anthropic/claude-haiku-5.5`; teto interno `AGENT_MONTHLY_BUDGET_USD=5`. `CRON_SECRET` é Sensitive em targets Preview e Production, sem leitura do valor. `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `AI_GATEWAY_API_KEY` não constam no inventário.
+- Evidência runtime Production: em 22/11 às 08:53:31 BRT, GET `/api/agents/worker` no deployment `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` registrou `service_not_configured`. Pela ordem do handler, a flag estava habilitada, o formato do `CRON_SECRET` passou, o Bearer apresentado correspondeu, o resolver aceitou a presença/formato local do token OIDC e a configuração de budget/preço foi parseável. O cliente Supabase de serviço não foi criado porque `SUPABASE_SECRET_KEY` está ausente; o handler parou antes do tick, claim e chamada ao modelo.
+- Limite da evidência: o resolver valida presença/formato do token OIDC, não a aceitação pelo AI Gateway. O request das 08:53 não coincide com o horário declarado do Cron (08:17 BRT), e a origem da requisição não foi identificada; portanto, não prova entrega do Vercel Cron nem autenticação aceita pelo Gateway. O valor do Cron secret não foi exposto.
+- Recomenda-se ao Owner desabilitar `AGENT_EXECUTOR_ENABLED` em Production até a homologação. Nenhuma variável foi alterada.
+
+### Supabase e consumo
+- Projetos staging e Production estão `ACTIVE_HEALTHY`.
+- Staging: 162 runs, 162 `killed`; 0 steps, 0 tool grants, 0 `agent_model_usage`, 0 tokens, US$ 0 e 0 conteúdos vinculados. Settings: `kill_switch=false`, 500 runs/dia, 12 steps/run.
+- Production: 0 runs, steps, grants, usage e conteúdos vinculados.
+- `agent_model_usage` zerado é consistente com ausência de uso. Não há evidência de reconciliação após uma chamada cobrada.
+
+### AI Gateway e risco de orçamento
+- API de uso do Vercel AI Gateway para o projeto, últimos 7 dias (janela retornada 15–23/11 UTC): `rows=[]`, `series=[]`. Budgets de team, project e defaults: nenhum; regras de roteamento: nenhuma.
+- Catálogo live confirma `anthropic/claude-haiku-5.5`. Nenhuma chamada real ao Gateway foi comprovada.
+- **Risco novo identificado:** `model-pricing.ts` usa preço fixo por token (`input=0.0000001`, `output=0.0000005`) e margem de 10%, sem implementar os tiers do catálogo. O catálogo indica, acima de 100.001 tokens, input de `0.0000005` e output de `0.0000025` por token (5x a primeira faixa). O estimador pode subestimar consumo de chamadas grandes; a margem de 10% não cobre essa diferença. Corrigir e testar o pricing tiered antes de tratar o teto interno como confiável.
+- O limite interno de US$ 5 é soft, sem reserva atômica do custo máximo por chamada e sem outbox durável de reconciliação.
+
+### Fluxo e decisão
+- Código na main confirma Planner → Executor → Verifier; ferramentas de leitura limitadas/escopadas por organização; `draft_content` grava somente status `draft`; Verifier exige evidência de produto verificada. E2E 36/36 valida fluxo de fila/limites/kill switch, não execução com modelo.
+- Não executar `operations_review` real até provisionar chave service exclusiva de staging, grants mínimos, budget externo isolado e corrigir o estimador por tiers. Depois, comprovar OIDC no Gateway, executar uma única run e reconciliar request/modelo/tokens/custo com `agent_model_usage`.
+- Sem merge, alteração em `main`/Production, migration remota, secret, grant, budget, publicação de conteúdo ou chamada paga nesta rodada.
