@@ -522,3 +522,15 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 - Código: worker falha fechado sem OIDC/modelo e, após autenticação do cron/modelo, sem SUPABASE_SECRET_KEY; nenhuma claim acontece antes da criação do cliente de serviço. OIDC runtime não comprovado.
 - O Gateway confirma o modelo no catálogo; uso do projeto 7d = 0 requests/tokens/custo; agent_model_usage = 0 linhas/tokens/custo nos dois bancos.
 - Budget: gasto consultado antes de cada claim, limite soft; sem reserva atômica nem outbox durável. Homologação real bloqueada por chave service de staging, grants mínimos, budget externo isolado e prova OIDC.
+
+
+## Atualização de progresso — 22/11/2026 07:59 BRT
+
+- **Integração:** nove splits originais (#35–#42 e #46) merged; #82/#97 merged; #102 fechada sem merge. PR #113 é a única aberta, Draft/mergeable, 30 ahead/0 behind, docs-only (cinco arquivos).
+- **CI no HEAD `a9cbe2f`:** #45010831733 success, 418/418 unit tests e 28 arquivos SQL aprovados; typecheck/lint/audit/build success.
+- **E2E no Preview/Staging do HEAD exato:** #45010855834 success, 36/36 em 3,4 min, artifact #14750330616. O workflow PR #45010831811 também passou 36/36 localmente; seu job Staging foi skipped. Nenhum dos testes chama AI Gateway.
+- **Preview:** `dpl_96w44YQjmQ5h6ihUjB49KCqQeTC5` READY no HEAD. **Production:** `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` READY na main `84afe632`; sem alteração nesta rodada.
+- **Worker:** Cron `17 11 * * *` UTC (08:17 BRT). Às 07:59, ainda futuro. `AGENT_EXECUTOR_ENABLED=true` em Preview/Production; `SUPABASE_SECRET_KEY` ausente; handler falha antes do tick/claim. OIDC runtime e formato do CRON_SECRET não comprovados.
+- **Dados:** staging 160 runs, todas killed, 0 steps/grants/usage; settings kill switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14. `agent_model_usage` zero nos dois bancos.
+- **Gateway:** uso 7d sem rows/series; budgets project/default e rules ausentes. Modelo disponível no catálogo; nenhuma chamada real comprovada.
+- **Gate operacional:** chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC/CRON. Não executar run paga antes dos gates.

@@ -250,3 +250,14 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - Staging: 154 runs killed, 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
 - AI Gateway 7d: 0 requests/tokens/custo; budgets project/default e rules ausentes. agent_model_usage vazio nos dois bancos.
 - Gates pendentes: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado, validação segura de CRON_SECRET e prova OIDC runtime. Não executar run real até aprovação dos gates.
+
+
+## Fechamento e auditoria de branches — 22/11/2026 07:59 BRT
+
+- PRs #35–#42 e #46: merged. #82 e #97: merged. #102: fechada sem merge. #113: única PR aberta, Draft/mergeable, 30 commits ahead/0 behind, cinco arquivos docs-only.
+- Nove branches `feature/s14-*`: 0 commits ahead e 267–294 behind de main; splits integrados, sem trabalho exclusivo a promover.
+- `fix/s14-timeout-ledger-rebased-20261121-1415`: 16 ahead/160 behind; hashes dos quatro arquivos críticos (`run.ts`, `model-gateway.ts`, `agents-budget.test.ts`, `agents-executor.test.ts`) coincidem com main.
+- `fix/s14-deadline-timeout-classification`: 19 ahead/203 behind e `model-gateway.ts` difere da main; revisar diff antes de qualquer cherry-pick.
+- `release/s14-mainline-integration-20261121`: 34 ahead/289 behind; snapshot divergente, não promover.
+- CI #45010831733: 418/418 unit tests e 28 arquivos SQL aprovados. E2E deployment_status #45010855834: 36/36 no Preview do HEAD `a9cbe2f`, artifact #14750330616. Nenhum desses testes executa IA paga.
+- Próxima frente: provisionar credenciais/grants/budget isolados e comprovar OIDC/CRON; somente então executar uma única run real e reconciliar AI Gateway com `agent_model_usage`.

@@ -124,3 +124,13 @@ Consulta Vercel com decrypt=false; nenhum valor sensitive foi lido:
 - SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY e AI_GATEWAY_API_KEY não aparecem no inventário visível do projeto. OIDC é a credencial selecionada, mas token/autenticação em runtime não comprovados.
 - O worker bloqueia sem token OIDC válido (model_not_configured) e, se OIDC passar, sem SUPABASE_SECRET_KEY (service_not_configured) antes do claim.
 - Não provisionar segredo compartilhado entre Preview e Production. A chave necessária deve ser exclusiva do Supabase staging e limitada ao target Preview, após aprovação do Owner.
+
+
+## Inventário não secreto verificado — 22/11/2026 07:59 BRT
+Consulta Vercel com `decrypt=false`; nenhum valor Sensitive foi descriptografado:
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5`.
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `CRON_SECRET` existe como Sensitive em targets separados Preview/Production; valor, comprimento e whitespace não foram lidos/validados.
+- `SUPABASE_SECRET_KEY` e `SUPABASE_SERVICE_ROLE_KEY` não constam no inventário de variáveis do projeto; também não há `AI_GATEWAY_API_KEY`. A branch `qa-e2e-staging` tem apenas URL, publishable key e site URL específicos; não tem chave de serviço.
+- O caminho OIDC está selecionado, mas autenticação efetiva em runtime não foi comprovada. Sem `SUPABASE_SECRET_KEY`, o cliente service não é criado e o worker para antes do claim/model call.
+- Não compartilhar secrets entre Preview e Production. A chave necessária deve ser exclusiva do Supabase staging e limitada ao target Preview, após aprovação do Owner.

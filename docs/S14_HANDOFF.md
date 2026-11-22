@@ -443,3 +443,32 @@ Somente leituras, inspeção de código e atualização documental nesta rodada.
 Não executar operations_review real enquanto faltarem: chave service exclusiva de staging no target Preview, grants mínimos de leitura, budget externo isolado, prova de OIDC em runtime e validação segura do Cron secret. Depois dos gates, executar uma única run e reconciliar request/modelo/tokens/custo do Gateway com agent_model_usage, além de steps, draft e Verifier.
 
 Somente consultas, inspeção de código e documentação nesta rodada. Sem merge, alteração em main/Production, migration remota, secret, grant, budget ou chamada paga.
+
+
+---
+
+## Checkpoint verificado — 22/11/2026 07:59 BRT
+
+### GitHub, CI e Preview
+- Main: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`. PR #113 aberta, Draft e mergeable; HEAD `a9cbe2f88216d75918fd96a82882909624068e85`, 30 commits à frente / 0 atrás. Compare confirma somente os cinco documentos S14 no diff. PRs #35–#42, #46, #82 e #97 merged; #102 fechada sem merge; #113 é a única PR aberta.
+- CI #45010831733 no HEAD exato: 2/2 jobs success, 418/418 testes unitários, typecheck, lint, dependency audit, build e 28 arquivos SQL aprovados.
+- E2E PR #45010831811: 36/36 browser tests locais; job Staging desse evento foi skipped. E2E deployment_status #45010855834: Playwright · Staging success, 36/36 em 3,4 min no Preview exato do HEAD `a9cbe2f`; artifact #14750330616. Os testes exercitam fila/kill switch, não chamam o modelo.
+- Preview exato: deployment `dpl_96w44YQjmQ5h6ihUjB49KCqQeTC5`, READY, https://smkon-k6xe35ol2-smkon.vercel.app. Production: `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, READY na main `84afe632`; nenhum deploy/alias Production foi alterado.
+
+### Branches e splits
+- PRs de split #35–#42 e #46, mais #82/#97, estão merged; #102 não foi merged. As nove branches `feature/s14-*` têm 0 commits exclusivos à frente da main e 267–294 atrás; não promover.
+- `fix/s14-timeout-ledger-rebased-20261121-1415` diverge (16 ahead/160 behind), mas os hashes de `run.ts`, `model-gateway.ts`, `agents-budget.test.ts` e `agents-executor.test.ts` coincidem com main. `fix/s14-deadline-timeout-classification` diverge (19/203) e seu `model-gateway.ts` difere; não fazer cherry-pick sem revisão. `release/s14-mainline-integration-20261121` diverge 34/289; não promover.
+
+### Worker, credenciais e Cron
+- `vercel.json`: `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. No checkpoint 07:59, a execução diária ainda era futura; runtime logs dos últimos 30 min não retornaram registros do worker em Preview ou Production.
+- Inventário Vercel consultado com `decrypt=false`: `SUPABASE_SECRET_KEY` e `SUPABASE_SERVICE_ROLE_KEY` ausentes no projeto, inclusive no target Preview da branch `qa-e2e-staging`; `AI_GATEWAY_API_KEY` ausente. `CRON_SECRET` Sensitive separado em Preview e Production, sem leitura do valor; comprimento/formato não certificados. `AGENT_EXECUTOR_ENABLED=true` em ambos; provider `vercel-ai-gateway`, auth `oidc`, modelo `anthropic/claude-haiku-5.5`, teto interno US$ 5.
+- Código em main: flag → validação de CRON_SECRET/Bearer → resolução do modelo/OIDC → budget → cliente de serviço → worker tick/claim. `createServiceClient()` exige `SUPABASE_SECRET_KEY`; ausente, retorna null e o handler responde `service_not_configured` antes de iniciar o tick, reivindicar run ou fazer chamada ao modelo. OIDC em runtime não comprovado.
+- Production permanece com `AGENT_EXECUTOR_ENABLED=true`; recomendo ao Owner desabilitar a flag até homologação. Nenhuma variável foi alterada.
+
+### Supabase e AI Gateway
+- Staging: 160 runs, todas `killed`; 0 steps, 0 grants e 0 usage. `agent_settings`: `kill_switch=false`, 500 runs/dia, 12 steps/run. Production: 0 runs, steps, grants e usage.
+- `agent_model_usage`: 0 linhas, input/output tokens e custo em ambos os bancos. AI Gateway no projeto, últimos 7 dias: `rows=[]`, `series=[]`; budget de projeto/default e regras de roteamento ausentes. Catálogo confirma `anthropic/claude-haiku-5.5` disponível. Nenhuma chamada real comprovada.
+- 31 nomes de migrations coincidem entre os bancos, mas version IDs divergem; não executar `db repair`/`db push` sem plano formal. O teto interno US$ 5 é soft: não há reserva atômica de custo máximo nem outbox durável de reconciliação.
+
+### Decisão
+E2E 36/36 comprova o fluxo de staging sem IA real. A execução controlada `operations_review` permanece bloqueada pela ausência da chave service exclusiva de staging, grants mínimos e budget externo isolado, além de OIDC/CRON não comprovados. Não houve merge, alteração em main/Production, migration remota, secret, grant, budget ou chamada paga.

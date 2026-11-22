@@ -481,3 +481,16 @@ Somente leituras, inspeção de código e atualização documental nesta rodada.
 Não executar operations_review real enquanto faltarem: chave service exclusiva de staging no target Preview, grants mínimos de leitura, budget externo isolado, prova de OIDC em runtime e validação segura do Cron secret. Depois dos gates, executar uma única run e reconciliar request/modelo/tokens/custo do Gateway com agent_model_usage, além de steps, draft e Verifier.
 
 Somente consultas, inspeção de código e documentação nesta rodada. Sem merge, alteração em main/Production, migration remota, secret, grant, budget ou chamada paga.
+
+
+## Estado verificado — 22/11/2026 07:59 BRT
+
+- PR #113: aberta, Draft, mergeable; HEAD `a9cbe2f`, 30 ahead/0 behind, diff limitado aos cinco documentos S14. Main `84afe632`. PRs #35–#42, #46, #82 e #97 merged; #102 fechada sem merge.
+- CI #45010831733 no HEAD exato: 418/418 unit tests, 28 arquivos SQL, typecheck/lint/audit/build aprovados. Playwright deployment_status #45010855834: 36/36 no Preview exato do HEAD, 3,4 min; artifact #14750330616. O E2E PR #45010831811 passou 36/36 local, mas o job Staging desse evento foi skipped.
+- Preview `dpl_96w44YQjmQ5h6ihUjB49KCqQeTC5` READY; Production `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` READY na main `84afe632`. Nenhuma alteração Production.
+- Cron de Production: `/api/agents/worker`, `17 11 * * *` UTC (08:17 BRT). Às 07:59 ainda futuro; logs runtime de 30 min sem eventos do worker.
+- Env inventory com `decrypt=false`: `SUPABASE_SECRET_KEY`/ `SUPABASE_SERVICE_ROLE_KEY` ausentes, inclusive no target `qa-e2e-staging`; `CRON_SECRET` Sensitive em Preview e Production (valor não lido, formato não certificado); `AGENT_EXECUTOR_ENABLED=true` nos dois; provider Gateway, auth OIDC, Haiku 5.5, teto interno US$ 5. `AI_GATEWAY_API_KEY` ausente.
+- Worker resolve configuração do modelo e budget, mas não chama o tick até obter cliente service. Sem `SUPABASE_SECRET_KEY`, `createServiceClient()` retorna null e o handler termina antes de claim/model call. OIDC runtime não comprovado.
+- Staging: 160 runs, todas killed; 0 steps/grants/usage; kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14. `agent_model_usage` zero linhas/tokens/custo em ambos.
+- AI Gateway 7d: rows/series vazias; budget específico e defaults ausentes; rules ausentes. Modelo consta no catálogo, mas não há request real comprovado.
+- Limite interno de US$ 5 é soft; sem reserva atômica/outbox durável. Não executar `operations_review` real até provisionar chave service de staging, grants mínimos, budget externo isolado e comprovar OIDC/CRON.
