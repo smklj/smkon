@@ -1,14 +1,14 @@
 ## Checkpoint S14 — 21/11/2026 22:00 BRT
 
 - Splits #35–#42 e #46: todos fechados e mergeados. PR #82 e #97 mergeadas; #102 fechada sem merge; #113 é a única PR aberta, Draft e mergeable, com cinco arquivos apenas documentais.
-- CI #44964877160 no head \`334a3d9\`: 2/2 jobs success; 418/418 testes (0 falhas, cancelados ou skipped), typecheck/lint/audit/build e migrations/SQL tests aprovados.
-- Playwright #44964877243: 36/36 no job Build local, conectado ao Supabase isolado de staging; job dedicado Playwright · Staging skipped por evento \`pull_request\`. Não houve chamada ao modelo.
-- Preview exato do head #113 READY: \`dpl_6RhTSSuzeHaPRin4CbjDZ63oVyak\`. Production READY em SHA \`86bd67c\`; \`main\` está 7 commits à frente, sem arquivos S14 no diff.
-- Worker e Cron estão no deployment Production: \`/api/agents/worker\`, \`17 11 * * *\` UTC (08:17 BRT). Sem runtime logs em Production na janela de 50 min; Preview registrou um GET do worker rejeitado como unauthorized, sem execução autenticada comprovada.
-- Vercel env sem decrypt: \`SUPABASE_SECRET_KEY\` ausente em Preview/Production; \`CRON_SECRET\` Sensitive presente, comprimento não validado; \`AGENT_EXECUTOR_ENABLED=true\` nos dois; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5 configurados.
+- CI #44964877160 no head `334a3d9`: 2/2 jobs success; 418/418 testes (0 falhas, cancelados ou skipped), typecheck/lint/audit/build e migrations/SQL tests aprovados.
+- Playwright #44964877243: 36/36 no job Build local, conectado ao Supabase isolado de staging; job dedicado Playwright · Staging skipped por evento `pull_request`. Não houve chamada ao modelo. Para o checkpoint `6a05caec`, novos CI #44969792653 e E2E #44969792601 estavam em execução.
+- Preview do checkpoint auditado `6a05caec` READY: `dpl_7Gh7ThzWW8WuDwD5vX72rkTb14Lj`. Production READY em SHA `86bd67c`; `main` está 7 commits à frente, sem arquivos S14 no diff.
+- Worker e Cron estão no deployment Production: `/api/agents/worker`, `17 11 * * *` UTC (08:17 BRT). Sem runtime logs em Production na janela de 50 min; Preview registrou um GET do worker rejeitado como unauthorized, sem execução autenticada comprovada.
+- Vercel env sem decrypt: `SUPABASE_SECRET_KEY` ausente em Preview/Production; `CRON_SECRET` Sensitive presente, comprimento não validado; `AGENT_EXECUTOR_ENABLED=true` nos dois; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5 configurados.
 - Staging: 140 runs, todas killed; 0 steps, grants, usage e conteúdos ligados a run; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14 e zero settings.
 - Os dois bancos têm 31 nomes de migrations iguais, mas 0/31 version IDs iguais; não executar repair/db push sem reconciliação. RLS ativo nas seis tabelas auditadas; 19 funções agent_* com EXECUTE anon=0, authenticated=6, service_role=12.
-- AI Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. \`agent_model_usage\` vazio nos dois bancos. Nenhuma chamada real comprovada.
+- AI Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. `agent_model_usage` vazio nos dois bancos. Nenhuma chamada real comprovada.
 - Bloqueio operacional: service key de staging ausente, grants zerados, budget externo ausente, CRON_SECRET sem validação e OIDC sem prova runtime. Não executar teste pago nem simular sucesso.
 - O limite interno de US$ 5 é soft, sem reserva atômica; não há outbox durável para reconciliar falha de gravação após cobrança.
 - Nenhuma alteração de código, schema, secrets, grants, budgets ou Production nesta rodada.

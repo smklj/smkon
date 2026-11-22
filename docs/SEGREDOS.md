@@ -2,20 +2,20 @@
 
 | Variável/controle | Production | Preview (staging) |
 |---|---|---|
-| \`SUPABASE_SECRET_KEY\` | Ausente | Ausente |
-| \`CRON_SECRET\` | Sensitive presente; comprimento não verificado | Sensitive presente; comprimento não verificado |
-| \`AGENT_EXECUTOR_ENABLED\` | \`true\` | \`true\` |
-| \`AGENT_MODEL_PROVIDER\` | \`vercel-ai-gateway\` | \`vercel-ai-gateway\` |
-| \`AGENT_MODEL_AUTH\` | \`oidc\` | \`oidc\` |
-| \`AGENT_MODEL\` | \`anthropic/claude-haiku-5.5\` | \`anthropic/claude-haiku-5.5\` |
-| \`AGENT_MONTHLY_BUDGET_USD\` | US$ 5 (limite interno soft) | US$ 5 (limite interno soft) |
-| \`AI_GATEWAY_API_KEY\` | Ausente (OIDC selecionado) | Ausente (OIDC selecionado) |
+| `SUPABASE_SECRET_KEY` | Ausente | Ausente |
+| `CRON_SECRET` | Sensitive presente; comprimento não verificado | Sensitive presente; comprimento não verificado |
+| `AGENT_EXECUTOR_ENABLED` | `true` | `true` |
+| `AGENT_MODEL_PROVIDER` | `vercel-ai-gateway` | `vercel-ai-gateway` |
+| `AGENT_MODEL_AUTH` | `oidc` | `oidc` |
+| `AGENT_MODEL` | `anthropic/claude-haiku-5.5` | `anthropic/claude-haiku-5.5` |
+| `AGENT_MONTHLY_BUDGET_USD` | US$ 5 (limite interno soft) | US$ 5 (limite interno soft) |
+| `AI_GATEWAY_API_KEY` | Ausente (OIDC selecionado) | Ausente (OIDC selecionado) |
 | Budget externo AI Gateway do projeto | Nenhum | Nenhum |
 | Budget default AI Gateway | Nenhum | Nenhum |
 
-A consulta Vercel foi feita com \`decrypt=false\`. Nenhum valor Sensitive foi lido ou incluído. OIDC está selecionado, mas token/aceitação em runtime não foram comprovados. \`SUPABASE_SECRET_KEY\` está ausente nos dois targets; sem ela, após passar as barreiras anteriores, o worker retorna \`503 service_not_configured\` antes de claim.
+A consulta Vercel foi feita com `decrypt=false`. Nenhum valor Sensitive foi lido ou incluído. OIDC está selecionado, mas token/aceitação em runtime não foram comprovados. `SUPABASE_SECRET_KEY` está ausente nos dois targets; sem ela, após passar as barreiras anteriores, o worker retorna `503 service_not_configured` antes de claim.
 
-**Recomendação:** manter \`AGENT_EXECUTOR_ENABLED=false\` em Production até homologação. Não copiar segredo de Production para Preview. Para o teste real, provisionar a chave exclusiva do projeto staging apenas em Preview, validar o Cron secret sem revelar valor, aprovar grants mínimos e configurar budget externo restrito ao projeto.
+**Recomendação:** manter `AGENT_EXECUTOR_ENABLED=false` em Production até homologação. Não copiar segredo de Production para Preview. Para o teste real, provisionar a chave exclusiva do projeto staging apenas em Preview, validar o Cron secret sem revelar valor, aprovar grants mínimos e configurar budget externo restrito ao projeto.
 
 ---
 
