@@ -315,3 +315,11 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - AI Gateway 7d: 0 requests/tokens/custo; budgets team/project/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos. Nenhuma chamada real comprovada.
 - Gate permanece: chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC em runtime. Não executar operations_review real antes desses gates.
 - Nenhuma alteração de main/Production, migration remota, secret, grant, budget ou chamada paga nesta rodada.
+
+## S14 — checkpoint operacional 22/11/2026 05:02 BRT
+- Splits #35–#42 e #46 integrados; #82/#97 merged; #102 fechada sem merge; #113 é a única PR aberta, Draft/mergeable, 26 ahead/0 behind. Compare confirma apenas cinco arquivos docs.
+- CI #44996313091 no head c7deb14: 418/418 e 2/2 jobs success. E2E PR #44996313030 cancelado/skipped; último E2E Staging #44983114589: 36/36 no SHA de aplicação 7d957275 (código equivalente; PR docs-only).
+- Preview c7deb14 READY; Production main 84afe632 READY. Cron 17 11 UTC (08:17 BRT); às 05:02 ainda futuro. Sem mudança de Production.
+- Staging: 154 runs killed, 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets project/default e rules ausentes. agent_model_usage vazio nos dois bancos.
+- Gates pendentes: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado, validação segura de CRON_SECRET e prova OIDC runtime. Não executar run real até aprovação dos gates.

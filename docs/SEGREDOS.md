@@ -198,3 +198,13 @@ Sem SUPABASE_SECRET_KEY, o cliente service_role não é criado; o worker não ch
 Não executar operations_review real enquanto faltarem: chave service exclusiva de Staging no target Preview, grants mínimos de leitura aprovados, budget externo isolado do Production, validação segura de CRON_SECRET e prova de OIDC em runtime. Depois dos gates, executar uma única run e reconciliar request/modelo/tokens/custo do Gateway com agent_model_usage, conferindo steps, draft e Verifier.
 
 Somente leituras, inspeção de código e atualização documental nesta rodada. Sem merge, alteração em main ou Production, migration remota, secret, grant, budget, deploy Production ou chamada paga.
+
+
+## Inventário não secreto S14 — 22/11/2026 05:02 BRT
+Consulta Vercel com decrypt=false; nenhum valor sensitive foi lido:
+- AGENT_MODEL_PROVIDER=vercel-ai-gateway, AGENT_MODEL_AUTH=oidc, AGENT_MODEL=anthropic/claude-haiku-5.5, AGENT_MONTHLY_BUDGET_USD=5.
+- AGENT_EXECUTOR_ENABLED=true em Preview e Production.
+- CRON_SECRET existe como Sensitive em targets separados Preview e Production; valor, comprimento e formato não foram lidos/validados.
+- SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY e AI_GATEWAY_API_KEY não aparecem no inventário visível do projeto. OIDC é a credencial selecionada, mas token/autenticação em runtime não comprovados.
+- O worker bloqueia sem token OIDC válido (model_not_configured) e, se OIDC passar, sem SUPABASE_SECRET_KEY (service_not_configured) antes do claim.
+- Não provisionar segredo compartilhado entre Preview e Production. A chave necessária deve ser exclusiva do Supabase staging e limitada ao target Preview, após aprovação do Owner.

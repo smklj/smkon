@@ -604,3 +604,10 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 - AI Gateway 7d: 0 requests/tokens/custo; budgets team/project/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos. Nenhuma chamada real comprovada.
 - Gate permanece: chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC em runtime. Não executar operations_review real antes desses gates.
 - Nenhuma alteração de main/Production, migration remota, secret, grant, budget ou chamada paga nesta rodada.
+
+## Checkpoint de validação — 22/11/2026 05:02 BRT
+- CI #44996313091 no head c7deb14: 2/2 jobs success; logs confirmam 418/418 testes unitários, typecheck, lint, audit, build e migrations/SQL tests.
+- E2E #44996313030 foi cancelado/skipped; último Playwright · Staging aprovado #44983114589, 36/36 no SHA de aplicação 7d957275. Nenhum desses testes faz chamada ao AI Gateway.
+- Código: worker falha fechado sem OIDC/modelo e, após autenticação do cron/modelo, sem SUPABASE_SECRET_KEY; nenhuma claim acontece antes da criação do cliente de serviço. OIDC runtime não comprovado.
+- O Gateway confirma o modelo no catálogo; uso do projeto 7d = 0 requests/tokens/custo; agent_model_usage = 0 linhas/tokens/custo nos dois bancos.
+- Budget: gasto consultado antes de cada claim, limite soft; sem reserva atômica nem outbox durável. Homologação real bloqueada por chave service de staging, grants mínimos, budget externo isolado e prova OIDC.
