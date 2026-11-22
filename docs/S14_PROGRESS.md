@@ -1,3 +1,21 @@
+## Checkpoint de progresso S14 — 22/11/2026 00:00 BRT
+
+- PR #113 permanece aberta/Draft/mergeable; base `main` em `84afe632`. Head auditado antes deste checkpoint: `e5ba869f`, 9 ahead/0 behind. Esta atualização é somente documental.
+- Splits #35–#42 e #46 confirmados individualmente como merged; #82 e #97 merged; #102 fechada sem merge.
+- CI #44974732697 no SHA exato `e5ba869f`: 2/2 jobs success; 418/418 testes, 0 falhas/skip; typecheck, lint, audit, build e migrations/SQL tests aprovados.
+- E2E PR #44974732762: Build local 36/36; o job Staging desse run foi skipped pelo evento pull_request. E2E de deployment #44974751006: Playwright · Staging success no Preview/SHA exato `e5ba869f`, 36/36, 0 falhas; artifact #14735191696. Inclui agents.spec.mjs, fila, limites e kill switch. Não chama AI Gateway.
+- Preview exato `e5ba869f` READY: deployment `dpl_9ifdqD9u7ypcBTPeZ46MC7uWQM2k`. Production READY em `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente, diff de 17 arquivos sem alterações S14.
+- Cron Production: `/api/agents/worker`, `17 11 UTC` = 08:17 BRT. Runtime logs: nenhum registro nos últimos 30 min em Production/Preview. Sem invocação autenticada comprovada.
+- Inventário Vercel (decrypt=false): SUPABASE_SECRET_KEY ausente nos dois targets; CRON_SECRET Sensitive presente nos dois; AGENT_EXECUTOR_ENABLED=true; Gateway/OIDC/Haiku 5.5/US$5 interno. AI_GATEWAY_API_KEY ausente; OIDC runtime não comprovado.
+- Staging: 144 runs, todas killed; 0 steps, grants, usage, tokens, custo e conteúdo ligado. Settings: kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
+- ACL/RLS repetidos nos dois bancos: 6/6 tabelas com RLS; 5 policies S14 + 4 em content_items; 19 funções agent_*, EXECUTE anon=0/authenticated=6/service_role=12.
+- Migrations: 31 nomes em cada banco, 0/31 version IDs iguais; ordem de audience_consent/workspace_members difere. Sem repair/db push.
+- AI Gateway 7d: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. agent_model_usage vazio nos dois bancos; consistência observável para uso zero, não prova pós-cobrança.
+- Bloqueio do teste real: chave exclusiva de staging, grants mínimos, budget externo isolado, validação segura do CRON_SECRET e OIDC runtime. Não simular sucesso nem realizar chamada paga.
+
+
+---
+
 ## Checkpoint de progresso S14 — 21/11/2026 22:58 BRT
 
 - PR #113 permanece Draft, mergeable, 8 ahead/0 behind no checkpoint; apenas documentação. Splits #35–#42 e #46, PR #82 e #97 confirmadas mergeadas; #102 fechada sem merge.
