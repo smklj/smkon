@@ -126,3 +126,23 @@ Sem `SUPABASE_SECRET_KEY` nenhuma integração de receita ou de publicação fun
 openssl rand -base64 32
 ```
 Cadastre direto na Vercel (Settings → Environment Variables), tipo **Sensitive**, um valor para Production e outro para Preview. Trocar a chave exige recifrar os tokens já salvos (use um `_KEY_ID` novo).
+
+
+## Auditoria de variáveis S14 — 22/11/2026 01:57 BRT
+
+Inventário Vercel consultado com decrypt=false. Nenhum valor Sensitive foi lido.
+
+| Variável | Preview | Production | Evidência |
+|---|---|---|---|
+| SUPABASE_SECRET_KEY | ausente | ausente | Não aparece no inventário do projeto |
+| CRON_SECRET | Sensitive | Sensitive | Targets separados; valores não lidos |
+| AGENT_EXECUTOR_ENABLED | true | true | Variável plain nos dois targets |
+| AGENT_MODEL_PROVIDER | vercel-ai-gateway | vercel-ai-gateway | Configuração plain |
+| AGENT_MODEL_AUTH | oidc | oidc | Opt-in OIDC explícito |
+| AGENT_MODEL | anthropic/claude-haiku-5.5 | anthropic/claude-haiku-5.5 | Catálogo do Gateway |
+| AGENT_MONTHLY_BUDGET_USD | 5 | 5 | Teto interno |
+| AI_GATEWAY_API_KEY | ausente | ausente | OIDC é o caminho selecionado |
+
+Às 04:49:13Z, a rota Production /api/agents/worker registrou unauthorized. Pelo fluxo do handler, a requisição passou pela flag e pelo validador de formato do CRON_SECRET, mas o Bearer não correspondeu. Isso não comprova Cron autenticado nem OIDC.
+
+Sem SUPABASE_SECRET_KEY, o cliente service_role não é criado; o worker não chega ao claim nem à chamada paga. A recomendação é o Owner manter AGENT_EXECUTOR_ENABLED=false em Production até homologação. Nenhuma variável foi alterada nesta auditoria.
