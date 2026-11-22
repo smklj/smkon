@@ -49,9 +49,7 @@ Sem merge, alteração em `main`/Production, migration remota, secret, grant, bu
 
 # S14 — Handoff: executor real dos agentes (Planner → Executor → Verifier)
 
-**Estado em 19/11/2026:** código das 9 etapas integrado na branch `feature/smkon-production-readiness` (PRs #35–#42
-e o PR da etapa 8/9, `feature/s14-run-detail`). **Não está em produção**: falta o merge na `main` e as autorizações
-listadas no fim. Plano vivo, decisões e registro por etapa: `docs/S14_PROGRESS.md`.
+**Estado atual em 22/11/2026:** as nove etapas foram integradas à `main` (PRs #35–#42 e #46; #82 e #97 também estão incorporadas). O deployment Production da main `84afe632` contém a rota do worker e o Vercel Cron. A execução real de IA, porém, ainda não está homologada: faltam chave service exclusiva de staging, grants mínimos, budget externo isolado e prova de OIDC em runtime. A branch `feature/smkon-production-readiness` é histórica e não deve ser promovida. O checkpoint operacional no topo deste arquivo é a fonte do estado atual; as seções seguintes preservam decisões e evidências históricas, inclusive de 19/11.
 
 ## O que mudou
 

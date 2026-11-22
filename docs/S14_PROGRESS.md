@@ -33,11 +33,7 @@
 
 # S14 — Executor real dos agentes (Planner → Executor → Verifier)
 
-**Branch de integração:** `feature/smkon-production-readiness` · uma etapa por PR (`feature/s14-<etapa>`).
-**Pré-requisito:** S13 em produção (migration `20261119020000_agent_runs.sql`, ver `docs/S13_HANDOFF.md`).
-
-Este arquivo é o plano vivo do S14. Cada execução avança **uma** etapa do checklist, marca o item e registra
-o PR e os resultados reais dos testes. Nada aqui é considerado concluído sem teste executado.
+**Estado atual em 22/11/2026:** as etapas do checklist foram integradas à `main`; `feature/smkon-production-readiness` e `feature/s14-<etapa>` são referências históricas, não branches de release. Este documento preserva o plano, contratos e decisões originais. O status vigente está no checkpoint no topo e em `docs/S14_HANDOFF.md`. A implementação está integrada e os testes automatizados passaram; a homologação de IA real continua bloqueada por credencial de staging, grants, budget externo e prova OIDC.
 
 ## Objetivo
 
