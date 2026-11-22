@@ -1,3 +1,18 @@
+## Checkpoint de progresso S14 — 22/11/2026 00:55 BRT
+
+- PR #113 no HEAD `52aae681`, 14 ahead/0 behind, somente cinco arquivos documentais; permanece Draft. Splits #35–#42 e #46, #82 e #97 merged; #102 fechada sem merge.
+- CI #44978955812 no HEAD exato: 2/2 jobs success; 418/418 unit tests, 0 falhas/skip; typecheck, lint, audit, build e 28 arquivos SQL aprovados.
+- E2E #44978955925 (evento PR) cancelado no Build local e Staging skipped. Última execução de Staging válida #44974751006: SHA de aplicação e5ba869f, 36/36, artifact #14735191696. PR atual é docs-only; não atribuir E2E ao HEAD documental.
+- Preview atual #113 READY: dpl_GkCqxfeNSXENdbf8DFqY5JT73xab, SHA 52aae681. Production READY: dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 7 commits à frente, sem arquivos S14 no diff.
+- Cron Production: /api/agents/worker, 17 11 UTC (08:17 BRT). Preview registrou GET sem Bearer como unauthorized; isso valida indiretamente o mínimo/trim do CRON_SECRET de Preview, mas não o OIDC nem a autenticação de Cron. Production sem logs na janela de 50 min.
+- Vercel env (decrypt=false): SUPABASE_SECRET_KEY e SUPABASE_SERVICE_ROLE_KEY ausentes; CRON_SECRET Sensitive em Preview/Production; AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/Haiku 5.5/US$5 internos. OIDC runtime não comprovado.
+- Staging: 146 runs, todas killed; 0 steps/grants/usage/conteúdo vinculado; settings kill_switch=false, 500/dia, 12 steps/run. Production sem dados S14.
+- RLS 6/6; policies 5 tabelas S14 + 4 content_items; 19 funções agent_*: anon=0/authenticated=6/service_role=12. 31 nomes de migrations em cada banco, 0/31 version IDs iguais; não executar repair/db push.
+- AI Gateway 7d: 0 requests/tokens/custo; sem budgets de equipe/projeto/default e sem rules. agent_model_usage 0 linhas em ambos; consistente com uso zero, sem prova pós-cobrança.
+- Bloqueio de run real: chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC runtime. Sem chamada real ou alteração Production.
+
+---
+
 ## Checkpoint de progresso S14 — 22/11/2026 00:00 BRT
 
 - PR #113 permanece aberta/Draft/mergeable; base `main` em `84afe632`. Head auditado antes deste checkpoint: `e5ba869f`, 9 ahead/0 behind. Esta atualização é somente documental.

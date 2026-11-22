@@ -1,3 +1,17 @@
+## Estado de integração S14 — 22/11/2026 00:55 BRT
+
+- main HEAD 84afe632; PR #113 Draft/mergeable, head 52aae681, 14 ahead/0 behind, cinco arquivos docs-only. Splits #35–#42 e #46, #82 e #97 merged; #102 fechada sem merge.
+- CI #44978955812 no HEAD exato: 2/2 jobs success, 418/418 unit tests e 28 arquivos SQL aprovados. E2E PR #44978955925 cancelado/skip; E2E de Staging anterior #44974751006 36/36 no SHA de aplicação e5ba869f, artifact #14735191696.
+- Preview READY dpl_GkCqxfeNSXENdbf8DFqY5JT73xab, SHA 52aae681. Production READY dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 7 commits à frente, diff de 17 arquivos sem código S14.
+- Cron /api/agents/worker, 17 11 UTC = 08:17 BRT. Preview GET sem Bearer gerou unauthorized após validação do formato de CRON_SECRET; Production sem runtime logs nos últimos 50 min.
+- Env sem decrypt: SUPABASE_SECRET_KEY e SUPABASE_SERVICE_ROLE_KEY ausentes; CRON_SECRET Sensitive nos dois targets; AGENT_EXECUTOR_ENABLED=true; Gateway/OIDC/Haiku 5.5/US$5 internos; OIDC runtime não comprovado.
+- Staging 146 runs killed, 0 steps/grants/usage/linked content; settings kill_switch=false, 500/dia, 12 steps/run. Production zero dados S14.
+- RLS 6/6; policies 5 S14 + 4 content_items; 19 funções agent_* com anon=0/authenticated=6/service_role=12. 31 nomes de migrations em ambos, 0/31 version IDs iguais.
+- Gateway 7d: 0 requests/tokens/custo; budgets equipe/projeto/default e rules ausentes. agent_model_usage vazio nos dois bancos. Sem chamada real comprovada.
+- Bloqueio: chave service exclusiva de staging, grants mínimos, budget externo e prova OIDC runtime. Não executar teste pago nem simular sucesso.
+
+---
+
 ## Estado de integração S14 — 22/11/2026 00:00 BRT
 
 - GitHub: main `84afe632`; PR #113 aberta/Draft/mergeable, head anterior `e5ba869f`, 9 ahead/0 behind. Splits #35–#42 e #46, PR #82 e #97 merged; #102 fechada sem merge.

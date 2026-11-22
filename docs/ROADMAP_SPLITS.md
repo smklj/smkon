@@ -1,3 +1,31 @@
+## Fechamento S14 — checkpoint 22/11/2026 00:55 BRT
+
+### Splits
+- [x] Planner (#35), Executor core (#36), read tools (#37), draft RPC (#38), claim queue (#39), worker (#40), model adapter (#41), budget/OIDC (#42) e run detail (#46): 9/9 PRs confirmadas individualmente como merged.
+- [x] Correções de timeout/ledger integradas à main por PR #82; PR #97 documental merged.
+- [x] PR #113 é somente documentação, Draft, 14 ahead/0 behind; sem merge.
+
+### Verificação
+- [x] CI #44978955812 no HEAD 52aae681: 418/418 unit tests, 28 arquivos SQL, typecheck/lint/audit/build aprovados.
+- [x] E2E Staging anterior #44974751006: 36/36 no SHA de aplicação e5ba869f, artifact #14735191696. O E2E PR #44978955925 foi cancelado/skip; não atribuir ao HEAD atual.
+- [x] Preview atual READY; Production READY em SHA 86bd67c, main 7 commits à frente e sem arquivos S14 no diff.
+- [x] Auditoria RLS/ACL: 6/6 tabelas com RLS, 19 funções agent_*, grants anon=0/authenticated=6/service_role=12.
+- [x] Staging 146 runs killed, 0 steps/grants/usage/drafts vinculados; Production sem dados S14.
+- [x] 31 nomes de migrations nos dois bancos; 0/31 version IDs coincidem. Não executar repair/db push sem reconciliação.
+
+### Homologação operacional ainda aberta
+- [ ] SUPABASE_SECRET_KEY exclusiva do staging.
+- [ ] Grants mínimos de leitura para operations_review.
+- [ ] Budget externo de AI Gateway restrito ao projeto de staging.
+- [ ] Validar CRON_SECRET de Production sem revelar valor.
+- [ ] Comprovar OIDC em runtime.
+- [ ] Executar uma única operations_review real e reconciliar request/modelo/tokens/custo com agent_model_usage.
+- [ ] Resolver reserva atômica/outbox antes de ampliar execução: teto interno US$ 5 é soft e não há outbox durável.
+
+Nenhuma chamada real ao Gateway foi comprovada; uso agregado e ledger permanecem zero. Nenhuma alteração em Production foi executada.
+
+---
+
 ## Fechamento S14 — checkpoint 22/11/2026 00:00 BRT
 
 ### Implementação integrada

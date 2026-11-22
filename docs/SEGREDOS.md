@@ -1,3 +1,23 @@
+## Checkpoint de credenciais S14 — 22/11/2026 00:55 BRT (inventário Vercel com decrypt=false)
+
+| Controle | Production | Preview/Staging |
+|---|---|---|
+| SUPABASE_SECRET_KEY | Ausente | Ausente |
+| SUPABASE_SERVICE_ROLE_KEY | Ausente | Ausente |
+| CRON_SECRET | Sensitive presente; valor/comprimento não lidos | Sensitive presente; valor não lido; passou indiretamente mínimo 32/trim via resposta unauthorized |
+| AGENT_EXECUTOR_ENABLED | true | true |
+| AGENT_MODEL_PROVIDER | vercel-ai-gateway | vercel-ai-gateway |
+| AGENT_MODEL_AUTH | oidc | oidc |
+| AGENT_MODEL | anthropic/claude-haiku-5.5 | anthropic/claude-haiku-5.5 |
+| AGENT_MONTHLY_BUDGET_USD | 5 (teto interno soft) | 5 (teto interno soft) |
+| AI_GATEWAY_API_KEY | Ausente (OIDC selecionado) | Ausente (OIDC selecionado) |
+
+Nenhum valor secreto foi descriptografado. O GET sem Bearer no Preview foi rejeitado como unauthorized depois das barreiras de flag e formato de CRON_SECRET; isso não comprova OIDC nem execução autenticada. Em Production, comprimento/whitespace do CRON_SECRET não foi validado.
+
+Bloqueios: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC em runtime. Recomenda-se ao Owner desabilitar AGENT_EXECUTOR_ENABLED em Production até homologação. Nenhuma variável foi alterada.
+
+---
+
 ## Checkpoint de credenciais S14 — 22/11/2026 00:00 BRT (inventário Vercel com decrypt=false)
 
 | Controle | Production | Preview/Staging |
