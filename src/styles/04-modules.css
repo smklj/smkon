@@ -182,3 +182,26 @@
 .check-error .check-mark { color: var(--danger); }
 .check-error { color: var(--text); }
 @media (prefers-reduced-motion: reduce) { .checks > summary::after { transition: none; } }
+
+/* Admin — prontidão para uso */
+.readiness { display: grid; gap: 8px; }
+.readiness-summary { margin: 0; font-size: 13px; color: var(--text-2); }
+.readiness-summary strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.readiness-vars { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.readiness-vars code { font-family: var(--font-mono-stack, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 12px; padding: 1px 6px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); color: var(--text); background: var(--surface-2); }
+
+/* Visão geral — primeiros passos */
+.first-steps-progress { height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 4px 0 12px; }
+.first-steps-progress > span { display: block; height: 100%; background: var(--text); border-radius: inherit; transition: width var(--dur-3) var(--ease-out); }
+.first-steps-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.first-step { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px; padding: 10px 8px; border-radius: var(--radius-sm); }
+.first-step.is-next { background: var(--surface-2); }
+.first-step-mark { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--bg); }
+.first-step.is-done .first-step-mark { background: var(--ok); border-color: var(--ok); }
+.first-step.is-next .first-step-mark { border-color: var(--text); }
+.first-step-body { min-width: 0; }
+.first-step-title { margin: 0; font-size: 14px; color: var(--text); }
+.first-step.is-done .first-step-title { color: var(--muted); }
+.first-step-body .row-meta { margin: 2px 0 0; }
+@media (prefers-reduced-motion: reduce) { .first-steps-progress > span { transition: none; } }
+@media (max-width: 640px) { .first-step { grid-template-columns: 22px 1fr; } .first-step > .button { grid-column: 2; justify-self: start; } }

@@ -1957,6 +1957,14 @@ export type Database = {
           retry_after_seconds: number
         }[]
       }
+      rate_limit_consume_login: {
+        Args: { p_scope: string; p_subject: string }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_seconds: number
+        }[]
+      }
       review_product_evidence: {
         Args: { p_decision: string; p_evidence_id: string; p_note?: string }
         Returns: {

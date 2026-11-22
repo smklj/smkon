@@ -1,3 +1,4 @@
+import { onboardingSteps } from "../../src/lib/overview/onboarding.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { affiliateOpen, costPerClick, emptyOverview, parseOverview, providerLabel, seriesTotal } from "../../src/lib/overview/types.ts";
@@ -77,4 +78,20 @@ test("séries diárias: só datas válidas, contagens inteiras e não negativas"
   assert.deepEqual(parsed.trends.publications_scheduled, []);
   assert.deepEqual(parsed.trends.agent_runs, []);
   assert.equal(seriesTotal(parsed.trends.content_created), 5);
+});
+
+test("primeiros passos: tudo pendente num workspace vazio e concluído conforme os números reais", () => {
+  const empty = emptyOverview();
+  const steps = onboardingSteps(empty);
+  assert.deepEqual(steps.map((step) => step.id), ["product", "evidence", "content", "approve", "schedule", "connect"]);
+  assert.ok(steps.every((step) => !step.done));
+
+  const used = emptyOverview();
+  used.products.total = 3;
+  used.products.scored = 1;
+  used.content.total = 2;
+  used.content.approved = 1;
+  used.publication.awaiting_dry_run = 1;
+  const done = Object.fromEntries(onboardingSteps(used).map((step) => [step.id, step.done]));
+  assert.deepEqual(done, { product: true, evidence: true, content: true, approve: true, schedule: true, connect: false });
 });

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { contentSecurityPolicy, securityHeaders } from "../../src/lib/http/security-headers.ts";
 import { errorFields, log, redact, setLogSinks } from "../../src/lib/observability/log.ts";
-import { clientIp, rateLimitSubject } from "../../src/lib/http/rate-limit.ts";
+import { clientIp, consumeLoginRateLimit, rateLimitSubject } from "../../src/lib/http/rate-limit.ts";
 
 const NONCE = "AAAAAAAAAAAAAAAAAAAAAA==";
 
@@ -60,4 +60,31 @@ test("IP do cliente vem do primeiro X-Forwarded-For", () => {
   assert.equal(clientIp(new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" })), "203.0.113.7");
   assert.equal(clientIp(new Headers({ "x-real-ip": "198.51.100.2" })), "198.51.100.2");
   assert.equal(clientIp(new Headers()), "unknown");
+});
+
+test("limite de login: usa só a chave de servidor e libera (registrando) quando ela falta", async () => {
+  const lines: string[] = [];
+  setLogSinks([{ name: "memoria", write: (_record, line) => void lines.push(line) }]);
+  try {
+    const subject = rateLimitSubject("pessoa@empresa.com");
+    assert.deepEqual(await consumeLoginRateLimit(null, "login_email", subject), { allowed: true, retryAfterSeconds: 0 });
+    assert.ok(lines.some((line) => line.includes("rate_limit.login_unprotected")), "registra que o limite está desligado");
+
+    const calls: Array<{ fn: string; args: unknown }> = [];
+    const blocked = {
+      rpc: async (fn: string, args: unknown) => {
+        calls.push({ fn, args });
+        return { data: [{ allowed: false, remaining: 0, retry_after_seconds: 120 }], error: null };
+      },
+    };
+    // @ts-expect-error cliente mínimo para o teste
+    assert.deepEqual(await consumeLoginRateLimit(blocked, "login_ip", subject), { allowed: false, retryAfterSeconds: 120 });
+    assert.deepEqual(calls, [{ fn: "rate_limit_consume_login", args: { p_scope: "login_ip", p_subject: subject } }]);
+
+    const failing = { rpc: async () => ({ data: null, error: { message: "boom", code: "XX000" } }) };
+    // @ts-expect-error cliente mínimo para o teste
+    assert.deepEqual(await consumeLoginRateLimit(failing, "login_email", subject), { allowed: true, retryAfterSeconds: 0 });
+  } finally {
+    setLogSinks(null);
+  }
 });
