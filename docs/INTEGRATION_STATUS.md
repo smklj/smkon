@@ -1,3 +1,20 @@
+## Estado de integração S14 — 22/11/2026 00:00 BRT
+
+- GitHub: main `84afe632`; PR #113 aberta/Draft/mergeable, head anterior `e5ba869f`, 9 ahead/0 behind. Splits #35–#42 e #46, PR #82 e #97 merged; #102 fechada sem merge.
+- CI #44974732697: 2/2 success, 418/418 unitários, migrations/SQL tests success.
+- E2E #44974751006: Playwright · Staging success no Preview/SHA exato `e5ba869f`; 36/36 pass, 0 falhas, artifact #14735191696. O run PR #44974732762 teve Build local 36/36 e job Staging skipped. Nenhum teste chamou o modelo.
+- Preview READY: `dpl_9ifdqD9u7ypcBTPeZ46MC7uWQM2k`, SHA `e5ba869f`. Production READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente e diff sem arquivos S14.
+- Cron Production: `/api/agents/worker`, `17 11 UTC` (08:17 BRT). Sem runtime logs nos últimos 30 minutos em Production/Preview.
+- Vercel env (decrypt=false): SUPABASE_SECRET_KEY ausente; CRON_SECRET Sensitive presente; AGENT_EXECUTOR_ENABLED=true; provider Gateway/OIDC/Haiku 5.5; budget interno US$5. OIDC runtime não comprovado. Sem AI_GATEWAY_API_KEY.
+- Staging: 144 runs, todas killed; 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production zero dados S14.
+- RLS 6/6; 5 policies S14 + 4 content_items; 19 funções agent_*, EXECUTE anon=0/authenticated=6/service_role=12 nos dois bancos.
+- 31 nomes de migrations em ambos, 0/31 version IDs iguais; ordem de audience_consent/workspace_members difere. Não executar repair/db push.
+- AI Gateway 7d: 0 requests/tokens/custo; nenhum budget específico/default ou regra. agent_model_usage vazio em ambos. Consistente com uso zero, mas sem prova de reconciliação pós-cobrança.
+- Gate real: chave exclusiva de staging, grants mínimos, budget externo isolado, validação CRON_SECRET e OIDC runtime. Sem chamada real até todos os gates estarem satisfeitos.
+
+
+---
+
 ## Estado de integração S14 — 21/11/2026 22:58 BRT
 
 - main HEAD 84afe632; PR #113 aberta/Draft/mergeable, head 6bb47d7, 8 ahead/0 behind. PRs #35–#42 e #46, #82 e #97 mergeadas; #102 fechada sem merge.
