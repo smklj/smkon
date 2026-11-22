@@ -534,3 +534,17 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 - **Dados:** staging 160 runs, todas killed, 0 steps/grants/usage; settings kill switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14. `agent_model_usage` zero nos dois bancos.
 - **Gateway:** uso 7d sem rows/series; budgets project/default e rules ausentes. Modelo disponível no catálogo; nenhuma chamada real comprovada.
 - **Gate operacional:** chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC/CRON. Não executar run paga antes dos gates.
+
+---
+
+## Checkpoint final — 22/11/2026 08:58 BRT
+
+- PR #113 Draft/mergeable, HEAD `d27e4bf`, 31 ahead/0 behind, cinco arquivos docs-only; única PR aberta observada. Splits #35–#42, #46, #82 e #97 merged; #102 fechada sem merge.
+- CI #45015586749 no HEAD exato: 418/418, 0 falhas/skip, 2/2 jobs success. E2E deployment_status #45015607358 no HEAD exato: Playwright Staging 36/36 em 3,2 min, artifact #14751981957.
+- Preview exato `dpl_LjhcXBhgV1W4hqwZV2UyXyg6hbD7` READY. Production `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` READY em main `84afe632`; sem alteração de Production.
+- Staging: 162 runs, todas killed; 0 steps/grants/usage/tokens/custo/conteúdo vinculado. Production: zero dados S14. `agent_model_usage` consistente com uso zero.
+- Vercel env inventory sem decrypt: `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` Sensitive em Preview/Production; `AGENT_EXECUTOR_ENABLED=true`; Gateway/OIDC/Haiku 5.5; teto interno US$ 5.
+- Production runtime às 08:53:31 BRT: worker chegou a `service_not_configured`. Flag, formato e comparação Bearer do Cron secret passaram; o token OIDC passou apenas a validação local de presença/formato; budget/preço foram parseados. Ausência de `SUPABASE_SECRET_KEY` impediu tick/claim/model call. Origem do request não identificada; horário não coincide com Cron 08:17 BRT.
+- AI Gateway 7d: zero requests/tokens/custo; budgets team/project/default e rules ausentes. Nenhuma chamada real comprovada.
+- Risco de pricing: catálogo Haiku 5.5 cobra 5x a partir de 100.001 tokens; `model-pricing.ts` ainda usa taxa fixa + 10%, sem tiers. Corrigir antes de confiar no teto.
+- Bloqueios: chave service exclusiva de staging, grants mínimos, budget externo, confirmação OIDC no Gateway e pricing tiered. Nenhuma alteração de Production ou chamada paga.
