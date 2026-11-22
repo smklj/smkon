@@ -134,3 +134,14 @@ Consulta Vercel com `decrypt=false`; nenhum valor Sensitive foi descriptografado
 - `SUPABASE_SECRET_KEY` e `SUPABASE_SERVICE_ROLE_KEY` não constam no inventário de variáveis do projeto; também não há `AI_GATEWAY_API_KEY`. A branch `qa-e2e-staging` tem apenas URL, publishable key e site URL específicos; não tem chave de serviço.
 - O caminho OIDC está selecionado, mas autenticação efetiva em runtime não foi comprovada. Sem `SUPABASE_SECRET_KEY`, o cliente service não é criado e o worker para antes do claim/model call.
 - Não compartilhar secrets entre Preview e Production. A chave necessária deve ser exclusiva do Supabase staging e limitada ao target Preview, após aprovação do Owner.
+
+---
+
+## Inventário S14 — 22/11/2026 08:58 BRT (sem descriptografar valores)
+
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `CRON_SECRET`: Sensitive em targets separados Preview/Production; valor nunca lido ou registrado.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`.
+- `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `AI_GATEWAY_API_KEY` ausentes no inventário Vercel.
+- Runtime Production em 08:53:31 BRT alcançou `service_not_configured`: Bearer/CRON passou; OIDC passou somente checagem local de presença/formato, não houve validação no Gateway. A ausência de `SUPABASE_SECRET_KEY` bloqueou antes do claim/model call.
+- Não inserir ou compartilhar chaves entre ambientes. Provisionar uma chave de serviço exclusiva de staging apenas no target Preview, com grants mínimos, depois de aprovação do Owner. Manter Production desabilitado até homologação.
