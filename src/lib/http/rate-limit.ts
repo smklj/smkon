@@ -8,7 +8,7 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 type ServiceClient = BaseClient<Database>;
 
 /** Escopos de usuário logado: o banco usa auth.uid() como sujeito. */
-export type RateLimitScope = "invite_create" | "invite_accept";
+export type RateLimitScope = "invite_create" | "invite_accept" | "ai_assist";
 /** Escopos de login: só a chave de servidor consome (anon não bloqueia o login de ninguém). */
 export type LoginRateLimitScope = "login_ip" | "login_email";
 export type RateLimitResult = { allowed: boolean; retryAfterSeconds: number };

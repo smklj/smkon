@@ -1957,6 +1957,21 @@ export type Database = {
           retry_after_seconds: number
         }[]
       }
+      ai_assist_record_usage: {
+        Args: {
+          p_cost_usd: number
+          p_feature: string
+          p_input_tokens: number
+          p_model: string
+          p_organization_id: string
+          p_output_tokens: number
+        }
+        Returns: undefined
+      }
+      ai_assist_spend_since: {
+        Args: { p_organization_id: string; p_since: string }
+        Returns: number
+      }
       rate_limit_consume_login: {
         Args: { p_scope: string; p_subject: string }
         Returns: {

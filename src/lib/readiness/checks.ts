@@ -8,7 +8,8 @@
 import { loadTokenKeyring } from "../integrations/shared/token-envelope.ts";
 import { loadMercadoLivreTokenKeyring } from "../integrations/mercado-livre/token-crypto.ts";
 import { modelConfigStatus } from "../agents/executor/model.ts";
-import { modelPrice } from "../agents/executor/model-pricing.ts";
+import { modelPrice, parseBudget } from "../agents/executor/model-pricing.ts";
+import { googleApiKey, isGoogleModel } from "../agents/executor/transport.ts";
 import { cronSecret, executorEnabled } from "../agents/worker/auth.ts";
 
 export type ReadinessStatus = "ready" | "action" | "invalid" | "off";
@@ -52,6 +53,13 @@ function result(
 const SERVICE_HINT =
   "Supabase → Project Settings → API Keys → crie uma secret key e cadastre na Vercel como SUPABASE_SECRET_KEY (tipo Sensitive).";
 const KEY_HINT = "Gere com `openssl rand -base64 32` e cadastre na Vercel como Sensitive. O _ID é um rótulo curto (ex.: k2026).";
+
+/** De onde sai a cobrança do modelo, em uma frase. */
+function destination(env: Env, model: string, oidc: boolean): string {
+  if (isGoogleModel(model) && googleApiKey(env)) return "Gemini direto na conta Google (GEMINI_API_KEY).";
+  if (has(env, "AI_GATEWAY_API_KEY")) return "Pelo Vercel AI Gateway com chave própria.";
+  return oidc ? "Pelo Vercel AI Gateway (OIDC): exige saldo de créditos do AI Gateway." : "Sem credencial do modelo.";
+}
 
 export function readinessChecks(env: Env): ReadinessCheck[] {
   const serviceReady = has(env, "SUPABASE_SECRET_KEY");
@@ -177,10 +185,38 @@ export function readinessChecks(env: Env): ReadinessCheck[] {
           unlocks: "Rascunhos e análises por agentes (Planner → Executor → Verifier), sem publicar nada.",
           hint: [
             model.ok ? `Modelo: ${model.model}${modelPrice(model.model) ? "" : " (sem preço cadastrado; use um dos modelos suportados)"}.` : null,
-            oidc ? "Credencial do AI Gateway por OIDC: só é confirmada na primeira execução." : null,
+            model.ok ? destination(env, model.model, oidc) : null,
           ]
             .filter(Boolean)
             .join(" ") || undefined,
+        },
+        missing,
+        invalid,
+      ),
+    );
+  }
+
+  // IA nos módulos (Studio, compliance...): usa a sessão do usuário, não depende da chave de servidor.
+  {
+    const assistModel = env.AI_MODEL?.trim() || env.AGENT_MODEL?.trim() || "";
+    const oidc = env.AGENT_MODEL_AUTH === "oidc";
+    const missing: string[] = [];
+    const invalid: string[] = [];
+    if (!assistModel) missing.push("AGENT_MODEL");
+    else if (!modelPrice(assistModel)) invalid.push(env.AI_MODEL?.trim() ? "AI_MODEL" : "AGENT_MODEL");
+    if (parseBudget(env.AI_MONTHLY_BUDGET_USD ?? env.AGENT_MONTHLY_BUDGET_USD) === null) missing.push("AI_MONTHLY_BUDGET_USD");
+    const googleDirect = assistModel && isGoogleModel(assistModel) && googleApiKey(env);
+    if (has(env, "GEMINI_API_KEY") && !googleApiKey(env)) invalid.push("GEMINI_API_KEY");
+    else if (!googleDirect && !has(env, "AI_GATEWAY_API_KEY") && !oidc) {
+      missing.push(assistModel && isGoogleModel(assistModel) ? "GEMINI_API_KEY" : "AI_GATEWAY_API_KEY");
+    }
+    checks.push(
+      result(
+        {
+          id: "ai-assist",
+          title: "IA nos módulos",
+          unlocks: "Escrever com IA e revisão de conformidade no Studio; resumos em produtos, financeiro e audiência.",
+          hint: assistModel ? `Modelo: ${assistModel}. ${destination(env, assistModel, oidc)}` : undefined,
         },
         missing,
         invalid,

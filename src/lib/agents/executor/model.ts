@@ -14,6 +14,7 @@
  * runAgent falha com model_not_configured. Nenhuma chamada paga acontece por resolver o modelo.
  */
 import { createGatewayModel, type FetchLike, type ModelUsage } from "./model-gateway.ts";
+import { googleApiKey, isGoogleModel, resolveTransport } from "./transport.ts";
 import type { AgentModel } from "./types.ts";
 import type { WorkerEnv } from "../worker/auth.ts";
 
@@ -32,7 +33,8 @@ export interface ModelResolveOptions {
   onUsage?: (usage: ModelUsage) => Promise<void>;
 }
 
-function credential(env: WorkerEnv, oidcToken?: string | null): { ok: true; token: string } | { ok: false; reason: "key_missing" | "key_invalid" | "oidc_token_missing" } {
+/** Credencial do Gateway: AI_GATEWAY_API_KEY ou, com AGENT_MODEL_AUTH=oidc, o token OIDC da invocação. */
+export function gatewayCredential(env: WorkerEnv, oidcToken?: string | null): { ok: true; token: string } | { ok: false; reason: "key_missing" | "key_invalid" | "oidc_token_missing" } {
   if (env.AGENT_MODEL_AUTH === "oidc") {
     const token = [oidcToken, env.VERCEL_OIDC_TOKEN].find((value) => typeof value === "string" && value.length >= MIN_KEY_LENGTH && !/\s/.test(value));
     return token ? { ok: true, token } : { ok: false, reason: "oidc_token_missing" };
@@ -51,7 +53,9 @@ export function modelConfigStatus(env: WorkerEnv, oidcToken?: string | null): Mo
   const model = env.AGENT_MODEL?.trim();
   if (!model) return { ok: false, reason: "model_missing" };
   if (!MODEL_ID.test(model)) return { ok: false, reason: "model_invalid" };
-  const cred = credential(env, oidcToken);
+  // Gemini com GEMINI_API_KEY vai direto ao Google: não precisa de credencial do Gateway.
+  if (isGoogleModel(model) && googleApiKey(env)) return { ok: true, provider: "vercel-ai-gateway", model };
+  const cred = gatewayCredential(env, oidcToken);
   if (!cred.ok) return { ok: false, reason: cred.reason };
   return { ok: true, provider: "vercel-ai-gateway", model };
 }
@@ -59,7 +63,16 @@ export function modelConfigStatus(env: WorkerEnv, oidcToken?: string | null): Mo
 export function resolveAgentModel(env: WorkerEnv, options: ModelResolveOptions = {}): AgentModel | null {
   const status = modelConfigStatus(env, options.oidcToken);
   if (!status.ok) return null;
-  const cred = credential(env, options.oidcToken);
-  if (!cred.ok) return null;
-  return createGatewayModel({ apiKey: cred.token, model: status.model, fetch: options.fetch, onUsage: options.onUsage });
+  const cred = gatewayCredential(env, options.oidcToken);
+  const transport = resolveTransport(env, status.model, cred.ok ? cred.token : null);
+  if (!transport) return null;
+  return createGatewayModel({
+    apiKey: transport.apiKey,
+    model: status.model,
+    baseUrl: transport.baseUrl,
+    modelId: transport.modelId,
+    direct: transport.direct,
+    fetch: options.fetch,
+    onUsage: options.onUsage,
+  });
 }

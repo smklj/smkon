@@ -31,6 +31,7 @@ import { generateAutonomousDraft } from "@/lib/content/autonomous-generator";
 import { generateAutonomousPost } from "@/lib/content/smart-post-generator";
 import { draftHasWriting, findTemplate, templateSubject } from "@/lib/content/templates";
 import { TemplatePicker } from "@/components/studio/TemplatePicker";
+import { AiAssistPanel } from "@/components/studio/AiAssistPanel";
 
 type Filter = "Todos" | ContentStatusLabel;
 
@@ -64,6 +65,8 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
   const [notice, setNotice] = useState("");
   const [media, setMedia] = useState<MediaOption[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  // Papel no workspace (vem com a lista): só owner/admin escrevem; analyst ainda pode revisar.
+  const [role, setRole] = useState<string | null>(null);
   const [counts, setCounts] = useState<StatusCounts | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -145,6 +148,7 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
       setItems(mapped);
       setNextCursor(typeof body.nextCursor === "string" ? body.nextCursor : null);
       if (body.counts) setCounts(body.counts as StatusCounts);
+      if (typeof body.role === "string") setRole(body.role);
       return mapped;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível carregar os conteúdos.";
@@ -487,6 +491,18 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
             </p>
           )}
           <TemplatePicker hasWriting={draftHasWriting(draft)} disabled={saving} onApply={applyTemplate} />
+          {role === null || role === "owner" || role === "admin" || role === "analyst" ? (
+            <AiAssistPanel
+              draft={draft}
+              hasWriting={draftHasWriting(draft)}
+              canWrite={role === null || role === "owner" || role === "admin"}
+              disabled={saving}
+              onApply={(fields) => {
+                setDraft((prev) => ({ ...prev, ...fields }));
+                setError("");
+              }}
+            />
+          ) : null}
           <div className="studio-form-grid">
             <label className="studio-field studio-wide"><span>Título interno *</span><input value={draft.title} onChange={(e) => update("title", e.target.value)} placeholder="Ex.: Review honesta — produto X" disabled={saving} /></label>
             <label className="studio-field"><span>Produto / oferta</span><input value={draft.product} onChange={(e) => update("product", e.target.value)} placeholder="Nome do produto" disabled={saving} /></label>

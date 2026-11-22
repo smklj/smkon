@@ -23,3 +23,17 @@ test("Content Studio: rascunho, aprovação da versão exata e exclusão bloquea
   await page.getByRole("button", { name: "Arquivar" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Conteúdo arquivado." })).toBeVisible();
 });
+
+test("Content Studio: revisão de conformidade aponta promessa de renda (sem salvar nada)", async ({ page }) => {
+  await page.goto("/studio");
+  await page.getByRole("button", { name: "Novo conteúdo" }).click();
+  await page.getByLabel("Título interno *").fill(`E2E Conformidade ${runId}`);
+  await page.getByLabel("Roteiro / estrutura do vídeo").fill("Com este curso você vai ter renda extra garantida todo mês.");
+  await page.getByLabel("Legenda").fill("Garanta já o seu [preço]");
+  await page.getByRole("button", { name: "Revisar conformidade" }).click();
+  const review = page.locator(".ai-assist-review");
+  await expect(review).toContainText("Promessa de renda");
+  await expect(review).toContainText("Campo a preencher");
+  await expect(review.locator(".ai-issue-bloqueio").first()).toBeVisible();
+  await snap(page, "21-studio-conformidade");
+});
