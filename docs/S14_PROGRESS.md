@@ -561,3 +561,16 @@ Nenhum merge, alteração em main/Production, migration remota, alteração de s
 - CI S14 288/288 e E2E 36/36 no Preview/SHA 46a6d1f5; CI integração 350/350 no SHA 419694eb, anterior às últimas frentes. HEAD atual tem Vercel build-rate-limit e nenhuma workflow run PR associada.
 - Bloqueios: service key Staging ausente, zero grants, budget externo ausente, CRON_SECRET/OIDC não validados em runtime. Não executar teste real até fechar gates.
 - Nenhuma alteração Production, merge, migration, secret, grant, budget ou chamada paga nesta rodada.
+
+
+## Checkpoint S14 — 22/11/2026 01:57 BRT
+
+- PR #113 segue Draft/mergeable, 15 ahead / 0 behind, docs-only em cinco arquivos. Splits #35–#42 e #46 confirmados merged individualmente; #82/#97 merged; #102 fechada sem merge.
+- CI #44983092682 no head 7d957275: 2/2 jobs success, 418/418 unit tests, typecheck/lint/audit/build e migrations/SQL tests aprovados.
+- E2E de deployment_status #44983114589: Playwright · Staging success, 36/36 em 3,6 min no Preview dpl_Exi3uZxvFqmX5mugDtKWsuuG9oKi / SHA 7d957275; artifact [14738303182](https://github.com/smklj/smkon/actions/runs/44983114589/artifacts/14738303182). O job Staging do PR run #44983092670 foi skipped; não confundir os dois eventos. E2E não chama o modelo.
+- Preview dpl_Exi3uZxvFqmX5mugDtKWsuuG9oKi READY. Production atual dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY em main SHA 84afe632; vercel.json e rota worker presentes. Cron 17 11 * * * UTC = 08:17 BRT.
+- Runtime Production registrou GET não autenticado ao worker às 04:49:13Z (unauthorized). O ramo comprova flag habilitada e formato de CRON_SECRET aceito, mas Bearer inválido/ausente; não comprova Cron/OIDC/claim.
+- Inventário sem decrypt: SUPABASE_SECRET_KEY ausente; CRON_SECRET Sensitive em Preview/Production; AGENT_EXECUTOR_ENABLED=true em ambos; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5 configurados. OIDC runtime não comprovado.
+- Staging: 148 runs, todas killed; 0 steps/grants/usage/linked content; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14. 31 nomes de migrations em cada ambiente, 0/31 version IDs iguais.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets de projeto/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo em ambos. Nenhuma chamada real comprovada.
+- Não executar teste real até provisionar chave service exclusiva de staging, grants mínimos, budget externo isolado e comprovar OIDC. Nenhum merge, mudança Production, secret, grant, budget, migration remota ou chamada paga nesta rodada.
