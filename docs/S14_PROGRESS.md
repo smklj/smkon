@@ -1,35 +1,29 @@
-## Checkpoint de progresso S14 — 22/11/2026 05:56 BRT
+## Checkpoint de progresso S14 — 22/11/2026 07:02 BRT
 
 ### Concluído
-- [x] Nove splits originais: Planner #35, Executor #36, read tools #37, draft #38, claim queue #39, worker #40, model adapter #41, budget/OIDC #42 e run detail #46 — todos verificados como merged.
-- [x] Correções complementares #82 e handoff #97 merged; PR #102 fechada sem merge.
-- [x] CI no HEAD documental `1fbf8f2`: 418/418 unit tests, 2/2 jobs, typecheck/lint/audit/build e 28 arquivos SQL aprovados.
-- [x] Playwright · Staging no Preview exato `1fbf8f2`: 36/36 aprovados em #45001321176; log confirma 36 passed em 3,7 min.
-- [x] Preview exato do HEAD READY; Production permanece READY na main `84afe632`.
-- [x] Auditoria read-only de RLS/ACL, migrations, ambiente, Cron e consumo concluída.
+- [x] Nove splits originais (#35–#42 e #46) integrados; #82/#97 merged; #102 fechada sem merge; #113 é a única PR aberta e permanece Draft.
+- [x] CI #45005652099 no HEAD e12ee6f: 418/418 unit tests, 2/2 jobs success, typecheck/lint/audit/build aprovados; job de migrations/SQL success com 20 arquivos SQL distintos identificados nos logs.
+- [x] Playwright · Staging #45005672517 no Preview exato e12ee6f: 36/36 em 3,6 min; artifact #14747642548.
+- [x] Preview do HEAD e12ee6f READY; Production permanece READY na main 84afe632, sem alterações nesta rodada.
+- [x] Auditoria read-only de variáveis Vercel, Cron, AI Gateway, uso/ledger, RLS/ACL e migrations.
 
-### Implementação revisada na main
-- Planner, Executor e Verifier estão implementados; worker usa claim/lease, limites de tempo e kill switch.
-- Ferramentas de leitura derivam organização do contexto da execução, aplicam allowlist e limitam saída a 50 itens / 60.000 bytes.
-- `draft_content` usa RPC dedicada, exige retorno `status=draft` e não publica nem aprova conteúdo.
-- Verifier exige evidência de produto observada e verificada antes de aceitar claims ou rascunhos.
-- OIDC selecionado por configuração explícita; resolver lê header `x-vercel-oidc-token` ou `VERCEL_OIDC_TOKEN`.
-- Ledger registra usage antes de aceitar resposta 2xx; sem usage do provider, estima conservadoramente.
+### Implementação integrada
+- Planner, Executor e Verifier; ferramentas de leitura; criação de rascunhos via RPC; claim/lease e worker; timeout/kill switch; adaptador do AI Gateway e registro de consumo.
+- O E2E validou a fila e o kill switch, mas não fez chamada ao modelo nem criou consumo de IA.
 
 ### Ainda aberto — bloqueia homologação de IA real
-- [ ] `SUPABASE_SECRET_KEY` exclusiva do projeto staging, somente Preview.
-- [ ] Grants mínimos aprovados para as ferramentas da operação `operations_review`.
-- [ ] Budget externo de AI Gateway restrito ao projeto de staging; nenhum budget de projeto/default/team foi encontrado.
-- [ ] Validar comprimento/formato de `CRON_SECRET` sem revelar o valor.
-- [ ] Comprovar token OIDC em runtime.
-- [ ] Executar uma única operação real e reconciliar request/modelo/tokens/custo com `agent_model_usage`.
-- [ ] Endurecer orçamento: reserva atômica e outbox durável antes de ampliar execução.
+- [ ] Provisionar SUPABASE_SECRET_KEY exclusiva do Supabase staging no target Preview; não compartilhar com Production.
+- [ ] Conceder grants mínimos e explicitamente aprovados para as ferramentas de leitura.
+- [ ] Configurar budget externo isolado; não usar budget no projeto Vercel compartilhado se isso afetar Production.
+- [ ] Comprovar OIDC em runtime e validar CRON_SECRET sem expor seu valor.
+- [ ] Executar uma única operations_review e reconciliar request, modelo, tokens e custo com agent_model_usage.
+- [ ] Endurecer orçamento com reserva atômica e outbox durável antes de declarar limite financeiro rígido.
 
 ### Estado atual
-- PR #113: Draft/mergeable, docs-only, HEAD `1fbf8f2`, base `main` `84afe632`; compare 27 ahead / 0 behind no checkpoint.
-- Staging: 156 runs, todas killed; 0 steps/grants/usage/conteúdo ligado; kill switch false, 500 runs/dia, 12 steps/run.
-- Production: zero dados S14. `agent_model_usage` zero em ambos; Gateway 7d sem requests/tokens/custo.
-- Nenhuma chamada real ao AI Gateway foi comprovada. Testes automatizados não chamam o modelo.
+- Staging: 158 runs, todas killed; 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia e 12 steps/run. Production sem dados S14.
+- AI Gateway 7d e agent_model_usage: 0 requests/linhas/tokens/custo nos respectivos escopos. Nenhuma chamada real comprovada.
+- Production mantém AGENT_EXECUTOR_ENABLED=true sem SUPABASE_SECRET_KEY; recomendação ao Owner: desabilitar a flag até homologação. Não alterado por falta de autorização de Production.
+- Sem merge, alteração de main/Production, migration remota, secret, grant, budget ou chamada paga nesta rodada.
 
 # S14 — Executor real dos agentes (Planner → Executor → Verifier)
 

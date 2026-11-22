@@ -1,34 +1,27 @@
-## Fechamento de implementação S14 — 22/11/2026 05:56 BRT
+## Fechamento de implementação S14 — 22/11/2026 07:02 BRT
 
 ### Splits concluídos
-- [x] #35 Planner.
-- [x] #36 Executor core.
-- [x] #37 Ferramentas de leitura.
-- [x] #38 Geração de rascunhos.
-- [x] #39 Claim queue / lease.
-- [x] #40 Worker.
-- [x] #41 Model adapter / AI Gateway.
-- [x] #42 Budget e OIDC.
-- [x] #46 Run detail / handoff.
-- [x] #82 correção de timeout/ledger e #97 documentação integrada.
-- [x] #102 fechada sem merge; #113 permanece Draft e docs-only.
+- [x] #35 Planner; #36 Executor core; #37 ferramentas de leitura; #38 geração de rascunhos; #39 claim queue/lease; #40 worker; #41 model adapter; #42 budget/OIDC; #46 run detail.
+- [x] #82 correções complementares e #97 documentação integradas; #102 fechada sem merge; #113 permanece Draft e docs-only.
 
-### Evidências de aceite automatizado
-- [x] CI #45001303549 no HEAD documental `1fbf8f2`: 418/418 unit tests, 2/2 jobs, build/typecheck/lint/audit e 28 arquivos SQL aprovados.
-- [x] Playwright · Staging #45001321176 no Preview exato: 36/36 aprovados; log confirma 36 passed em 3,7 min.
-- [x] Preview do HEAD READY; Production READY na main `84afe632`, sem alterações nesta frente.
-- [x] RLS/ACL auditadas em 6/6 tabelas nos dois ambientes.
-- [x] Uso Gateway 7d e ledger Supabase consultados: zero requests/tokens/custo e zero linhas de usage.
+### Evidências de aceite no HEAD atual
+- [x] CI #45005652099, HEAD e12ee6f: 2/2 jobs success; 418/418 unit tests; typecheck/lint/audit/build; job SQL/migrations success (20 arquivos SQL distintos nos logs deste run).
+- [x] Playwright · Staging #45005672517, Preview exato e12ee6f: 36/36 em 3,6 min; artifact #14747642548.
+- [x] Preview e12ee6f READY; Production main 84afe632 READY, sem alterações nesta rodada.
 
 ### Homologação operacional ainda aberta
-- [ ] Chave service exclusiva do Supabase staging no target Preview.
-- [ ] Grants mínimos de leitura aprovados.
-- [ ] Budget externo isolado do projeto de staging.
-- [ ] Validação segura de CRON_SECRET e prova de OIDC em runtime.
-- [ ] Uma única `operations_review` real; reconciliar request, modelo, tokens e custo com `agent_model_usage`; conferir steps, draft e Verifier.
-- [ ] Endurecer o limite interno: reserva atômica por chamada e outbox durável para reconciliar falha de gravação.
+- [ ] SUPABASE_SECRET_KEY exclusiva de staging no target Preview.
+- [ ] Grants mínimos de leitura aprovados e instalados.
+- [ ] Budget externo isolado do projeto compartilhado com Production.
+- [ ] OIDC comprovado em runtime e CRON_SECRET validado sem exposição.
+- [ ] Uma única operations_review real, com request/tokens/custo reconciliados contra agent_model_usage.
+- [ ] Reserva atômica de custo e outbox durável para reconciliação financeira.
 
-**Conclusão:** implementação e testes automatizados aprovados; operação com IA real não homologada. Não declarar S14 operacional até concluir todos os gates.
+### Estado financeiro e segurança
+- AI Gateway 7d: 0 requests, tokens e custo; budgets e rules ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos.
+- Staging: 158 runs killed, sem steps/grants/usage/linked content; Production sem dados S14.
+- AGENT_EXECUTOR_ENABLED=true em Production, mas SUPABASE_SECRET_KEY ausente. Recomendação ao Owner: desligar a flag até homologação; nenhuma alteração de Production foi feita.
+- Nenhuma chamada paga, secret, grant, budget, migration remota, merge ou deploy Production nesta rodada.
 
 # SMKON — Roadmap de execução em splits
 

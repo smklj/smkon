@@ -1,17 +1,18 @@
-## Estado de integração S14 — 22/11/2026 05:56 BRT
+## Estado de integração S14 — 22/11/2026 07:02 BRT
 
-- GitHub: `main` `84afe632`; PR #113 aberta, Draft, mergeable, HEAD `1fbf8f2`; compare 27 ahead / 0 behind no checkpoint e cinco arquivos docs-only. Única PR aberta.
-- Splits #35–#42 e #46 merged; #82 e #97 merged; #102 fechada sem merge. Branch `feature/smkon-production-readiness` diverged 2/36; branch `release/s14-mainline-integration-20261121` diverged 34/289 e reintroduz código antigo. Não promover.
-- CI #45001303549 no HEAD exato: 2/2 jobs success, 418/418 unit tests, typecheck/lint/audit/build e migrations/28 arquivos SQL aprovados.
-- E2E PR #45001303766: Build local success e Staging skipped. E2E deployment_status #45001321176: Playwright · Staging success, 36/36 no Preview exato `1fbf8f2`; sem chamada ao modelo.
-- Preview `dpl_4tF7vodPKUfehRTGxCica2KFs7VB` READY. Production `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` READY na main `84afe632`; nenhuma alteração Production nesta rodada.
-- Cron Production: `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. Logs Production últimos 50 min: nenhum. Preview registrou GET sem Bearer como `unauthorized`; isso não prova Cron autenticado ou OIDC.
-- Vercel env (decrypt=false): `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` Sensitive em targets separados; `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5. Valores secretos não lidos; comprimento de Cron secret não validado.
-- Supabase staging: 156 runs, todas killed; 0 steps/grants/usage/linked content; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
-- RLS ativo em 6/6 tabelas auditadas nos dois ambientes; cinco policies S14 e quatro em content_items; funções agent_* EXECUTE authenticated=6, service_role=12, postgres=19; nenhuma concessão anon retornada.
-- 31 nomes de migrations iguais, 0/31 version IDs iguais; ordem de `audience_consent` e `workspace_members` difere. Não executar repair/db push sem reconciliação.
-- AI Gateway 7d: 0 requests/tokens/custo; budgets project/team/default e rules ausentes. `agent_model_usage` 0 linhas/tokens/custo nos dois bancos.
-- Gate real: chave service exclusiva de staging, grants mínimos, budget externo isolado, validação segura de CRON_SECRET e prova OIDC em runtime. Não executar `operations_review` real antes de todos os gates.
+- GitHub: main 84afe632; PR #113 aberta, Draft, mergeable, 29 commits ahead/0 behind; HEAD e12ee6f. Compare confirma cinco arquivos docs-only. Única PR aberta.
+- Splits #35–#42 e #46 merged; #82/#97 merged; #102 fechada sem merge. Branch feature/smkon-production-readiness diverged 2/36; release/s14-mainline-integration-20261121 diverged 34/289 e contém código antigo; não promover.
+- CI #45005652099 no HEAD exato: 2/2 jobs success, 418/418 unit tests; typecheck/lint/audit/build aprovados; SQL/migrations job success, 20 arquivos SQL distintos listados nos logs.
+- E2E deployment_status #45005672517: Playwright · Staging success, 36/36 no Preview exato e12ee6f; artifact #14747642548. PR-run #45005652053 cancelado/skipped, sem alterar o resultado do deployment_status.
+- Preview dpl_RTBXRFjKSXqY2zgyb8MgpfVe9mFt READY. Production dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY na main 84afe632.
+- Cron Production: /api/agents/worker, 17 11 UTC = 08:17 BRT. Runtime logs de Production nos últimos 30 min: nenhum registro. Às 07:02 BRT, próxima execução ainda futura.
+- Vercel env metadata decrypt=false: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive separado; AGENT_EXECUTOR_ENABLED=true; provider vercel-ai-gateway; auth oidc; modelo anthropic/claude-haiku-5.5; teto interno US$ 5. Nenhum valor sensitive lido; formato de CRON_SECRET não certificado.
+- Staging: 158 runs, todas killed; 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14.
+- agent_model_usage: 0 linhas/tokens/custo nos dois bancos. RLS 6/6; 9 policies; 19 funções agent_*; EXECUTE anon=0, authenticated=6, service_role=12.
+- Migrations: 31 nomes correspondentes, 0/31 version IDs coincidentes; não fazer repair/db push sem reconciliação formal.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets project/default e rules ausentes; catálogo contém anthropic/claude-haiku-5.5. Nenhuma chamada real comprovada.
+- Gate: chave service exclusiva de staging, grants mínimos, budget externo isolado, prova OIDC e validação segura de CRON_SECRET. Sem esses itens, não executar operations_review real.
+- Sem merge, alteração de main/Production, migration remota, secret, grant, budget ou chamada paga.
 
 # SMKON — Status da integração
 
