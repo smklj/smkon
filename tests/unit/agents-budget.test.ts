@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createGatewayModel, DEFAULT_PLAN_MAX_TOKENS, type FetchLike, type ModelUsage } from "../../src/lib/agents/executor/model-gateway.ts";
-import { estimateCost, MODEL_PRICES, monthStartUtc, parseBudget } from "../../src/lib/agents/executor/model-pricing.ts";
+import { estimateCost, MODEL_PRICES, modelRequestProfile, monthStartUtc, parseBudget } from "../../src/lib/agents/executor/model-pricing.ts";
 import { modelConfigStatus, resolveAgentModel } from "../../src/lib/agents/executor/model.ts";
 import type { ExecutorLogger } from "../../src/lib/agents/executor/run.ts";
 import type { AgentStore } from "../../src/lib/agents/executor/types.ts";
@@ -200,4 +200,20 @@ test("abort durante body stream 2xx preserva o erro de timeout após registrar o
   await assert.rejects(model.plan(planInput, controller.signal), (error) => error === aborted);
   assert.equal(usage.length, 1);
   assert.equal(usage[0].outputTokens, DEFAULT_PLAN_MAX_TOKENS);
+});
+
+test("preço por faixa: acima de 100 mil tokens de entrada o Haiku 5.5 custa 5x na chamada inteira", () => {
+  const haiku = MODEL_PRICES["anthropic/claude-haiku-5.5"];
+  // Até a faixa: (100000 × 0,0000001 + 1000 × 0,0000005) × 1,1 = 0,01155
+  assert.equal(estimateCost(haiku, 100_000, 1_000), 0.01155);
+  // Acima: (150000 × 0,0000005 + 1000 × 0,0000025) × 1,1 = 0,08525
+  assert.equal(estimateCost(haiku, 150_000, 1_000), 0.08525);
+});
+
+test("Gemini: preço de tabela (sem a promoção) e raciocínio baixo com folga de saída", () => {
+  assert.deepEqual(MODEL_PRICES["google/gemini-3.8-flash"], { input: 0.0000015, output: 0.0000075 });
+  assert.deepEqual(modelRequestProfile("google/gemini-3.8-flash"), { reasoningEffort: "low", outputHeadroom: 1024 });
+  assert.deepEqual(modelRequestProfile("anthropic/claude-haiku-5.5"), {}, "Haiku segue sem ajuste");
+  // 2000 de entrada e 1500 de saída: (2000 × 0,0000015 + 1500 × 0,0000075) × 1,1 = 0,015675
+  assert.equal(estimateCost(MODEL_PRICES["google/gemini-3.8-flash"], 2_000, 1_500), 0.015675);
 });

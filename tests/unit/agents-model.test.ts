@@ -411,3 +411,18 @@ test("handler: model_not_configured registra só o motivo, nunca valores das var
   assert.ok(lines.some((line) => line.includes('"reason":"key_invalid"')));
   assert.ok(!lines.some((line) => line.includes("curta") || line.includes(secret)));
 });
+
+test("gateway: Gemini vai com raciocínio baixo e folga de saída; Haiku sem extensão", async () => {
+  const fetch = fakeFetch([completion('{"steps":[]}')]);
+  const gemini = createGatewayModel({ apiKey: KEY, model: "google/gemini-3.8-flash", fetch });
+  await gemini.plan({ goal: "Resumo da semana", agent: "product_research", tools: ["read_products"], maxCalls: 3 }, signal());
+  assert.equal(fetch.sent[0].body.model, "google/gemini-3.8-flash");
+  assert.deepEqual(fetch.sent[0].body.reasoning, { effort: "low" });
+  assert.equal(fetch.sent[0].body.max_tokens, 1500 + 1024);
+
+  const other = fakeFetch([completion('{"steps":[]}')]);
+  const haiku = createGatewayModel({ apiKey: KEY, model: "anthropic/claude-haiku-5.5", fetch: other });
+  await haiku.plan({ goal: "Resumo da semana", agent: "product_research", tools: ["read_products"], maxCalls: 3 }, signal());
+  assert.equal(other.sent[0].body.reasoning, undefined);
+  assert.equal(other.sent[0].body.max_tokens, 1500);
+});

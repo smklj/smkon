@@ -8,6 +8,7 @@
 import { loadTokenKeyring } from "../integrations/shared/token-envelope.ts";
 import { loadMercadoLivreTokenKeyring } from "../integrations/mercado-livre/token-crypto.ts";
 import { modelConfigStatus } from "../agents/executor/model.ts";
+import { modelPrice } from "../agents/executor/model-pricing.ts";
 import { cronSecret, executorEnabled } from "../agents/worker/auth.ts";
 
 export type ReadinessStatus = "ready" | "action" | "invalid" | "off";
@@ -158,6 +159,8 @@ export function readinessChecks(env: Env): ReadinessCheck[] {
     if (!has(env, "CRON_SECRET")) missing.push("CRON_SECRET");
     else if (!cronSecret(env)) invalid.push("CRON_SECRET");
     if (!has(env, "AGENT_MONTHLY_BUDGET_USD")) missing.push("AGENT_MONTHLY_BUDGET_USD");
+    // Modelo sem preço cadastrado: o worker recusa (budget_not_configured), porque o teto não teria como ser aplicado.
+    if (model.ok && !modelPrice(model.model)) invalid.push("AGENT_MODEL");
     if (!model.ok) {
       if (model.reason === "provider_missing") missing.push("AGENT_MODEL_PROVIDER");
       else if (model.reason === "provider_unsupported") invalid.push("AGENT_MODEL_PROVIDER");
@@ -172,7 +175,12 @@ export function readinessChecks(env: Env): ReadinessCheck[] {
           id: "agents",
           title: "Agentes de IA",
           unlocks: "Rascunhos e análises por agentes (Planner → Executor → Verifier), sem publicar nada.",
-          hint: oidc ? "Credencial do AI Gateway por OIDC: só é confirmada na primeira execução." : undefined,
+          hint: [
+            model.ok ? `Modelo: ${model.model}${modelPrice(model.model) ? "" : " (sem preço cadastrado; use um dos modelos suportados)"}.` : null,
+            oidc ? "Credencial do AI Gateway por OIDC: só é confirmada na primeira execução." : null,
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined,
         },
         missing,
         invalid,

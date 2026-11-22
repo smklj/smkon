@@ -64,7 +64,7 @@ export async function ReadinessPanel() {
                   Formato inválido: {check.invalid.map((name) => <code key={name}>{name}</code>)}
                 </p>
               ) : null}
-              {check.hint && check.status !== "ready" ? <p className="row-meta">{check.hint}</p> : null}
+              {check.hint && (check.status !== "ready" || check.id === "agents") ? <p className="row-meta">{check.hint}</p> : null}
             </div>
             <Badge tone={STATUS_TONE[check.status]}>{STATUS_LABEL[check.status]}</Badge>
           </li>

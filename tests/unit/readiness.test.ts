@@ -78,3 +78,22 @@ test("núcleo sem Supabase configurado não fica pronto; resumo ignora recursos 
   const summary = readinessSummary(checks);
   assert.equal(summary.total, checks.filter((check) => check.status !== "off").length);
 });
+
+test("agentes: mostra o modelo e recusa modelo sem preço cadastrado", () => {
+  const env = {
+    ...BASE,
+    SUPABASE_SECRET_KEY: "sb_secret_teste",
+    AGENT_EXECUTOR_ENABLED: "true",
+    AGENT_MODEL_PROVIDER: "vercel-ai-gateway",
+    AGENT_MODEL_AUTH: "oidc",
+    AGENT_MONTHLY_BUDGET_USD: "5",
+    CRON_SECRET: "x".repeat(40),
+  };
+  const gemini = byId({ ...env, AGENT_MODEL: "google/gemini-3.8-flash" }).agents;
+  assert.equal(gemini.status, "ready");
+  assert.match(gemini.hint ?? "", /Modelo: google\/gemini-3\.8-flash\./);
+  const unpriced = byId({ ...env, AGENT_MODEL: "google/gemini-9-qualquer" }).agents;
+  assert.equal(unpriced.status, "invalid");
+  assert.deepEqual(unpriced.invalid, ["AGENT_MODEL"]);
+  assert.match(unpriced.hint ?? "", /sem preço cadastrado/);
+});
