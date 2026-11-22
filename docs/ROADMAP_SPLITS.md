@@ -301,3 +301,17 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - Staging: 150 runs killed, 0 steps/grants/usage/linked content; Production sem dados S14. RLS 6/6 em ambos; migrations: 31 nomes correspondentes, 0/31 version IDs iguais.
 - AI Gateway 7d: 0 requests/tokens/custo; budgets externos/default e regras ausentes. agent_model_usage vazio nos dois bancos; nenhuma chamada real comprovada.
 - Pendências para homologação: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado, validação CRON_SECRET e OIDC em runtime. Sem esses gates, não executar operations_review real.
+
+---
+
+## Atualização operacional — 22/11/2026 03:56 BRT
+- CI #44992062696 no HEAD 8f9bd8: 2/2 jobs success, 418/418 testes, typecheck/lint/audit/build e migrations/SQL aprovados. E2E PR #44992062742: 36/36 no job local com Supabase staging; job Playwright · Staging skipped pelo evento pull_request. Último E2E via deployment_status: #44983114589, 36/36 no SHA de aplicação 7d957275.
+- PR #113 permanece Draft/mergeable; branch 24 commits ahead / 0 behind de main 84afe632; apenas os cinco documentos S14 alterados. Splits #35–#42 e #46 integrados; #82/#97 merged; #102 fechada sem merge.
+- Preview do HEAD 7b5c421 READY: dpl_8idR4fUwcvP1TWjLaRDEawoDQiDB, https://smkon-2011ifjfr-smkon.vercel.app. Production READY: dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV, main 84afe632; nenhuma alteração Production.
+- Cron /api/agents/worker às 17:11 UTC (08:17 BRT). No checkpoint 03:56, ainda futuro. Runtime logs Production nos últimos 30 min: zero linhas; janela de 3h indisponível pela retenção Hobby.
+- Inventário sem decrypt: AGENT_EXECUTOR_ENABLED=true em Preview/Production; CRON_SECRET Sensitive por target; SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY ausentes; Gateway/OIDC/Claude Haiku 5.5 e teto interno US$5. OIDC runtime não comprovado.
+- Staging: 152 runs, todas killed; 0 steps/grants/usage/drafts vinculados; kill_switch=false, max_runs_per_day=500, max_steps_per_run=12. Production sem dados S14. RLS 6/6 em ambos; policies 5 S14 + 4 content_items; funções agent_* EXECUTE authenticated=6, service_role=12, postgres=19.
+- Ambos os bancos têm 31 nomes de migrations, mas 0/31 version IDs iguais; não executar db repair/db push sem reconciliação formal.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets team/project/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos. Nenhuma chamada real comprovada.
+- Gate permanece: chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC em runtime. Não executar operations_review real antes desses gates.
+- Nenhuma alteração de main/Production, migration remota, secret, grant, budget ou chamada paga nesta rodada.
