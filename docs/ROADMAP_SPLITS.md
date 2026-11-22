@@ -1,3 +1,24 @@
+## Checkpoint de fechamento S14 — 21/11/2026 21:00 BRT
+
+### Implementação
+- [x] Planner (#35), Executor core (#36), read tools (#37), draft RPC (#38), claim queue (#39), worker (#40), model adapter (#41), budget/OIDC (#42), run detail (#46): PRs fechadas e mergeadas.
+- [x] Correções de timeout/ledger S14 incorporadas ao histórico de main.
+- [x] CI atual do checkpoint anterior: 418/418; E2E local com staging: 36/36.
+- [x] Worker e Cron presentes no deployment Production READY.
+
+### Homologação ainda aberta
+- [ ] Provisionar SUPABASE_SECRET_KEY exclusiva do Supabase staging somente em Preview.
+- [ ] Validar CRON_SECRET por verificação de comprimento/entropia sem imprimir o valor.
+- [ ] Comprovar emissão e aceitação do token OIDC em runtime.
+- [ ] Aprovar apenas grants mínimos de leitura no workspace de staging.
+- [ ] Criar budget externo restrito ao projeto SMKON; o budget interno de US$ 5 não é reserva atômica.
+- [ ] Rodar uma única operations_review em staging.
+- [ ] Comprovar Planner → Executor → Verifier, read tools e draft_content.
+- [ ] Reconciliar request do Gateway, tokens/custo e agent_model_usage.
+
+### Critério de conclusão
+Não marcar S14 operacional até existir request real do AI Gateway, run/steps verificáveis, draft vinculado por agent_run_id, Verifier concluído e ledger reconciliado. Não fazer merge nem alterações de Production sem autorização específica.
+
 ## Reconciliação S14 — 21/11/2026 20:00 BRT
 
 - Os nove splits S14 (#35–#42 e #46) estão integrados. Não há split de implementação original pendente.

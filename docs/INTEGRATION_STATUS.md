@@ -1,3 +1,18 @@
+## Estado de integração S14 — 21/11/2026 21:00 BRT
+
+- main HEAD: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
+- Production Vercel READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits ahead/0 behind. Compare: 17 arquivos de workflows/dependências/CSS, nenhum arquivo S14.
+- O deployment contém worker route e Cron `17 11 * * *` UTC (08:17 BRT). Sem runtime logs de função nos últimos 30 minutos.
+- Preview PR #113 READY: `dpl_7odjhLb3xjHpFmATUZgB2cYouNZW`, SHA `cbf4d2e`; head documental atual anterior `2943fb6`.
+- PR #113: Draft, mergeable, 5 ahead/0 behind; PRs #35–#42 e #46 integradas.
+- CI #44959989807: 418/418. E2E #44959989796: 36/36 no build local com staging; job dedicado de Preview/Staging skipped.
+- feature/smkon-production-readiness: 2 ahead/36 behind; release/s14-mainline-integration-20261121: 34 ahead/289 behind. Não promover.
+- Supabase staging/Production: 31 nomes de migrations iguais, 31 version IDs diferentes; sem repair/db push. Staging 138 runs (todas killed), 0 steps/grants/usage; Production sem dados S14.
+- Env Vercel: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive presente mas não validado; AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/model/US$5 interno configurados.
+- Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. agent_model_usage 0 linhas em ambos.
+- Nenhuma chamada real comprovada. Próximo gate: chave exclusiva de staging, validação segura de cron secret, OIDC runtime, grants mínimos, budget externo e uma única run controlada.
+- Sem merge, deploy ou alteração de Production nesta rodada.
+
 ## Checkpoint de integração — 21/11/2026 20:00 BRT
 
 - HEAD atual de `main`: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.

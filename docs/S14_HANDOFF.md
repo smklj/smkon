@@ -1,3 +1,57 @@
+## Checkpoint operacional S14 — 21/11/2026 21:00 BRT
+
+> Auditoria ao vivo. Esta seção substitui os checkpoints anteriores; não inferir operação real a partir de CI, E2E ou deployment READY.
+
+### GitHub e splits
+- HEAD de `main`: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
+- PR #113 aberta, Draft, mergeable, base `main`, 5 commits à frente e 0 atrás; branch `docs/s14-current-operational-handoff-20261121-2000`, head anterior `2943fb60e49215afc8dfff90740543c63a8ff8c5`.
+- PRs de implementação #35–#42 e #46: todas fechadas e mergeadas. PR #82 e #97 também mergeadas. PR #102 fechada sem merge. Nenhuma alteração de código ou migration nesta atualização.
+- `feature/smkon-production-readiness`: 2 ahead / 36 behind; branch de release antiga: 34 ahead / 289 behind. Não promover nenhuma delas.
+
+### CI e E2E do head documental anterior
+- CI #44959989807: 418/418 testes, 0 falhas, 0 skipped; typecheck, lint, audit, build e SQL/migrations aprovados.
+- Playwright #44959989796: 36/36 aprovados em build local. O log confirma login/bootstrapping de QA no Supabase isolado de staging; inclui teste da fila/kill switch e CSP em `/studio`.
+- O job separado `Playwright · Staging` foi skipped pelo evento `pull_request`; não houve E2E contra um deployment Preview.
+- Os dois runs são do head anterior `2943fb6`. Os novos commits desta atualização são somente documentação; CI deve ser reexecutado no novo head.
+
+### Vercel, Production e Preview
+- Deployment Production mais recente consultado: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, READY, SHA `86bd67c928b834e472d2fc1eba180f138ddaeb11`, branch `main`, criado em 21/11/2026 19:37 BRT.
+- HEAD de `main` está 7 commits à frente e 0 atrás desse deployment. O compare lista somente workflows, dependências e extração de CSS; nenhum arquivo S14 mudou nesse intervalo.
+- O SHA implantado contém `vercel.json` e `src/app/api/agents/worker/route.ts`. Cron: `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. Não declarar execução do Cron: nenhum runtime log de função foi retornado na janela consultada de 30 minutos.
+- Preview da PR #113: READY em `dpl_7odjhLb3xjHpFmATUZgB2cYouNZW`, SHA `cbf4d2ebfdd7133f8dd0ca1c824ff5b7b7ef8cae`. O head da PR avançou depois apenas com documentação; este Preview mantém o mesmo código de aplicação, mas não contém os últimos documentos.
+
+### Variáveis e autenticação (inventário sem descriptografar)
+- `SUPABASE_SECRET_KEY`: ausente em Preview e Production.
+- `CRON_SECRET`: registro Sensitive presente em ambos; valor não lido e comprimento mínimo de 32 caracteres não validado.
+- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
+- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5` em ambos.
+- `AI_GATEWAY_API_KEY` ausente; o caminho selecionado é OIDC. Emissão/aceitação do token não comprovada em runtime.
+- O handler valida flag, cron secret, Bearer, modelo/OIDC e orçamento antes de criar o cliente Supabase. Sem `SUPABASE_SECRET_KEY`, `createServiceClient()` retorna null e o worker responde `503 service_not_configured` antes de claim/steps/model call, desde que as barreiras anteriores passem.
+- Recomendação: manter o executor desabilitado em Production até homologação. Nenhuma variável de Production foi alterada.
+
+### Supabase — staging e Production
+- Projetos ativos: staging `xoyasrizivadxnpmzzno` (sa-east-1); Production `hpplboyysmfcjsnjrdmw` (us-west-2).
+- Ambos listam 31 nomes de migrations correspondentes, mas os 31 version IDs diferem. Não executar `db repair`/`db push`; a equivalência do conteúdo das migrations não foi demonstrada por essa listagem.
+- Staging: 138 `agent_runs`, todas `killed`; 0 `agent_steps`; 0 `agent_tool_grants`; 0 `agent_model_usage`; 1 `agent_settings` (`kill_switch=false`, 500 runs/dia, 12 steps/run).
+- Production: 0 runs, steps, grants, usage e settings.
+- `agent_model_usage`: 0 linhas e somas de input/output tokens/custo = 0 em ambos.
+- `agent_draft_content` é uma RPC FUNCTION, não uma tabela. `content_items` tem 308 linhas e 150 status=draft no staging, mas 0 linhas com `agent_run_id` (nenhum rascunho atribuível ao Executor); Production tem 0 itens.
+- Nas seis tabelas auditadas (cinco tabelas S14 + `content_items`), RLS está habilitado; cada tabela S14 tem 1 policy e `content_items` tem 4. Existem 19 funções `agent_*`: EXECUTE anon=0, authenticated=6, service_role=12.
+
+### AI Gateway e orçamento
+- Uso do projeto nos últimos 7 dias: 0 requests, 0 input/output tokens, US$ 0.
+- Budget específico do projeto: nenhum; budgets default: nenhum; regras de roteamento: nenhuma.
+- Modelo disponível no catálogo não prova chamada. Nenhuma chamada real ao AI Gateway foi comprovada.
+- `agent_model_usage` zerado é consistente com ausência de requests, mas não valida reconciliação após cobrança.
+- Teto interno de US$ 5 é soft, sem reserva atômica por chamada; não há outbox durável comprovada para reconciliar falha de gravação após resposta cobrada.
+
+### Gate para teste real
+- Não executar teste real: chave exclusiva de staging ausente, grants de leitura zerados, budget externo ausente e OIDC runtime não comprovado.
+- Próximos passos: provisionar somente a chave do projeto staging no target Preview; validar `CRON_SECRET` sem revelar valor; comprovar OIDC; aprovar grants mínimos; definir budget externo limitado ao projeto; então executar uma única `operations_review` e reconciliar request ID, modelo, tokens/custo com `agent_model_usage`.
+- Sem merge, deploy, migration remota, alteração de Production/secrets, grants, budgets ou chamadas pagas nesta rodada.
+
+---
+
 ## Checkpoint operacional S14 — 21/11/2026 20:00 BRT
 
 > Esta seção é o estado atual auditado e substitui afirmações de status anteriores neste documento. O restante do arquivo é preservado como histórico/decisões de implementação.

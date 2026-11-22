@@ -1,3 +1,16 @@
+## Checkpoint S14 — 21/11/2026 21:00 BRT
+
+- Splits de implementação #35–#42 e #46: fechados e mergeados. PR #82 e PR #97 mergeadas; PR #102 fechada sem merge; PR #113 aberta, Draft, 5 ahead/0 behind.
+- CI do head anterior da PR #113 (#44959989807): 418/418, sem falhas. Playwright #44959989796: 36/36 no build local com Supabase isolado de staging; job dedicado de Preview/Staging foi skipped pelo evento pull_request.
+- Preview PR #113 READY em SHA `cbf4d2e`; head anterior `2943fb6` recebeu somente documentação depois desse deploy.
+- Production READY em SHA `86bd67c`; `main` `84afe632` está 7 commits à frente. Diff posterior: workflows, dependências e CSS, sem arquivos S14. Worker e Cron estão presentes no deployment.
+- Cron diário 08:17 BRT; sem runtime log de função na janela consultada de 30 min.
+- Staging: 138 runs, todas killed; 0 steps, grants, usage e conteúdo ligado a agent_run_id; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero registros S14.
+- Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. agent_model_usage: zero linhas nos dois bancos.
+- Bloqueio operacional: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive presente mas não validado; OIDC sem prova runtime; AGENT_EXECUTOR_ENABLED=true nos dois ambientes; nenhum grant e nenhum budget externo.
+- Não houve chamada real ao Gateway. Não executar staging real até provisionar chave exclusiva, grants mínimos, budget externo e comprovar OIDC.
+- Nenhuma alteração de código, schema, secrets, grants, budgets ou Production nesta rodada.
+
 ## Checkpoint atual — 21/11/2026 20:00 BRT
 
 > Este checkpoint substitui o estado histórico abaixo. Não marcar operação real como concluída sem request real do Gateway e ledger reconciliado.
