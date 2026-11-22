@@ -1,3 +1,28 @@
+## Fechamento de implementação S14 — 22/11/2026 07:02 BRT
+
+### Splits concluídos
+- [x] #35 Planner; #36 Executor core; #37 ferramentas de leitura; #38 geração de rascunhos; #39 claim queue/lease; #40 worker; #41 model adapter; #42 budget/OIDC; #46 run detail.
+- [x] #82 correções complementares e #97 documentação integradas; #102 fechada sem merge; #113 permanece Draft e docs-only.
+
+### Evidências de aceite no HEAD atual
+- [x] CI #45005652099, HEAD e12ee6f: 2/2 jobs success; 418/418 unit tests; typecheck/lint/audit/build; job SQL/migrations success (20 arquivos SQL distintos nos logs deste run).
+- [x] Playwright · Staging #45005672517, Preview exato e12ee6f: 36/36 em 3,6 min; artifact #14747642548.
+- [x] Preview e12ee6f READY; Production main 84afe632 READY, sem alterações nesta rodada.
+
+### Homologação operacional ainda aberta
+- [ ] SUPABASE_SECRET_KEY exclusiva de staging no target Preview.
+- [ ] Grants mínimos de leitura aprovados e instalados.
+- [ ] Budget externo isolado do projeto compartilhado com Production.
+- [ ] OIDC comprovado em runtime e CRON_SECRET validado sem exposição.
+- [ ] Uma única operations_review real, com request/tokens/custo reconciliados contra agent_model_usage.
+- [ ] Reserva atômica de custo e outbox durável para reconciliação financeira.
+
+### Estado financeiro e segurança
+- AI Gateway 7d: 0 requests, tokens e custo; budgets e rules ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos.
+- Staging: 158 runs killed, sem steps/grants/usage/linked content; Production sem dados S14.
+- AGENT_EXECUTOR_ENABLED=true em Production, mas SUPABASE_SECRET_KEY ausente. Recomendação ao Owner: desligar a flag até homologação; nenhuma alteração de Production foi feita.
+- Nenhuma chamada paga, secret, grant, budget, migration remota, merge ou deploy Production nesta rodada.
+
 # SMKON — Roadmap de execução em splits
 
 **Origem:** Auditoria Técnica v1 (18/11/2026).
@@ -177,3 +202,73 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - Staging 121 runs killed, sem steps/grants/usage; Production sem runs. Assinaturas de objetos auditados coincidem, mas versões de migrations S14 diferem; reconciliar histórico antes de qualquer repair/db push.
 - Gate operacional: chave exclusiva de Staging, grants mínimos, budget externo isolado, validação de CRON_SECRET/OIDC, Preview/E2E do SHA de homologação, uma operations_review e reconciliação de tokens/custo com agent_model_usage.
 - Nenhuma mudança de Production nesta auditoria.
+
+
+## S14 — checkpoint operacional 22/11/2026 01:57 BRT
+
+- Os nove splits originais (#35–#42 e #46) foram confirmados individualmente como merged. #82/#97 também merged; #102 fechada sem merge; PR #113 é a única aberta, Draft/mergeable, 15 ahead / 0 behind e docs-only.
+- CI #44983092682 no head 7d957275: 418/418 testes unitários e 2/2 jobs success; migrations/SQL tests aprovados.
+- E2E deployment_status #44983114589: 36/36 no Preview exato do SHA 7d957275; artifact 14738303182. O teste valida UI, fila, limites e kill switch; não chama o AI Gateway.
+- Preview atual dpl_Exi3uZxvFqmX5mugDtKWsuuG9oKi READY. Production atual dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY no main SHA 84afe632. Cron /api/agents/worker, 17 11 UTC (08:17 BRT).
+- Production registrou uma requisição GET não autenticada ao worker às 04:49:13Z, recusada como unauthorized. Isso prova que flag e formato do CRON_SECRET passaram suas validações nessa requisição; não prova Cron, OIDC, claim ou execução de IA.
+- Staging: 148 runs, todas killed; 0 steps, 0 grants, 0 usage, 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets de projeto/default e regras ausentes. agent_model_usage zerado nos dois bancos, consistente com uso zero, sem provar reconciliação de cobrança.
+- Gate operacional permanece: SUPABASE_SECRET_KEY exclusiva de staging ausente, grants mínimos ausentes, budget externo isolado ausente e OIDC não comprovado em runtime. Não executar operations_review real até fechar esses gates.
+- Nenhum merge, alteração de Production, migration remota, secret, grant, budget ou chamada paga foi executado.
+
+---
+
+## S14 — checkpoint de fechamento operacional 22/11/2026 03:00 BRT
+
+- Os nove splits originais (#35–#42 e #46) permanecem integrados. #82 e #97 merged; #102 fechada sem merge; PR #113 é a única PR aberta e continua Draft.
+- PR #113 head `2513d971`, 20 ahead / 0 behind, somente cinco documentos. CI #44987586564: 418/418 e 2/2 jobs success.
+- E2E do head atual cancelado/skipped; último E2E Staging aprovado #44983114589, 36/36 no SHA de aplicação `7d957275`, app-equivalente porque a PR atual é docs-only.
+- Preview atual READY em `dpl_9oZkfe9pm5D1oXa5RuuVbpmBLFcS`; Production READY em `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, main `84afe632`. Sem alteração de Production.
+- Worker e Cron declarados em Production, 17 11 UTC (08:17 BRT). Às 03:00 a próxima execução diária ainda era futura.
+- Staging: 150 runs killed, 0 steps/grants/usage/linked content; Production sem dados S14. RLS 6/6 em ambos; migrations: 31 nomes correspondentes, 0/31 version IDs iguais.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets externos/default e regras ausentes. agent_model_usage vazio nos dois bancos; nenhuma chamada real comprovada.
+- Pendências para homologação: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado, validação CRON_SECRET e OIDC em runtime. Sem esses gates, não executar operations_review real.
+
+---
+
+## Atualização operacional — 22/11/2026 03:56 BRT
+- CI #44992062696 no HEAD 8f9bd8: 2/2 jobs success, 418/418 testes, typecheck/lint/audit/build e migrations/SQL aprovados. E2E PR #44992062742: 36/36 no job local com Supabase staging; job Playwright · Staging skipped pelo evento pull_request. Último E2E via deployment_status: #44983114589, 36/36 no SHA de aplicação 7d957275.
+- PR #113 permanece Draft/mergeable; branch 24 commits ahead / 0 behind de main 84afe632; apenas os cinco documentos S14 alterados. Splits #35–#42 e #46 integrados; #82/#97 merged; #102 fechada sem merge.
+- Preview do HEAD 7b5c421 READY: dpl_8idR4fUwcvP1TWjLaRDEawoDQiDB, https://smkon-2011ifjfr-smkon.vercel.app. Production READY: dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV, main 84afe632; nenhuma alteração Production.
+- Cron /api/agents/worker às 17:11 UTC (08:17 BRT). No checkpoint 03:56, ainda futuro. Runtime logs Production nos últimos 30 min: zero linhas; janela de 3h indisponível pela retenção Hobby.
+- Inventário sem decrypt: AGENT_EXECUTOR_ENABLED=true em Preview/Production; CRON_SECRET Sensitive por target; SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY ausentes; Gateway/OIDC/Claude Haiku 5.5 e teto interno US$5. OIDC runtime não comprovado.
+- Staging: 152 runs, todas killed; 0 steps/grants/usage/drafts vinculados; kill_switch=false, max_runs_per_day=500, max_steps_per_run=12. Production sem dados S14. RLS 6/6 em ambos; policies 5 S14 + 4 content_items; funções agent_* EXECUTE authenticated=6, service_role=12, postgres=19.
+- Ambos os bancos têm 31 nomes de migrations, mas 0/31 version IDs iguais; não executar db repair/db push sem reconciliação formal.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets team/project/default e regras ausentes. agent_model_usage: 0 linhas/tokens/custo nos dois bancos. Nenhuma chamada real comprovada.
+- Gate permanece: chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC em runtime. Não executar operations_review real antes desses gates.
+- Nenhuma alteração de main/Production, migration remota, secret, grant, budget ou chamada paga nesta rodada.
+
+## S14 — checkpoint operacional 22/11/2026 05:02 BRT
+- Splits #35–#42 e #46 integrados; #82/#97 merged; #102 fechada sem merge; #113 é a única PR aberta, Draft/mergeable, 26 ahead/0 behind. Compare confirma apenas cinco arquivos docs.
+- CI #44996313091 no head c7deb14: 418/418 e 2/2 jobs success. E2E PR #44996313030 cancelado/skipped; último E2E Staging #44983114589: 36/36 no SHA de aplicação 7d957275 (código equivalente; PR docs-only).
+- Preview c7deb14 READY; Production main 84afe632 READY. Cron 17 11 UTC (08:17 BRT); às 05:02 ainda futuro. Sem mudança de Production.
+- Staging: 154 runs killed, 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets project/default e rules ausentes. agent_model_usage vazio nos dois bancos.
+- Gates pendentes: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado, validação segura de CRON_SECRET e prova OIDC runtime. Não executar run real até aprovação dos gates.
+
+
+## Fechamento e auditoria de branches — 22/11/2026 07:59 BRT
+
+- PRs #35–#42 e #46: merged. #82 e #97: merged. #102: fechada sem merge. #113: única PR aberta, Draft/mergeable, 30 commits ahead/0 behind, cinco arquivos docs-only.
+- Nove branches `feature/s14-*`: 0 commits ahead e 267–294 behind de main; splits integrados, sem trabalho exclusivo a promover.
+- `fix/s14-timeout-ledger-rebased-20261121-1415`: 16 ahead/160 behind; hashes dos quatro arquivos críticos (`run.ts`, `model-gateway.ts`, `agents-budget.test.ts`, `agents-executor.test.ts`) coincidem com main.
+- `fix/s14-deadline-timeout-classification`: 19 ahead/203 behind e `model-gateway.ts` difere da main; revisar diff antes de qualquer cherry-pick.
+- `release/s14-mainline-integration-20261121`: 34 ahead/289 behind; snapshot divergente, não promover.
+- CI #45010831733: 418/418 unit tests e 28 arquivos SQL aprovados. E2E deployment_status #45010855834: 36/36 no Preview do HEAD `a9cbe2f`, artifact #14750330616. Nenhum desses testes executa IA paga.
+- Próxima frente: provisionar credenciais/grants/budget isolados e comprovar OIDC/CRON; somente então executar uma única run real e reconciliar AI Gateway com `agent_model_usage`.
+
+---
+
+## Fechamento S14 — checkpoint 22/11/2026 08:58 BRT
+
+- Splits #35–#42 e #46 integrados; #82/#97 merged; #102 fechada sem merge. PR #113 continua Draft, docs-only, HEAD `d27e4bf`.
+- CI #45015586749 no HEAD: 418/418; E2E Staging #45015607358 no HEAD: 36/36. Preview exato READY; Production permanece na main `84afe632`.
+- Planner, Executor, Verifier, read tools, draft tool, worker e claim queue implementados. E2E não equivale a execução real com IA.
+- Bloqueios finais: `SUPABASE_SECRET_KEY` ausente no staging; grants mínimos não concedidos; budgets externos team/project/default inexistentes; OIDC ainda não validado pelo Gateway; nenhum request real/ledger reconciliado.
+- Novo item de correção: `model-pricing.ts` não contempla tiers do catálogo Haiku 5.5 (5x após 100.001 tokens). Adicionar pricing tiered e testes antes da homologação financeira.
+- Não promover branches históricas divergentes, não fazer merge, não alterar Production e não executar chamada paga até todos os gates.

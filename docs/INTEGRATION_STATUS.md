@@ -1,3 +1,19 @@
+## Estado de integração S14 — 22/11/2026 07:02 BRT
+
+- GitHub: main 84afe632; PR #113 aberta, Draft, mergeable, 29 commits ahead/0 behind; HEAD e12ee6f. Compare confirma cinco arquivos docs-only. Única PR aberta.
+- Splits #35–#42 e #46 merged; #82/#97 merged; #102 fechada sem merge. Branch feature/smkon-production-readiness diverged 2/36; release/s14-mainline-integration-20261121 diverged 34/289 e contém código antigo; não promover.
+- CI #45005652099 no HEAD exato: 2/2 jobs success, 418/418 unit tests; typecheck/lint/audit/build aprovados; SQL/migrations job success, 20 arquivos SQL distintos listados nos logs.
+- E2E deployment_status #45005672517: Playwright · Staging success, 36/36 no Preview exato e12ee6f; artifact #14747642548. PR-run #45005652053 cancelado/skipped, sem alterar o resultado do deployment_status.
+- Preview dpl_RTBXRFjKSXqY2zgyb8MgpfVe9mFt READY. Production dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY na main 84afe632.
+- Cron Production: /api/agents/worker, 17 11 UTC = 08:17 BRT. Runtime logs de Production nos últimos 30 min: nenhum registro. Às 07:02 BRT, próxima execução ainda futura.
+- Vercel env metadata decrypt=false: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive separado; AGENT_EXECUTOR_ENABLED=true; provider vercel-ai-gateway; auth oidc; modelo anthropic/claude-haiku-5.5; teto interno US$ 5. Nenhum valor sensitive lido; formato de CRON_SECRET não certificado.
+- Staging: 158 runs, todas killed; 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14.
+- agent_model_usage: 0 linhas/tokens/custo nos dois bancos. RLS 6/6; 9 policies; 19 funções agent_*; EXECUTE anon=0, authenticated=6, service_role=12.
+- Migrations: 31 nomes correspondentes, 0/31 version IDs coincidentes; não fazer repair/db push sem reconciliação formal.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets project/default e rules ausentes; catálogo contém anthropic/claude-haiku-5.5. Nenhuma chamada real comprovada.
+- Gate: chave service exclusiva de staging, grants mínimos, budget externo isolado, prova OIDC e validação segura de CRON_SECRET. Sem esses itens, não executar operations_review real.
+- Sem merge, alteração de main/Production, migration remota, secret, grant, budget ou chamada paga.
+
 # SMKON — Status da integração
 
 Mantido pela frente **Integração** (execução agendada de hora em hora). Branch de integração:
@@ -351,3 +367,166 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - AI Gateway 7d: 0 requests/tokens/custo; budgets/rules externos ausentes. Staging 121 runs killed, sem steps/grants/usage; Production sem runs/usage. Ledger consistente com agregado zero, sem chamada real.
 - Assinaturas de colunas, constraints, policies, RLS/ACL e funções selecionadas coincidem nos dois Supabase; versões de migration S14 ainda diferem. Nenhum repair executado.
 - A flag Production não foi alterada. Recomendação: manter executor desabilitado até credenciais, grants, budget e OIDC/CRON homologados em Staging.
+
+
+## S14 — checkpoint operacional 22/11/2026 01:57 BRT
+
+- GitHub: main SHA 84afe632; PR #113 Draft/mergeable, head 7d957275, 15 ahead / 0 behind, somente cinco arquivos documentais. PRs #35–#42 e #46 verificadas como merged; #82/#97 merged; #102 fechada sem merge.
+- CI #44983092682: 2/2 jobs success, 418/418 unit tests, typecheck/lint/audit/build e SQL/migrations tests aprovados. E2E de deployment_status #44983114589: 36/36 no Preview exato 7d957275, artifact [14738303182](https://github.com/smklj/smkon/actions/runs/44983114589/artifacts/14738303182). O job Staging do evento pull_request foi skipped; o run de deployment_status é a evidência válida de Staging.
+- Preview dpl_Exi3uZxvFqmX5mugDtKWsuuG9oKi READY. Production mais recente dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY, main SHA 84afe632, aliases públicos ativos. vercel.json e src/app/api/agents/worker/route.ts estão em main; Cron 17 11 * * * UTC = 08:17 BRT.
+- Runtime Production: GET /api/agents/worker às 04:49:13Z terminou em unauthorized. Como o handler valida flag e formato do CRON_SECRET antes do Bearer, esse request prova AGENT_EXECUTOR_ENABLED=true e CRON_SECRET utilizável no runtime; não prova chamada autenticada do Cron ou OIDC. Não houve claim.
+- Vercel env inventory sem decrypt: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive em targets separados; AGENT_EXECUTOR_ENABLED=true nos dois; AGENT_MODEL_PROVIDER=vercel-ai-gateway, AGENT_MODEL_AUTH=oidc, AGENT_MODEL=anthropic/claude-haiku-5.5, AGENT_MONTHLY_BUDGET_USD=5. Nenhum valor secreto foi lido. OIDC não comprovado em runtime.
+- Supabase staging: 148 runs, todas killed; 0 steps, 0 tool grants, 0 usage, 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14. agent_model_usage soma 0 linhas/tokens/custo em ambos. Os dois bancos têm 31 nomes de migrations e 0/31 version IDs iguais.
+- AI Gateway 7d: 0 requests/tokens/custo; budget específico de projeto e defaults ausentes; regras de roteamento ausentes. Ledger zero é consistente, mas não valida reconciliação de cobrança.
+- Gate: não executar operations_review real até haver chave service exclusiva de staging, grants mínimos, budget externo isolado e prova de OIDC. Nenhum merge, mudança de Production, migration, secret, grant, budget ou chamada paga nesta rodada.
+
+---
+
+## S14 — reconciliação operacional 22/11/2026 03:00 BRT
+
+### GitHub e deploy
+- PR #113 aberta/Draft/mergeable, head `2513d971`, 20 ahead / 0 behind; diff verificado com apenas cinco arquivos documentais. Main `84afe632`.
+- CI #44987586564: 418/418 e 2/2 jobs success no head exato. E2E desse head cancelado; último E2E Staging aprovado #44983114589, 36/36 no SHA de aplicação `7d957275` (mesmo código, PR docs-only).
+- Preview atual do head: `dpl_9oZkfe9pm5D1oXa5RuuVbpmBLFcS`, READY. Production: `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, READY em main `84afe632`.
+- Cron no deployment Production: `/api/agents/worker`, `17 11 * * *` UTC (08:17 BRT). Sem runtime logs Production na janela recente de 50 min; a execução das 08:17 de 22/11 ainda era futura às 03:00 BRT.
+
+### Ambiente e segurança
+- Sem decrypt: `AGENT_EXECUTOR_ENABLED=true` nos dois targets; provider `vercel-ai-gateway`, auth `oidc`, modelo `anthropic/claude-haiku-5.5`, teto interno US$ 5.
+- `CRON_SECRET` Sensitive separado em Preview/Production; valores não lidos. `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `AI_GATEWAY_API_KEY` ausentes.
+- Handler: flag → CRON_SECRET mínimo 32 e trim → Bearer em tempo constante → modelo/OIDC → budget/preço → cliente de serviço → claim. O cliente usa SUPABASE_SECRET_KEY. OIDC runtime não comprovado; sem chave service o worker não alcança claim/model call.
+- Recomenda-se ao Owner desabilitar a flag em Production até homologação; nenhuma variável alterada.
+
+### Supabase e Gateway
+- Staging: 150 runs, todas killed; 0 steps, 0 grants, 0 usage e 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run.
+- Production: zero dados S14. agent_model_usage zerado em ambos.
+- RLS 6/6 em ambos; uma policy em cada tabela S14 e quatro em content_items. Funções agent_*: authenticated=6, service_role=12, postgres=19; nenhuma EXECUTE anon observada.
+- 31 nomes de migrations correspondentes, 0/31 version IDs iguais; não executar repair/db push sem reconciliação.
+- AI Gateway 7d: 0 requests, tokens e custo. Budgets de team/projeto/default e regras: nenhum. Nenhuma chamada real comprovada.
+- Limite interno US$ 5 é soft; sem reserva atômica por chamada ou outbox durável para reconciliar cobrança se a gravação falhar.
+
+---
+
+## Checkpoint operacional S14 — 22/11/2026 03:56 BRT
+
+### GitHub e CI
+- Repositório smklj/smkon; main permanece em 84afe632. PR #113 está aberta, Draft e mergeable; branch docs/s14-current-operational-handoff-20261121-2000 está 21 commits à frente / 0 atrás. Compare confirma somente cinco arquivos documentais. #113 é a única PR aberta. Splits #35–#42 e #46, além de #82 e #97, seguem merged; #102 fechada sem merge.
+- CI #44992062696 no HEAD 8f9bd8fad5c5df0acf3bc9a0a88161139cbc2084: 2/2 jobs success. Logs confirmam 418/418 unit tests, typecheck, lint, dependency audit, build Next.js e migrations/SQL tests em banco descartável.
+- E2E PR #44992062742: Playwright · Build local success, 36 passed (2.7m), usando o Supabase de staging; Playwright · Staging foi skipped pelo evento pull_request. Último job Playwright · Staging disparado por deployment_status ainda é #44983114589, 36/36 no SHA 7d957275 (código de app equivalente porque a PR é docs-only). Nenhum desses testes chama o AI Gateway.
+
+### Vercel e Cron
+- Preview exato do HEAD 8f9bd8: deployment dpl_Fim54qNNSjWVp3eFx4jbJxN17dXP, READY, https://smkon-p8lolgft9-smkon.vercel.app.
+- Production mais recente: dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV, READY, main SHA 84afe632, alias https://smkon.vercel.app. Nenhum deploy/alias Production foi alterado nesta rodada.
+- vercel.json declara /api/agents/worker, 17 11 * * * UTC = 08:17 BRT. No checkpoint 03:56 BRT, a execução diária das 08:17 ainda é futura. Logs de runtime Production na janela recente de 30 min: nenhuma linha. A consulta de 3h foi recusada pelo plano Hobby por exceder retenção; não interpretar como ausência de logs nesse período.
+
+### Credenciais e proteções (inventário Vercel sem decrypt)
+- AGENT_EXECUTOR_ENABLED=true em Preview e Production; AGENT_MODEL_PROVIDER=vercel-ai-gateway; AGENT_MODEL_AUTH=oidc; modelo anthropic/claude-haiku-5.5; teto interno AGENT_MONTHLY_BUDGET_USD=5.
+- CRON_SECRET consta como Sensitive separadamente em Preview e Production; nenhum valor foi lido. SUPABASE_SECRET_KEY e SUPABASE_SERVICE_ROLE_KEY ausentes no inventário de ambos os targets. AI_GATEWAY_API_KEY ausente; OIDC é o caminho configurado.
+- Código revisado: handler.ts valida flag → CRON_SECRET (mínimo 32 e trim) → Bearer em tempo constante → modelo/OIDC → budget/preço → cliente service_role → claim. service.ts exige SUPABASE_SECRET_KEY. model.ts aceita x-vercel-oidc-token ou VERCEL_OIDC_TOKEN somente com opt-in OIDC. Token/autenticação OIDC em runtime não comprovados. Sem token, bloqueio model_not_configured; se OIDC passar, chave Supabase ausente bloqueia com service_not_configured antes de claim/model call.
+- Não alterar Production sem autorização. Recomenda-se ao Owner manter/desligar AGENT_EXECUTOR_ENABLED em Production até homologação; nenhuma variável foi modificada.
+
+### Supabase, RLS, ACL e migrations
+- Staging xoyasrizivadxnpmzzno: 152 runs, todas killed; 0 steps, 0 tool grants, 0 agent_model_usage e 0 conteúdos com agent_run_id. agent_settings: kill_switch=false, max_runs_per_day=500, max_steps_per_run=12 (atualizado em 22/11 03:09 BRT). Production hpplboyysmfcjsnjrdmw: 0 runs, steps, grants, usage e conteúdo vinculado; sem linha de agent_settings.
+- RLS habilitado em 6/6 tabelas auditadas em ambos os bancos; policy count: uma em cada tabela S14 (agent_runs, agent_steps, agent_model_usage, agent_tool_grants, agent_settings) e quatro em content_items.
+- Funções agent_*: EXECUTE authenticated=6, service_role=12, postgres=19; nenhuma concessão a anon foi retornada. As ACLs consultadas coincidem entre Staging e Production.
+- Ambos listam os mesmos 31 nomes de migrations, mas 0/31 version IDs coincidem; audience_consent e workspace_members aparecem em ordem diferente. Isso não prova, isoladamente, schema divergente. Não executar db repair / db push sem comparar definições aplicadas, backup e plano formal.
+
+### Planner, Executor, Verifier, ferramentas e orçamento
+- run.ts relê status antes de fases, respeita cancelamento/kill switch, timeout por passo e prazo total; ferramenta fora de allowlist/grant é rejeitada. read.ts limita a 50 itens e 60.000 bytes, com allowlist e escopo da organização. draft.ts usa RPC agent_draft_content e só aceita retorno content_status=draft. verifier.ts é determinístico e exige evidência verificada do mesmo produto antes de permitir draft.
+- model-gateway.ts usa endpoint fixo https://ai-gateway.vercel.sh/v1/chat/completions; testes usam fetch injetado e não fazem chamadas reais. budget.ts grava por agent_record_model_usage; tick.ts consulta agent_model_spend_since antes de cada claim. Limite interno US$ 5 é soft, sem reserva atômica de custo máximo e sem outbox durável de reconciliação.
+
+### AI Gateway e ledger
+- Uso do projeto nos últimos 7 dias: nenhuma série/linha, 0 requests, 0 input/output tokens e US$ 0. Budgets de projeto, equipe e defaults: nenhum (defaultCoveredCounts zero); regras de roteamento: nenhuma. Catálogo live confirma anthropic/claude-haiku-5.5 disponível.
+- agent_model_usage: 0 linhas, 0 input tokens, 0 output tokens e US$ 0 em Staging e Production. Consistência observável com uso agregado zero; não comprova reconciliação depois de uma cobrança. Nenhuma chamada real ao Gateway foi comprovada.
+
+### Gate de homologação e segurança
+Não executar operations_review real enquanto faltarem: chave service exclusiva de Staging no target Preview, grants mínimos de leitura aprovados, budget externo isolado do Production, validação segura de CRON_SECRET e prova de OIDC em runtime. Depois dos gates, executar uma única run e reconciliar request/modelo/tokens/custo do Gateway com agent_model_usage, conferindo steps, draft e Verifier.
+
+Somente leituras, inspeção de código e atualização documental nesta rodada. Sem merge, alteração em main ou Production, migration remota, secret, grant, budget, deploy Production ou chamada paga.
+
+
+## Atualização operacional — 22/11/2026 05:02 BRT (consulta direta)
+
+### Repositório e PRs
+- Repositório smklj/smkon; main em 84afe632464cc83c347ca1cfe5923efe9bbc91fe.
+- PR #113 aberta, Draft e mergeable; head anterior c7deb14eb89913e64ccd94497da3502c3f2c004c, 26 commits à frente e 0 atrás. Compare main...head confirma exclusivamente os cinco documentos deste handoff.
+- A busca de PRs abertas retornou somente #113. Splits #35–#42 e #46, além de #82 e #97, estão merged; #102 está fechada sem merge. Não promover branches antigas divergentes.
+
+### CI, E2E e Preview
+- CI #44996313091 associado ao head c7deb14: 2/2 jobs concluídos com success. Logs do job de aplicação confirmam # tests 418, # pass 418, typecheck, lint, audit e build; job de migrations/SQL tests também success.
+- E2E PR #44996313030: Build local cancelled e Playwright · Staging skipped. Não atribuir sucesso a esse run.
+- Último job Playwright · Staging concluído com success: #44983114589, 36/36 no SHA de aplicação anterior 7d957275; a PR #113 é docs-only sobre a mesma base de aplicação. Isso não é teste de IA nem chamada ao Gateway.
+- Preview atual do head c7deb14: deployment dpl_DoNMN47RiSC4Td3HmQGTR4AbW6mj, READY, https://smkon-9by7gt71w-smkon.vercel.app.
+- Production mais recente: dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV, READY, SHA 84afe632, alias smkon.vercel.app. Nenhuma alteração de Production foi feita.
+
+### Worker, Cron e ambiente Vercel
+- vercel.json: /api/agents/worker, 17 11 * * * UTC = 08:17 BRT. No checkpoint 05:02 BRT, a próxima janela diária ainda era futura. Runtime logs de Production nos últimos 30 min: nenhuma linha; isso não prova ausência de execução fora dessa janela.
+- Inventário consultado com decrypt=false: SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY e AI_GATEWAY_API_KEY ausentes; CRON_SECRET Sensitive separado para Preview e Production; AGENT_EXECUTOR_ENABLED=true nos dois targets; provider vercel-ai-gateway, auth oidc, modelo anthropic/claude-haiku-5.5 e teto interno US$ 5. Nenhum valor secreto foi lido.
+- O handler valida flag → presença/formato de CRON_SECRET → Bearer em tempo constante → modelo/OIDC → budget/preço → cliente service_role → claim. Sem token OIDC válido, model_not_configured; se OIDC passar, a ausência de SUPABASE_SECRET_KEY bloqueia em service_not_configured antes de claim e chamada ao modelo. O token OIDC em runtime não foi comprovado; comprimento/valor de CRON_SECRET não foi lido.
+- Recomenda-se ao Owner manter AGENT_EXECUTOR_ENABLED=false em Production até a homologação. Nenhuma variável foi alterada.
+
+### Supabase e consumo
+- Staging xoyasrizivadxnpmzzno: 154 agent_runs, todas killed; 0 agent_steps, 0 agent_tool_grants, 0 agent_model_usage, 0 conteúdos vinculados por agent_run_id. agent_settings: kill_switch=false, 500 runs/dia, 12 steps/run.
+- Production hpplboyysmfcjsnjrdmw: 0 runs, steps, grants, usage e conteúdo vinculado.
+- Soma de agent_model_usage nos dois bancos: 0 linhas, 0 input tokens, 0 output tokens e US$ 0.
+- RLS ativo em 6/6 tabelas auditadas em ambos; policies: 1 em cada tabela S14 e 4 em content_items. Funções agent_*: EXECUTE authenticated=6, service_role=12, postgres=19; nenhuma concessão a anon retornada.
+- Os dois bancos listam os mesmos 31 nomes de migrations, mas os version IDs divergem e audience_consent/workspace_members aparecem em ordem diferente. Isso não prova schema divergente; não executar db repair/db push sem comparação formal, backup e plano.
+
+### AI Gateway, modelo e orçamento
+- Catálogo live: anthropic/claude-haiku-5.5 disponível; endpoint Anthropic declara ZDR e no-training. Isso é metadado do catálogo, não prova de chamada ou política configurada no projeto.
+- Uso agregado do projeto nos últimos 7 dias: 0 requests, 0 tokens e US$ 0. Budgets de projeto e defaults: nenhum; regras de roteamento: nenhuma.
+- agent_model_usage vazio é consistente com o agregado zero, mas não prova reconciliação após uma cobrança.
+- model-gateway.ts usa endpoint fixo e registra usage de respostas 2xx antes de aceitar o conteúdo; sem usage estima cenário conservador e falha se a RPC de registro falhar. tick.ts relê o gasto antes de cada claim; teto interno é soft, sem reserva atômica por chamada nem outbox durável para reconciliar falha posterior.
+
+### Gate de homologação
+Não executar operations_review real enquanto faltarem: chave service exclusiva de staging no target Preview, grants mínimos de leitura, budget externo isolado, prova de OIDC em runtime e validação segura do Cron secret. Depois dos gates, executar uma única run e reconciliar request/modelo/tokens/custo do Gateway com agent_model_usage, além de steps, draft e Verifier.
+
+Somente consultas, inspeção de código e documentação nesta rodada. Sem merge, alteração em main/Production, migration remota, secret, grant, budget ou chamada paga.
+
+
+## Estado verificado — 22/11/2026 07:59 BRT
+
+- PR #113: aberta, Draft, mergeable; HEAD `a9cbe2f`, 30 ahead/0 behind, diff limitado aos cinco documentos S14. Main `84afe632`. PRs #35–#42, #46, #82 e #97 merged; #102 fechada sem merge.
+- CI #45010831733 no HEAD exato: 418/418 unit tests, 28 arquivos SQL, typecheck/lint/audit/build aprovados. Playwright deployment_status #45010855834: 36/36 no Preview exato do HEAD, 3,4 min; artifact #14750330616. O E2E PR #45010831811 passou 36/36 local, mas o job Staging desse evento foi skipped.
+- Preview `dpl_96w44YQjmQ5h6ihUjB49KCqQeTC5` READY; Production `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` READY na main `84afe632`. Nenhuma alteração Production.
+- Cron de Production: `/api/agents/worker`, `17 11 * * *` UTC (08:17 BRT). Às 07:59 ainda futuro; logs runtime de 30 min sem eventos do worker.
+- Env inventory com `decrypt=false`: `SUPABASE_SECRET_KEY`/ `SUPABASE_SERVICE_ROLE_KEY` ausentes, inclusive no target `qa-e2e-staging`; `CRON_SECRET` Sensitive em Preview e Production (valor não lido, formato não certificado); `AGENT_EXECUTOR_ENABLED=true` nos dois; provider Gateway, auth OIDC, Haiku 5.5, teto interno US$ 5. `AI_GATEWAY_API_KEY` ausente.
+- Worker resolve configuração do modelo e budget, mas não chama o tick até obter cliente service. Sem `SUPABASE_SECRET_KEY`, `createServiceClient()` retorna null e o handler termina antes de claim/model call. OIDC runtime não comprovado.
+- Staging: 160 runs, todas killed; 0 steps/grants/usage; kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14. `agent_model_usage` zero linhas/tokens/custo em ambos.
+- AI Gateway 7d: rows/series vazias; budget específico e defaults ausentes; rules ausentes. Modelo consta no catálogo, mas não há request real comprovado.
+- Limite interno de US$ 5 é soft; sem reserva atômica/outbox durável. Não executar `operations_review` real até provisionar chave service de staging, grants mínimos, budget externo isolado e comprovar OIDC/CRON.
+
+---
+
+## Checkpoint operacional final — 22/11/2026 08:58 BRT
+
+### GitHub, CI e Preview/Staging
+- Repositório `smklj/smkon`; `main` permanece em `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
+- PR #113 permanece aberta, Draft e mergeable; HEAD `d27e4bf00aeed9e00c5f42ccd67dbecb31a55e0e`, 31 commits ahead / 0 behind, somente os cinco documentos S14 no diff. É a única PR aberta observada.
+- Splits #35–#42 e #46, além de #82/#97, estão merged; #102 está fechada sem merge. Não promover branches históricas divergentes.
+- CI #45015586749 no HEAD exato: 2/2 jobs success; logs confirmam 418 testes, 418 pass, 0 fail, 0 skipped. Typecheck, lint, dependency audit, build e job de migrations/SQL tests passaram.
+- E2E deployment_status #45015607358 no HEAD exato: Playwright · Staging success, 36 passed (3,2 min), artifact #14751981957. E2E PR #45015586850: browser tests locais success; job Staging desse evento foi skipped.
+- Preview exato: deployment `dpl_LjhcXBhgV1W4hqwZV2UyXyg6hbD7`, READY, https://smkon-azxjb9mcp-smkon.vercel.app. Production: `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV`, READY, main `84afe632`. Nenhum deploy, alias ou dado de Production foi alterado.
+
+### Worker, Cron e credenciais
+- `vercel.json` declara `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT.
+- Inventário Vercel com `decrypt=false`: `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; `AGENT_MODEL_PROVIDER=vercel-ai-gateway`; `AGENT_MODEL_AUTH=oidc`; `AGENT_MODEL=anthropic/claude-haiku-5.5`; teto interno `AGENT_MONTHLY_BUDGET_USD=5`. `CRON_SECRET` é Sensitive em targets Preview e Production, sem leitura do valor. `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `AI_GATEWAY_API_KEY` não constam no inventário.
+- Evidência runtime Production: em 22/11 às 08:53:31 BRT, GET `/api/agents/worker` no deployment `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` registrou `service_not_configured`. Pela ordem do handler, a flag estava habilitada, o formato do `CRON_SECRET` passou, o Bearer apresentado correspondeu, o resolver aceitou a presença/formato local do token OIDC e a configuração de budget/preço foi parseável. O cliente Supabase de serviço não foi criado porque `SUPABASE_SECRET_KEY` está ausente; o handler parou antes do tick, claim e chamada ao modelo.
+- Limite da evidência: o resolver valida presença/formato do token OIDC, não a aceitação pelo AI Gateway. O request das 08:53 não coincide com o horário declarado do Cron (08:17 BRT), e a origem da requisição não foi identificada; portanto, não prova entrega do Vercel Cron nem autenticação aceita pelo Gateway. O valor do Cron secret não foi exposto.
+- Recomenda-se ao Owner desabilitar `AGENT_EXECUTOR_ENABLED` em Production até a homologação. Nenhuma variável foi alterada.
+
+### Supabase e consumo
+- Projetos staging e Production estão `ACTIVE_HEALTHY`.
+- Staging: 162 runs, 162 `killed`; 0 steps, 0 tool grants, 0 `agent_model_usage`, 0 tokens, US$ 0 e 0 conteúdos vinculados. Settings: `kill_switch=false`, 500 runs/dia, 12 steps/run.
+- Production: 0 runs, steps, grants, usage e conteúdos vinculados.
+- `agent_model_usage` zerado é consistente com ausência de uso. Não há evidência de reconciliação após uma chamada cobrada.
+
+### AI Gateway e risco de orçamento
+- API de uso do Vercel AI Gateway para o projeto, últimos 7 dias (janela retornada 15–23/11 UTC): `rows=[]`, `series=[]`. Budgets de team, project e defaults: nenhum; regras de roteamento: nenhuma.
+- Catálogo live confirma `anthropic/claude-haiku-5.5`. Nenhuma chamada real ao Gateway foi comprovada.
+- **Risco novo identificado:** `model-pricing.ts` usa preço fixo por token (`input=0.0000001`, `output=0.0000005`) e margem de 10%, sem implementar os tiers do catálogo. O catálogo indica, acima de 100.001 tokens, input de `0.0000005` e output de `0.0000025` por token (5x a primeira faixa). O estimador pode subestimar consumo de chamadas grandes; a margem de 10% não cobre essa diferença. Corrigir e testar o pricing tiered antes de tratar o teto interno como confiável.
+- O limite interno de US$ 5 é soft, sem reserva atômica do custo máximo por chamada e sem outbox durável de reconciliação.
+
+### Fluxo e decisão
+- Código na main confirma Planner → Executor → Verifier; ferramentas de leitura limitadas/escopadas por organização; `draft_content` grava somente status `draft`; Verifier exige evidência de produto verificada. E2E 36/36 valida fluxo de fila/limites/kill switch, não execução com modelo.
+- Não executar `operations_review` real até provisionar chave service exclusiva de staging, grants mínimos, budget externo isolado e corrigir o estimador por tiers. Depois, comprovar OIDC no Gateway, executar uma única run e reconciliar request/modelo/tokens/custo com `agent_model_usage`.
+- Sem merge, alteração em `main`/Production, migration remota, secret, grant, budget, publicação de conteúdo ou chamada paga nesta rodada.
