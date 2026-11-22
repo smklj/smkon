@@ -1,80 +1,17 @@
-## Estado de integração S14 — 22/11/2026 00:55 BRT
+## Estado de integração S14 — 22/11/2026 05:56 BRT
 
-- main HEAD 84afe632; PR #113 Draft/mergeable, head 52aae681, 14 ahead/0 behind, cinco arquivos docs-only. Splits #35–#42 e #46, #82 e #97 merged; #102 fechada sem merge.
-- CI #44978955812 no HEAD exato: 2/2 jobs success, 418/418 unit tests e 28 arquivos SQL aprovados. E2E PR #44978955925 cancelado/skip; E2E de Staging anterior #44974751006 36/36 no SHA de aplicação e5ba869f, artifact #14735191696.
-- Preview READY dpl_GkCqxfeNSXENdbf8DFqY5JT73xab, SHA 52aae681. Production READY dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 7 commits à frente, diff de 17 arquivos sem código S14.
-- Cron /api/agents/worker, 17 11 UTC = 08:17 BRT. Preview GET sem Bearer gerou unauthorized após validação do formato de CRON_SECRET; Production sem runtime logs nos últimos 50 min.
-- Env sem decrypt: SUPABASE_SECRET_KEY e SUPABASE_SERVICE_ROLE_KEY ausentes; CRON_SECRET Sensitive nos dois targets; AGENT_EXECUTOR_ENABLED=true; Gateway/OIDC/Haiku 5.5/US$5 internos; OIDC runtime não comprovado.
-- Staging 146 runs killed, 0 steps/grants/usage/linked content; settings kill_switch=false, 500/dia, 12 steps/run. Production zero dados S14.
-- RLS 6/6; policies 5 S14 + 4 content_items; 19 funções agent_* com anon=0/authenticated=6/service_role=12. 31 nomes de migrations em ambos, 0/31 version IDs iguais.
-- Gateway 7d: 0 requests/tokens/custo; budgets equipe/projeto/default e rules ausentes. agent_model_usage vazio nos dois bancos. Sem chamada real comprovada.
-- Bloqueio: chave service exclusiva de staging, grants mínimos, budget externo e prova OIDC runtime. Não executar teste pago nem simular sucesso.
-
----
-
-## Estado de integração S14 — 22/11/2026 00:00 BRT
-
-- GitHub: main `84afe632`; PR #113 aberta/Draft/mergeable, head anterior `e5ba869f`, 9 ahead/0 behind. Splits #35–#42 e #46, PR #82 e #97 merged; #102 fechada sem merge.
-- CI #44974732697: 2/2 success, 418/418 unitários, migrations/SQL tests success.
-- E2E #44974751006: Playwright · Staging success no Preview/SHA exato `e5ba869f`; 36/36 pass, 0 falhas, artifact #14735191696. O run PR #44974732762 teve Build local 36/36 e job Staging skipped. Nenhum teste chamou o modelo.
-- Preview READY: `dpl_9ifdqD9u7ypcBTPeZ46MC7uWQM2k`, SHA `e5ba869f`. Production READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente e diff sem arquivos S14.
-- Cron Production: `/api/agents/worker`, `17 11 UTC` (08:17 BRT). Sem runtime logs nos últimos 30 minutos em Production/Preview.
-- Vercel env (decrypt=false): SUPABASE_SECRET_KEY ausente; CRON_SECRET Sensitive presente; AGENT_EXECUTOR_ENABLED=true; provider Gateway/OIDC/Haiku 5.5; budget interno US$5. OIDC runtime não comprovado. Sem AI_GATEWAY_API_KEY.
-- Staging: 144 runs, todas killed; 0 steps/grants/usage/linked content; kill_switch=false, 500 runs/dia, 12 steps/run. Production zero dados S14.
-- RLS 6/6; 5 policies S14 + 4 content_items; 19 funções agent_*, EXECUTE anon=0/authenticated=6/service_role=12 nos dois bancos.
-- 31 nomes de migrations em ambos, 0/31 version IDs iguais; ordem de audience_consent/workspace_members difere. Não executar repair/db push.
-- AI Gateway 7d: 0 requests/tokens/custo; nenhum budget específico/default ou regra. agent_model_usage vazio em ambos. Consistente com uso zero, mas sem prova de reconciliação pós-cobrança.
-- Gate real: chave exclusiva de staging, grants mínimos, budget externo isolado, validação CRON_SECRET e OIDC runtime. Sem chamada real até todos os gates estarem satisfeitos.
-
-
----
-
-## Estado de integração S14 — 21/11/2026 22:58 BRT
-
-- main HEAD 84afe632; PR #113 aberta/Draft/mergeable, head 6bb47d7, 8 ahead/0 behind. PRs #35–#42 e #46, #82 e #97 mergeadas; #102 fechada sem merge.
-- CI #44969883730: 2/2 jobs success, 418/418 unitários; migrations/SQL tests success. E2E #44969902121: Playwright · Staging 36/36 no SHA exato 6bb47d7, artifact #14732778783; inclui agents.spec.mjs e CSP. Nenhum teste chamou o modelo.
-- Preview #113 READY: dpl_CGeGDLMA5mn9bKTMRdaGJtVvb1Jz. Production READY: dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 7 commits à frente, sem arquivo S14 no diff.
-- Cron /api/agents/worker às 17:11 UTC (08:17 BRT). Production sem logs de runtime nos últimos 50 min. Preview recebeu GET sem Bearer e registrou unauthorized, antes de OIDC/claim; valida indiretamente o mínimo do CRON_SECRET de Preview.
-- Vercel: SUPABASE_SECRET_KEY ausente em ambos os targets; CRON_SECRET Sensitive presente em ambos; AGENT_EXECUTOR_ENABLED=true em Preview e Production; provider Gateway/OIDC/Haiku 5.5; budget interno US$5. OIDC runtime não comprovado.
-- Supabase: staging 142 runs, todas killed, sem steps/grants/usage; Production zero dados S14. RLS ativo nas seis tabelas; ACL de 19 funções agent_*: anon=0/authenticated=6/service_role=12. 31 nomes de migrations nos dois bancos, 0/31 version IDs iguais.
-- AI Gateway 7 dias: 0 requests/tokens/custo; budgets de projeto/default ausentes. agent_model_usage vazio nos dois ambientes.
-- Não homologado: falta service key exclusiva de staging, grants mínimos e budget externo isolado. Sem chamada real, merge, alteração Production ou migration remota.
-
----
-## Estado de integração S14 — 21/11/2026 22:00 BRT
-
-- `main` HEAD: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
-- PR #113 aberta, Draft, mergeable, head `334a3d9`, base `main`; somente cinco arquivos documentais. É a única PR aberta encontrada.
-- Splits #35–#42 e #46, PR #82 e #97: mergeados. PR #102: fechada sem merge.
-- Production READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente/0 atrás. Compare: 17 arquivos de workflow/dependências/CSS, nenhum arquivo S14.
-- O deployment Production contém worker route e Cron `17 11 * * *` UTC (08:17 BRT). Nenhum runtime log de função em Production nos últimos 50 min. Preview #113 READY no checkpoint `6a05caec`, deployment `dpl_7Gh7ThzWW8WuDwD5vX72rkTb14Lj`; um GET ao worker no Preview foi rejeitado como unauthorized.
-- CI #44964877160: 2/2 jobs success, 418/418 unitários, build/typecheck/lint/audit e SQL/migrations aprovados. E2E #44964877243: 36/36 no build local; job Playwright · Staging skipped por evento pull_request; os workflows do checkpoint `6a05caec` foram disparados e estavam em execução.
-- `feature/smkon-production-readiness`: 2 ahead/36 behind; diff só documental. `release/s14-mainline-integration-20261121`: 34 ahead/289 behind e reintroduz arquivos S14 como adições por base antiga. Não promover.
-- Supabase staging/Production: 31 nomes de migrations iguais, 0/31 version IDs iguais; não executar repair/db push. Staging 140 runs, todas killed, 0 steps/grants/usage/conteúdo ligado; settings kill_switch=false, 500/dia, 12 steps/run. Production sem dados S14/settings.
-- RLS ativo nas seis tabelas auditadas nos dois ambientes; policies: uma em cada tabela S14 e quatro em content_items. 19 funções agent_*: EXECUTE anon=0, authenticated=6, service_role=12.
-- Vercel env sem decrypt: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive presente, comprimento não validado; AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/Haiku 5.5/US$5 interno configurados.
-- AI Gateway últimos 7 dias: 0 requests/tokens/custo; budgets de projeto/default e regras de roteamento ausentes. agent_model_usage 0 linhas em ambos. Nenhuma chamada real comprovada.
-- Bloqueios: chave service exclusiva de staging, grants mínimos, budget externo, validação de CRON_SECRET e OIDC em runtime. O teto interno é soft e não há outbox durável. Não executar teste real até fechar esses gates.
-- Sem merge, deploy Production, migrations remotas, secrets, grants, budgets ou chamadas pagas nesta rodada.
-
----
-
-## Checkpoint de integração — 21/11/2026 20:00 BRT
-
-- HEAD atual de `main`: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
-- Production Vercel READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente. O diff posterior contém workflows/dependências/CSS, sem arquivos S14.
-- `vercel.json` e rota `/api/agents/worker` estão no SHA implantado. Cron diário `17 11 UTC` (08:17 BRT). Sem runtime logs na janela consultada de 50 min.
-- `feature/smkon-production-readiness`: 2 ahead/36 behind, diff apenas em `docs/INTEGRATION_STATUS.md`; branch congelada. `release/s14-mainline-integration-20261121`: 34 ahead/289 behind; não promover.
-- CI anterior #44954944211: 406/406 no commit `41fb60ab`; não é CI do HEAD atual. E2E anterior #44953753229: 35/36, falha CSP em `/studio`; reexecutar após a correção CSP da PR #106 no HEAD atual.
-- Staging e Production Supabase: 31 nomes de migrations em ambos; version IDs diferem em todos os 31. Não executar repair/db push sem reconciliação.
-- Staging: 136 runs, todas killed; 0 steps, usage e grants; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: 0 runs/steps/usage/grants/settings.
-- ACL/RLS auditada em 6 tabelas nos dois ambientes: RLS true; cinco tabelas S14 com 1 policy cada; content_items com 4; anon sem SELECT; authenticated/service_role com SELECT; 19 funções agent_* com EXECUTE anon=0, authenticated=6, service_role=12.
-- Vercel env: `SUPABASE_SECRET_KEY` ausente em Preview/Production; `CRON_SECRET` Sensitive presente nos dois, sem validar comprimento; `AGENT_EXECUTOR_ENABLED=true` nos dois; Gateway/OIDC/modelo/US$5 internos configurados.
-- AI Gateway: 7 dias sem linhas de uso; budget de projeto/default ausente; regras de roteamento ausentes; modelo disponível no catálogo. `agent_model_usage` 0 linhas nos dois bancos. Nenhuma chamada real comprovada.
-- Próximo gate: chave exclusiva de staging, validação segura do cron secret, OIDC runtime, grants mínimos, budget externo do projeto, E2E atual e uma única run controlada. Não alterar Production.
-
-
----
+- GitHub: `main` `84afe632`; PR #113 aberta, Draft, mergeable, HEAD `1fbf8f2`; compare 27 ahead / 0 behind no checkpoint e cinco arquivos docs-only. Única PR aberta.
+- Splits #35–#42 e #46 merged; #82 e #97 merged; #102 fechada sem merge. Branch `feature/smkon-production-readiness` diverged 2/36; branch `release/s14-mainline-integration-20261121` diverged 34/289 e reintroduz código antigo. Não promover.
+- CI #45001303549 no HEAD exato: 2/2 jobs success, 418/418 unit tests, typecheck/lint/audit/build e migrations/28 arquivos SQL aprovados.
+- E2E PR #45001303766: Build local success e Staging skipped. E2E deployment_status #45001321176: Playwright · Staging success, 36/36 no Preview exato `1fbf8f2`; sem chamada ao modelo.
+- Preview `dpl_4tF7vodPKUfehRTGxCica2KFs7VB` READY. Production `dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV` READY na main `84afe632`; nenhuma alteração Production nesta rodada.
+- Cron Production: `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. Logs Production últimos 50 min: nenhum. Preview registrou GET sem Bearer como `unauthorized`; isso não prova Cron autenticado ou OIDC.
+- Vercel env (decrypt=false): `SUPABASE_SECRET_KEY` ausente; `CRON_SECRET` Sensitive em targets separados; `AGENT_EXECUTOR_ENABLED=true` em Preview e Production; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5. Valores secretos não lidos; comprimento de Cron secret não validado.
+- Supabase staging: 156 runs, todas killed; 0 steps/grants/usage/linked content; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
+- RLS ativo em 6/6 tabelas auditadas nos dois ambientes; cinco policies S14 e quatro em content_items; funções agent_* EXECUTE authenticated=6, service_role=12, postgres=19; nenhuma concessão anon retornada.
+- 31 nomes de migrations iguais, 0/31 version IDs iguais; ordem de `audience_consent` e `workspace_members` difere. Não executar repair/db push sem reconciliação.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets project/team/default e rules ausentes. `agent_model_usage` 0 linhas/tokens/custo nos dois bancos.
+- Gate real: chave service exclusiva de staging, grants mínimos, budget externo isolado, validação segura de CRON_SECRET e prova OIDC em runtime. Não executar `operations_review` real antes de todos os gates.
 
 # SMKON — Status da integração
 

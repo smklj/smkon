@@ -1,107 +1,24 @@
-## Checkpoint de credenciais S14 — 22/11/2026 00:55 BRT (inventário Vercel com decrypt=false)
+## Inventário não secreto S14 — 22/11/2026 05:56 BRT
 
-| Controle | Production | Preview/Staging |
-|---|---|---|
-| SUPABASE_SECRET_KEY | Ausente | Ausente |
-| SUPABASE_SERVICE_ROLE_KEY | Ausente | Ausente |
-| CRON_SECRET | Sensitive presente; valor/comprimento não lidos | Sensitive presente; valor não lido; passou indiretamente mínimo 32/trim via resposta unauthorized |
-| AGENT_EXECUTOR_ENABLED | true | true |
-| AGENT_MODEL_PROVIDER | vercel-ai-gateway | vercel-ai-gateway |
-| AGENT_MODEL_AUTH | oidc | oidc |
-| AGENT_MODEL | anthropic/claude-haiku-5.5 | anthropic/claude-haiku-5.5 |
-| AGENT_MONTHLY_BUDGET_USD | 5 (teto interno soft) | 5 (teto interno soft) |
-| AI_GATEWAY_API_KEY | Ausente (OIDC selecionado) | Ausente (OIDC selecionado) |
+Consulta Vercel com `decrypt=false`; nenhum valor sensitive foi lido.
 
-Nenhum valor secreto foi descriptografado. O GET sem Bearer no Preview foi rejeitado como unauthorized depois das barreiras de flag e formato de CRON_SECRET; isso não comprova OIDC nem execução autenticada. Em Production, comprimento/whitespace do CRON_SECRET não foi validado.
+| Variável | Preview | Production | Observação |
+|---|---|---|---|
+| `SUPABASE_SECRET_KEY` | Ausente | Ausente | Obrigatória para o cliente service do worker |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ausente | Ausente | Não é o nome lido pelo código S14 |
+| `CRON_SECRET` | Sensitive presente | Sensitive presente | Valores não lidos; comprimento/trim não certificados |
+| `AGENT_EXECUTOR_ENABLED` | `true` | `true` | Owner deve desabilitar Production até homologação |
+| `AGENT_MODEL_PROVIDER` | `vercel-ai-gateway` | `vercel-ai-gateway` | Configuração explícita |
+| `AGENT_MODEL_AUTH` | `oidc` | `oidc` | Runtime OIDC não comprovado |
+| `AGENT_MODEL` | `anthropic/claude-haiku-5.5` | `anthropic/claude-haiku-5.5` | Modelo disponível no catálogo |
+| `AGENT_MONTHLY_BUDGET_USD` | `5` | `5` | Teto interno soft |
+| `AI_GATEWAY_API_KEY` | Ausente | Ausente | OIDC é o caminho selecionado |
 
-Bloqueios: SUPABASE_SECRET_KEY exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC em runtime. Recomenda-se ao Owner desabilitar AGENT_EXECUTOR_ENABLED em Production até homologação. Nenhuma variável foi alterada.
-
----
-
-## Checkpoint de credenciais S14 — 22/11/2026 00:00 BRT (inventário Vercel com decrypt=false)
-
-| Controle | Production | Preview/Staging |
-|---|---|---|
-| SUPABASE_SECRET_KEY | Ausente | Ausente |
-| SUPABASE_SERVICE_ROLE_KEY | Ausente | Ausente |
-| CRON_SECRET | Sensitive presente; valor/comprimento não lidos | Sensitive presente; valor não lido |
-| AGENT_EXECUTOR_ENABLED | true | true |
-| AGENT_MODEL_PROVIDER | vercel-ai-gateway | vercel-ai-gateway |
-| AGENT_MODEL_AUTH | oidc | oidc |
-| AGENT_MODEL | anthropic/claude-haiku-5.5 | anthropic/claude-haiku-5.5 |
-| AGENT_MONTHLY_BUDGET_USD | US$5 (limite interno soft) | US$5 (limite interno soft) |
-| AI_GATEWAY_API_KEY | Ausente; OIDC selecionado | Ausente; OIDC selecionado |
-| Budget externo AI Gateway | Nenhum budget específico/default | Nenhum budget específico/default |
-
-Nenhum valor Sensitive foi descriptografado ou incluído. OIDC é aceito pelo código somente com opt-in explícito `AGENT_MODEL_AUTH=oidc`, usando `x-vercel-oidc-token` ou `VERCEL_OIDC_TOKEN`; emissão e aceitação em runtime não foram comprovadas. O handler valida flag, CRON_SECRET, Bearer, modelo/OIDC e orçamento antes de criar o cliente de serviço. O cliente usa especificamente `SUPABASE_SECRET_KEY`; sem ela, a rota responde `503 service_not_configured` antes de claim/model call, se as barreiras anteriores passarem.
-
-Recomendação ao Owner: manter/desligar `AGENT_EXECUTOR_ENABLED` em Production até a homologação. Nenhuma variável foi alterada nesta rodada.
-
-
----
-
-## Checkpoint de credenciais S14 — 21/11/2026 22:58 BRT (decrypt=false)
-
-| Controle | Production | Preview/Staging |
-|---|---|---|
-| SUPABASE_SECRET_KEY | Ausente | Ausente |
-| CRON_SECRET | Sensitive presente; comprimento não validado | Sensitive presente; GET sem Bearer gerou evento unauthorized, provando validação do mínimo de 32 caracteres/trim antes da comparação |
-| AGENT_EXECUTOR_ENABLED | true | true |
-| AGENT_MODEL_PROVIDER | vercel-ai-gateway | vercel-ai-gateway |
-| AGENT_MODEL_AUTH | oidc | oidc |
-| AGENT_MODEL | anthropic/claude-haiku-5.5 | anthropic/claude-haiku-5.5 |
-| AGENT_MONTHLY_BUDGET_USD | US$5 (limite interno soft) | US$5 (limite interno soft) |
-| AI_GATEWAY_API_KEY | Ausente; OIDC selecionado | Ausente; OIDC selecionado |
-| Budget externo AI Gateway | Nenhum | Nenhum |
-
-Nenhum valor Sensitive foi descriptografado ou incluído. O evento unauthorized do Preview prova apenas que a rota passou pela validação do CRON_SECRET e rejeitou a ausência do Bearer; não prova OIDC nem execução do worker. Em Production, não há invocação autenticada/log que permita validar comprimento do CRON_SECRET.
-
-O worker usa especificamente SUPABASE_SECRET_KEY para o cliente service_role. Sem essa variável, após as barreiras anteriores, retorna 503 service_not_configured antes de claim/steps/model call. Recomenda-se ao Owner manter AGENT_EXECUTOR_ENABLED=false em Production até homologação; nenhuma configuração foi alterada nesta auditoria.
-
----
-## Inventário S14 — 21/11/2026 22:00 BRT (sem descriptografar)
-
-| Variável/controle | Production | Preview (staging) |
-|---|---|---|
-| `SUPABASE_SECRET_KEY` | Ausente | Ausente |
-| `CRON_SECRET` | Sensitive presente; comprimento não verificado | Sensitive presente; comprimento não verificado |
-| `AGENT_EXECUTOR_ENABLED` | `true` | `true` |
-| `AGENT_MODEL_PROVIDER` | `vercel-ai-gateway` | `vercel-ai-gateway` |
-| `AGENT_MODEL_AUTH` | `oidc` | `oidc` |
-| `AGENT_MODEL` | `anthropic/claude-haiku-5.5` | `anthropic/claude-haiku-5.5` |
-| `AGENT_MONTHLY_BUDGET_USD` | US$ 5 (limite interno soft) | US$ 5 (limite interno soft) |
-| `AI_GATEWAY_API_KEY` | Ausente (OIDC selecionado) | Ausente (OIDC selecionado) |
-| Budget externo AI Gateway do projeto | Nenhum | Nenhum |
-| Budget default AI Gateway | Nenhum | Nenhum |
-
-A consulta Vercel foi feita com `decrypt=false`. Nenhum valor Sensitive foi lido ou incluído. OIDC está selecionado, mas token/aceitação em runtime não foram comprovados. `SUPABASE_SECRET_KEY` está ausente nos dois targets; sem ela, após passar as barreiras anteriores, o worker retorna `503 service_not_configured` antes de claim.
-
-**Recomendação:** manter `AGENT_EXECUTOR_ENABLED=false` em Production até homologação. Não copiar segredo de Production para Preview. Para o teste real, provisionar a chave exclusiva do projeto staging apenas em Preview, validar o Cron secret sem revelar valor, aprovar grants mínimos e configurar budget externo restrito ao projeto.
-
----
-
-## Estado S14 verificado — 21/11/2026 20:00 BRT
-
-| Variável/controle | Production | Preview (staging) |
-|---|---|---|
-| `SUPABASE_SECRET_KEY` | ❌ ausente | ❌ ausente |
-| `CRON_SECRET` | Sensitive presente; comprimento não verificado | Sensitive presente; comprimento não verificado |
-| `AGENT_EXECUTOR_ENABLED` | `true` | `true` |
-| `AGENT_MODEL_PROVIDER` | `vercel-ai-gateway` | `vercel-ai-gateway` |
-| `AGENT_MODEL_AUTH` | `oidc` | `oidc` |
-| `AGENT_MODEL` | `anthropic/claude-haiku-5.5` | `anthropic/claude-haiku-5.5` |
-| `AGENT_MONTHLY_BUDGET_USD` | US$ 5 (teto interno) | US$ 5 (teto interno) |
-| Budget AI Gateway do projeto | ❌ nenhum | ❌ nenhum |
-| Budget default AI Gateway | ❌ nenhum | ❌ nenhum |
-
-O inventário foi consultado sem descriptografar variáveis. Nenhum valor de secret foi lido. A presença do registro Sensitive de `CRON_SECRET` não prova que seu valor atende ao mínimo de 32 caracteres. A configuração OIDC está selecionada, mas a emissão/aceitação do token não foi comprovada em runtime.
-
-**Bloqueio:** o worker usa `SUPABASE_SECRET_KEY` para criar o cliente server-only. Sem ela, retorna `503 service_not_configured` antes de reivindicar execuções (se as barreiras anteriores forem satisfeitas). Manter `AGENT_EXECUTOR_ENABLED=false` até a homologação é a recomendação; nenhuma variável foi alterada nesta auditoria.
-
-O próximo teste real deve usar apenas a chave do Supabase staging no target Preview, grants mínimos, budget externo restrito ao projeto e uma única execução controlada. Não copiar segredo de Production para Preview.
-
-
----
+- O resolver aceita token do header `x-vercel-oidc-token` ou da variável de runtime `VERCEL_OIDC_TOKEN`; nenhuma prova de token válido em runtime foi obtida.
+- A rota exige `CRON_SECRET` com pelo menos 32 caracteres, sem espaços nas pontas, e Bearer correspondente em comparação de tempo constante. Não tentar ler ou registrar o valor.
+- Sem `SUPABASE_SECRET_KEY`, `createServiceClient()` retorna null e o worker falha com `service_not_configured` antes do claim.
+- Previews/Development apontam para Supabase staging; Production aponta para o projeto Supabase de produção.
+- Não compartilhar chave service entre ambientes. Provisionar chave exclusiva de staging somente após aprovação do Owner e limitar ao target Preview.
 
 # Segredos e variáveis de ambiente
 

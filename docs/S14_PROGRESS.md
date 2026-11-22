@@ -1,114 +1,35 @@
-## Checkpoint de progresso S14 — 22/11/2026 00:55 BRT
+## Checkpoint de progresso S14 — 22/11/2026 05:56 BRT
 
-- PR #113 no HEAD `52aae681`, 14 ahead/0 behind, somente cinco arquivos documentais; permanece Draft. Splits #35–#42 e #46, #82 e #97 merged; #102 fechada sem merge.
-- CI #44978955812 no HEAD exato: 2/2 jobs success; 418/418 unit tests, 0 falhas/skip; typecheck, lint, audit, build e 28 arquivos SQL aprovados.
-- E2E #44978955925 (evento PR) cancelado no Build local e Staging skipped. Última execução de Staging válida #44974751006: SHA de aplicação e5ba869f, 36/36, artifact #14735191696. PR atual é docs-only; não atribuir E2E ao HEAD documental.
-- Preview atual #113 READY: dpl_GkCqxfeNSXENdbf8DFqY5JT73xab, SHA 52aae681. Production READY: dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 7 commits à frente, sem arquivos S14 no diff.
-- Cron Production: /api/agents/worker, 17 11 UTC (08:17 BRT). Preview registrou GET sem Bearer como unauthorized; isso valida indiretamente o mínimo/trim do CRON_SECRET de Preview, mas não o OIDC nem a autenticação de Cron. Production sem logs na janela de 50 min.
-- Vercel env (decrypt=false): SUPABASE_SECRET_KEY e SUPABASE_SERVICE_ROLE_KEY ausentes; CRON_SECRET Sensitive em Preview/Production; AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/Haiku 5.5/US$5 internos. OIDC runtime não comprovado.
-- Staging: 146 runs, todas killed; 0 steps/grants/usage/conteúdo vinculado; settings kill_switch=false, 500/dia, 12 steps/run. Production sem dados S14.
-- RLS 6/6; policies 5 tabelas S14 + 4 content_items; 19 funções agent_*: anon=0/authenticated=6/service_role=12. 31 nomes de migrations em cada banco, 0/31 version IDs iguais; não executar repair/db push.
-- AI Gateway 7d: 0 requests/tokens/custo; sem budgets de equipe/projeto/default e sem rules. agent_model_usage 0 linhas em ambos; consistente com uso zero, sem prova pós-cobrança.
-- Bloqueio de run real: chave service exclusiva de staging, grants mínimos, budget externo isolado e prova OIDC runtime. Sem chamada real ou alteração Production.
+### Concluído
+- [x] Nove splits originais: Planner #35, Executor #36, read tools #37, draft #38, claim queue #39, worker #40, model adapter #41, budget/OIDC #42 e run detail #46 — todos verificados como merged.
+- [x] Correções complementares #82 e handoff #97 merged; PR #102 fechada sem merge.
+- [x] CI no HEAD documental `1fbf8f2`: 418/418 unit tests, 2/2 jobs, typecheck/lint/audit/build e 28 arquivos SQL aprovados.
+- [x] Playwright · Staging no Preview exato `1fbf8f2`: 36/36 aprovados em #45001321176; log confirma 36 passed em 3,7 min.
+- [x] Preview exato do HEAD READY; Production permanece READY na main `84afe632`.
+- [x] Auditoria read-only de RLS/ACL, migrations, ambiente, Cron e consumo concluída.
 
----
+### Implementação revisada na main
+- Planner, Executor e Verifier estão implementados; worker usa claim/lease, limites de tempo e kill switch.
+- Ferramentas de leitura derivam organização do contexto da execução, aplicam allowlist e limitam saída a 50 itens / 60.000 bytes.
+- `draft_content` usa RPC dedicada, exige retorno `status=draft` e não publica nem aprova conteúdo.
+- Verifier exige evidência de produto observada e verificada antes de aceitar claims ou rascunhos.
+- OIDC selecionado por configuração explícita; resolver lê header `x-vercel-oidc-token` ou `VERCEL_OIDC_TOKEN`.
+- Ledger registra usage antes de aceitar resposta 2xx; sem usage do provider, estima conservadoramente.
 
-## Checkpoint de progresso S14 — 22/11/2026 00:00 BRT
+### Ainda aberto — bloqueia homologação de IA real
+- [ ] `SUPABASE_SECRET_KEY` exclusiva do projeto staging, somente Preview.
+- [ ] Grants mínimos aprovados para as ferramentas da operação `operations_review`.
+- [ ] Budget externo de AI Gateway restrito ao projeto de staging; nenhum budget de projeto/default/team foi encontrado.
+- [ ] Validar comprimento/formato de `CRON_SECRET` sem revelar o valor.
+- [ ] Comprovar token OIDC em runtime.
+- [ ] Executar uma única operação real e reconciliar request/modelo/tokens/custo com `agent_model_usage`.
+- [ ] Endurecer orçamento: reserva atômica e outbox durável antes de ampliar execução.
 
-- PR #113 permanece aberta/Draft/mergeable; base `main` em `84afe632`. Head auditado antes deste checkpoint: `e5ba869f`, 9 ahead/0 behind. Esta atualização é somente documental.
-- Splits #35–#42 e #46 confirmados individualmente como merged; #82 e #97 merged; #102 fechada sem merge.
-- CI #44974732697 no SHA exato `e5ba869f`: 2/2 jobs success; 418/418 testes, 0 falhas/skip; typecheck, lint, audit, build e migrations/SQL tests aprovados.
-- E2E PR #44974732762: Build local 36/36; o job Staging desse run foi skipped pelo evento pull_request. E2E de deployment #44974751006: Playwright · Staging success no Preview/SHA exato `e5ba869f`, 36/36, 0 falhas; artifact #14735191696. Inclui agents.spec.mjs, fila, limites e kill switch. Não chama AI Gateway.
-- Preview exato `e5ba869f` READY: deployment `dpl_9ifdqD9u7ypcBTPeZ46MC7uWQM2k`. Production READY em `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits à frente, diff de 17 arquivos sem alterações S14.
-- Cron Production: `/api/agents/worker`, `17 11 UTC` = 08:17 BRT. Runtime logs: nenhum registro nos últimos 30 min em Production/Preview. Sem invocação autenticada comprovada.
-- Inventário Vercel (decrypt=false): SUPABASE_SECRET_KEY ausente nos dois targets; CRON_SECRET Sensitive presente nos dois; AGENT_EXECUTOR_ENABLED=true; Gateway/OIDC/Haiku 5.5/US$5 interno. AI_GATEWAY_API_KEY ausente; OIDC runtime não comprovado.
-- Staging: 144 runs, todas killed; 0 steps, grants, usage, tokens, custo e conteúdo ligado. Settings: kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
-- ACL/RLS repetidos nos dois bancos: 6/6 tabelas com RLS; 5 policies S14 + 4 em content_items; 19 funções agent_*, EXECUTE anon=0/authenticated=6/service_role=12.
-- Migrations: 31 nomes em cada banco, 0/31 version IDs iguais; ordem de audience_consent/workspace_members difere. Sem repair/db push.
-- AI Gateway 7d: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. agent_model_usage vazio nos dois bancos; consistência observável para uso zero, não prova pós-cobrança.
-- Bloqueio do teste real: chave exclusiva de staging, grants mínimos, budget externo isolado, validação segura do CRON_SECRET e OIDC runtime. Não simular sucesso nem realizar chamada paga.
-
-
----
-
-## Checkpoint de progresso S14 — 21/11/2026 22:58 BRT
-
-- PR #113 permanece Draft, mergeable, 8 ahead/0 behind no checkpoint; apenas documentação. Splits #35–#42 e #46, PR #82 e #97 confirmadas mergeadas; #102 fechada sem merge.
-- CI #44969883730 no SHA exato 6bb47d: 2/2 jobs success; logs confirmam 418/418 unit tests e job de migrations/SQL tests success.
-- E2E #44969902121 no SHA exato 6bb47d: Playwright · Staging success, 36/36 pass, 0 fail/flaky/skipped. Artifact #14732778783. Inclui agents.spec.mjs (fila/kill switch) e CSP. Não chama o AI Gateway.
-- Preview do HEAD 6bb47d READY: dpl_CGeGDLMA5mn9bKTMRdaGJtVvb1Jz. Production READY em dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 84afe632 está 7 commits à frente, sem alterações S14 no diff.
-- Cron em Production: /api/agents/worker, 17 11 UTC (08:17 BRT), próxima janela 22/11/2026 08:17. Sem runtime logs Production na janela de 50 min; Preview registrou GET sem Bearer como unauthorized, antes de OIDC/claim.
-- Vercel env (decrypt=false): SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive em ambos (Preview passou validação indireta de tamanho; Production não validado); AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/Haiku 5.5/US$5 interno configurados.
-- Supabase Staging: 142 runs, todas killed; 0 steps, grants, usage, tokens, custo e conteúdos ligados; settings kill_switch=false, 500/dia, 12 steps/run. Production sem dados S14.
-- RLS nas seis tabelas auditadas; policies 1 em cada tabela S14 e 4 em content_items. 19 funções agent_*: anon=0, authenticated=6, service_role=12.
-- Migrations: 31 nomes presentes nos dois ambientes, 0/31 version IDs iguais; não fazer repair/db push.
-- AI Gateway 7 dias: 0 requests/tokens/custo, sem budgets externos/default; catálogo do Haiku 5.5 disponível. agent_model_usage 0 linhas nos dois ambientes, coerente com uso zero, sem prova de reconciliação de cobrança.
-- Bloqueio real: chave service de staging ausente, grants mínimos ausentes, budget externo ausente, OIDC runtime sem prova. Não fazer chamada paga nem simular sucesso.
-- Sem merge, sem alteração em Production, sem migration remota, sem alteração de secrets/grants/budgets.
-
----
-## Checkpoint S14 — 21/11/2026 22:00 BRT
-
-- Splits #35–#42 e #46: todos fechados e mergeados. PR #82 e #97 mergeadas; #102 fechada sem merge; #113 é a única PR aberta, Draft e mergeable, com cinco arquivos apenas documentais.
-- CI #44964877160 no head `334a3d9`: 2/2 jobs success; 418/418 testes (0 falhas, cancelados ou skipped), typecheck/lint/audit/build e migrations/SQL tests aprovados.
-- Playwright #44964877243: 36/36 no job Build local, conectado ao Supabase isolado de staging; job dedicado Playwright · Staging skipped por evento `pull_request`. Não houve chamada ao modelo. Para o checkpoint `6a05caec`, novos CI #44969792653 e E2E #44969792601 estavam em execução.
-- Preview do checkpoint auditado `6a05caec` READY: `dpl_7Gh7ThzWW8WuDwD5vX72rkTb14Lj`. Production READY em SHA `86bd67c`; `main` está 7 commits à frente, sem arquivos S14 no diff.
-- Worker e Cron estão no deployment Production: `/api/agents/worker`, `17 11 * * *` UTC (08:17 BRT). Sem runtime logs em Production na janela de 50 min; Preview registrou um GET do worker rejeitado como unauthorized, sem execução autenticada comprovada.
-- Vercel env sem decrypt: `SUPABASE_SECRET_KEY` ausente em Preview/Production; `CRON_SECRET` Sensitive presente, comprimento não validado; `AGENT_EXECUTOR_ENABLED=true` nos dois; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5 configurados.
-- Staging: 140 runs, todas killed; 0 steps, grants, usage e conteúdos ligados a run; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14 e zero settings.
-- Os dois bancos têm 31 nomes de migrations iguais, mas 0/31 version IDs iguais; não executar repair/db push sem reconciliação. RLS ativo nas seis tabelas auditadas; 19 funções agent_* com EXECUTE anon=0, authenticated=6, service_role=12.
-- AI Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. `agent_model_usage` vazio nos dois bancos. Nenhuma chamada real comprovada.
-- Bloqueio operacional: service key de staging ausente, grants zerados, budget externo ausente, CRON_SECRET sem validação e OIDC sem prova runtime. Não executar teste pago nem simular sucesso.
-- O limite interno de US$ 5 é soft, sem reserva atômica; não há outbox durável para reconciliar falha de gravação após cobrança.
-- Nenhuma alteração de código, schema, secrets, grants, budgets ou Production nesta rodada.
-
----
-
-## Checkpoint atual — 21/11/2026 20:00 BRT
-
-> Este checkpoint substitui o estado histórico abaixo. Não marcar operação real como concluída sem request real do Gateway e ledger reconciliado.
-
-### Status do checklist
-
-| Frente | Estado auditado |
-|---|---|
-| Planner → Executor → Verifier | Implementação integrada; CI unitário anterior aprovado; operação real ainda não homologada |
-| Ferramentas `read_*` | Implementadas com isolamento por organization_id; staging sem grants |
-| `draft_content` | Implementado; escreve apenas `status='draft'`; não testado em execução real |
-| Claim queue / lease / kill switch | Implementados; staging contém 136 runs `killed`, 0 steps |
-| Worker / Cron | Rota e cron presentes no deployment Production; nenhuma invocação real observada |
-| AI Gateway / OIDC | Provider/model/auth configurados; OIDC não comprovado em runtime |
-| Budget interno | US$ 5; verificação sem reserva atômica |
-| Budget externo Gateway | Não configurado (projeto/default sem budget) |
-| `agent_model_usage` | Tabela existe nos dois bancos; 0 linhas; consistência com uso zero, sem teste de cobrança real |
-| Preview / E2E atual | Preview atual da branch documental indisponível por rate limit; E2E anterior 35/36 (CSP); reexecutar no HEAD atual |
-
-### Bloqueadores que impedem homologação
-
-1. `SUPABASE_SECRET_KEY` ausente em Preview e Production. Para teste, provisionar apenas a chave do projeto staging no target Preview.
-2. `CRON_SECRET` existe como Sensitive nos dois targets, mas seu comprimento/validade não foi verificado.
-3. OIDC está selecionado, porém não há prova de token emitido e aceito no runtime.
-4. `agent_tool_grants` tem zero linhas no staging auditado.
-5. Não há budget externo do projeto nem budget default no AI Gateway.
-6. Não há request real no Gateway nem registro em `agent_model_usage`.
-
-### Critério de aceite da primeira execução real
-
-- Worker autenticado no Preview de staging, com chave do projeto staging apenas.
-- Uma única run `operations_review`, grants mínimos e kill switch monitorado.
-- Evidência de request HTTP ao AI Gateway, modelo, request id e resposta sem registrar prompt/segredo.
-- Planner, Executor, leitura autorizada, criação de draft e Verifier concluídos.
-- Uma linha por chamada em `agent_model_usage`, com run_id, fase, modelo, tokens e custo estimado; reconciliar com métricas do Gateway.
-- Confirmar que o draft permanece em `draft` e que não há publicação/aprovação automática.
-
-### Estado de repositório e deploy
-
-- `main` HEAD `84afe632`; Production READY no SHA `86bd67c`, 7 commits atrás.
-- Cron `17 11 UTC` = 08:17 BRT; próximo horário após a auditoria: 22/11/2026 08:17 BRT.
-- PR #102 está divergente (5 ahead/10 behind), sem reviews; substituída por PR documental criada sobre o HEAD atual.
-
-
----
+### Estado atual
+- PR #113: Draft/mergeable, docs-only, HEAD `1fbf8f2`, base `main` `84afe632`; compare 27 ahead / 0 behind no checkpoint.
+- Staging: 156 runs, todas killed; 0 steps/grants/usage/conteúdo ligado; kill switch false, 500 runs/dia, 12 steps/run.
+- Production: zero dados S14. `agent_model_usage` zero em ambos; Gateway 7d sem requests/tokens/custo.
+- Nenhuma chamada real ao AI Gateway foi comprovada. Testes automatizados não chamam o modelo.
 
 # S14 — Executor real dos agentes (Planner → Executor → Verifier)
 
