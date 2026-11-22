@@ -261,3 +261,14 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - `release/s14-mainline-integration-20261121`: 34 ahead/289 behind; snapshot divergente, não promover.
 - CI #45010831733: 418/418 unit tests e 28 arquivos SQL aprovados. E2E deployment_status #45010855834: 36/36 no Preview do HEAD `a9cbe2f`, artifact #14750330616. Nenhum desses testes executa IA paga.
 - Próxima frente: provisionar credenciais/grants/budget isolados e comprovar OIDC/CRON; somente então executar uma única run real e reconciliar AI Gateway com `agent_model_usage`.
+
+---
+
+## Fechamento S14 — checkpoint 22/11/2026 08:58 BRT
+
+- Splits #35–#42 e #46 integrados; #82/#97 merged; #102 fechada sem merge. PR #113 continua Draft, docs-only, HEAD `d27e4bf`.
+- CI #45015586749 no HEAD: 418/418; E2E Staging #45015607358 no HEAD: 36/36. Preview exato READY; Production permanece na main `84afe632`.
+- Planner, Executor, Verifier, read tools, draft tool, worker e claim queue implementados. E2E não equivale a execução real com IA.
+- Bloqueios finais: `SUPABASE_SECRET_KEY` ausente no staging; grants mínimos não concedidos; budgets externos team/project/default inexistentes; OIDC ainda não validado pelo Gateway; nenhum request real/ledger reconciliado.
+- Novo item de correção: `model-pricing.ts` não contempla tiers do catálogo Haiku 5.5 (5x após 100.001 tokens). Adicionar pricing tiered e testes antes da homologação financeira.
+- Não promover branches históricas divergentes, não fazer merge, não alterar Production e não executar chamada paga até todos os gates.
