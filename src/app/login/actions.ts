@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/http/safe-redirect";
-import { clientIp, consumeRateLimit, rateLimitSubject } from "@/lib/http/rate-limit";
+import { clientIp, consumeLoginRateLimit, rateLimitSubject } from "@/lib/http/rate-limit";
+import { createServiceClient } from "@/lib/supabase/service";
 import { log } from "@/lib/observability/log";
 import { ensureWorkspace } from "@/lib/tenancy/service";
 
@@ -24,10 +25,12 @@ export async function signIn(formData: FormData) {
 
   // Limite por IP e por e-mail (o servidor chama o Supabase sempre do mesmo IP,
   // então o limite por IP do Supabase Auth não protege contra força bruta aqui).
+  // Só a chave de servidor consome esses escopos: ninguém de fora bloqueia o login de um e-mail.
   const ip = clientIp(await headers());
+  const service = createServiceClient();
   const [byIp, byEmail] = await Promise.all([
-    consumeRateLimit(supabase, "login_ip", rateLimitSubject(ip)),
-    consumeRateLimit(supabase, "login_email", rateLimitSubject(email)),
+    consumeLoginRateLimit(service, "login_ip", rateLimitSubject(ip)),
+    consumeLoginRateLimit(service, "login_email", rateLimitSubject(email)),
   ]);
   if (!byIp.allowed || !byEmail.allowed) {
     log("warn", "auth.signIn.rate_limited", { byIp: !byIp.allowed, byEmail: !byEmail.allowed });

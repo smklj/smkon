@@ -8,6 +8,7 @@ import { ExternalActionsPanel } from "@/components/admin/ExternalActionsPanel";
 import { IntegrationHubPanel } from "@/components/admin/IntegrationHubPanel";
 import { InvitationsPanel } from "@/components/admin/InvitationsPanel";
 import { MembersPanel } from "@/components/admin/MembersPanel";
+import { ReadinessPanel } from "@/components/admin/ReadinessPanel";
 import { PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { AREAS, REVENUE_DOMAINS } from "@/lib/admin/constants";
 
@@ -29,6 +30,11 @@ export default function AdminPage() {
           </Link>
         }
       />
+
+      <section className="panel" id="prontidao" aria-labelledby="prontidao-titulo">
+        <SectionHeading id="prontidao-titulo" title="Prontidão para uso" aside={<span className="muted">configuração deste ambiente</span>} />
+        <ReadinessPanel />
+      </section>
 
       <section className="panel" aria-labelledby="membros-titulo">
         <SectionHeading id="membros-titulo" title="Membros" aside={<span className="muted">papéis e acesso</span>} />

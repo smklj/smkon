@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Badge, PageHeader, SectionHeading } from "@/components/ui/PageHeader";
 import { formatMoney } from "@/lib/finance/commissions";
 import { NAV_ITEMS, STATUS_LABEL } from "@/lib/navigation";
+import { onboardingSteps, type OnboardingStep } from "@/lib/overview/onboarding";
 import { loadWorkspaceOverview } from "@/lib/overview/server";
 import {
   affiliateOpen,
@@ -112,6 +113,42 @@ function EmptyDomain({ text }: { text: string }) {
   return <p className="row-meta domain-empty">{text}</p>;
 }
 
+/** Some quando todos os passos estiverem feitos. */
+function FirstSteps({ steps }: { steps: OnboardingStep[] }) {
+  const done = steps.filter((step) => step.done).length;
+  if (done === steps.length) return null;
+  const next = steps.find((step) => !step.done);
+  return (
+    <section className="panel first-steps" aria-labelledby="primeiros-passos-titulo">
+      <SectionHeading
+        id="primeiros-passos-titulo"
+        title="Primeiros passos"
+        aside={<span className="muted">{done} de {steps.length} concluídos</span>}
+      />
+      <div className="first-steps-progress" role="progressbar" aria-label="Primeiros passos" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}>
+        <span style={{ width: `${(done / steps.length) * 100}%` }} />
+      </div>
+      <ol className="first-steps-list">
+        {steps.map((step) => (
+          <li key={step.id} className={`first-step${step.done ? " is-done" : ""}${step === next ? " is-next" : ""}`}>
+            <span className="first-step-mark" aria-hidden="true">{step.done ? "✓" : ""}</span>
+            <div className="first-step-body">
+              <p className="first-step-title">
+                {step.title}
+                <span className="sr-only">{step.done ? " (concluído)" : " (pendente)"}</span>
+              </p>
+              {step.done ? null : <p className="row-meta">{step.description}</p>}
+            </div>
+            {step === next ? (
+              <Link className="button button-secondary button-small" href={step.href}>{step.action}</Link>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default async function OverviewPage() {
   const overview = await loadOverview();
   const data = overview.state === "ok" ? overview.data : null;
@@ -145,6 +182,8 @@ export default async function OverviewPage() {
           Os números de conteúdo abaixo são reais.
         </p>
       ) : null}
+
+      {complete && data ? <FirstSteps steps={onboardingSteps(data)} /> : null}
 
       <section className="metrics metrics-open" aria-label="Indicadores principais">
         <Metric

@@ -39,3 +39,15 @@ test("Membros: lista do workspace com o próprio usuário", async ({ page }) => 
   await expect(list.getByText("· você").first()).toBeVisible();
   await snap(page, "31-admin-membros");
 });
+
+test("Prontidão para uso: lista o que falta sem expor valores", async ({ page }) => {
+  await page.goto("/admin");
+  const panel = page.locator("#prontidao");
+  await expect(panel.getByRole("heading", { name: "Prontidão para uso" })).toBeVisible();
+  const core = panel.getByRole("listitem").filter({ hasText: "Núcleo do app" });
+  await expect(core.getByText("Pronto", { exact: true })).toBeVisible();
+  // Só nomes de variáveis aparecem; nenhum valor de chave do Supabase.
+  await expect(panel).not.toContainText("sb_publishable_");
+  await expect(panel).not.toContainText("sb_secret_");
+  await snap(page, "32-admin-prontidao");
+});

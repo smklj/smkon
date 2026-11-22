@@ -6,7 +6,7 @@ Situação conferida na Vercel em 21/11/2026. Valores nunca entram no repositór
 |---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | cliente Supabase | ✅ | ✅ (staging) |
 | `NEXT_PUBLIC_SITE_URL` | redirects de e-mail | ✅ | por origem |
-| `SUPABASE_SECRET_KEY` | operações de servidor (webhooks, sync, agentes, execução de ações) | ❌ **falta** | ❌ falta |
+| `SUPABASE_SECRET_KEY` | operações de servidor (limite de tentativas de login, webhooks, sync, agentes, execução de ações) | ❌ **falta** | ❌ falta |
 | `CRON_SECRET` | worker de agentes | ✅ | ✅ |
 | `AGENT_*` | executor de agentes via AI Gateway | ✅ | ✅ |
 | `INTEGRATION_TOKEN_ENCRYPTION_KEY` (+ `_ID`) | cifra tokens do Metricool | ❌ falta | ❌ falta |
@@ -14,7 +14,11 @@ Situação conferida na Vercel em 21/11/2026. Valores nunca entram no repositór
 | `MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY` (+ `_ID`) | cifra tokens do Mercado Livre | ❌ falta | ❌ falta |
 | `KIWIFY_WEBHOOK_ENABLED` / `KIWIFY_WEBHOOK_SECRET` | receptor Kiwify (desligado) | — | — |
 
-Sem `SUPABASE_SECRET_KEY` nenhuma integração de receita ou de publicação funciona em produção.
+Sem `SUPABASE_SECRET_KEY` nenhuma integração de receita ou de publicação funciona em produção, e o
+limite de tentativas de login fica desligado (registrado no log como `rate_limit.login_unprotected`).
+
+O painel **Admin → Prontidão para uso** mostra, para owner e admin, o que está pronto e o que falta
+neste ambiente (só nomes de variáveis, nunca valores).
 
 ## Como gerar as chaves de cifragem
 ```bash
