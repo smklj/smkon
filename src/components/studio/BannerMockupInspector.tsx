@@ -21,6 +21,11 @@ import {
 } from "@/lib/infoproducts";
 import { SMKONBannerCanvas } from "./SMKONBannerCanvas";
 import { PostCarouselStudio } from "./PostCarouselStudio";
+import { SceneSaveControl, type SavedScene, type ScenePiece } from "./SceneSaveControl";
+import type { SmartPostPackage } from "@/lib/content/smart-post-generator";
+import type { SceneDocument } from "@/lib/scene/types";
+import { bannerConfigFromScene, bannerConfigToScene } from "@/lib/scene/templates/smkon-banner";
+import { postPackageFromScene } from "@/lib/scene/templates/smkon-post";
 import {
   OFFICIAL_SMKON_PRESETS,
   inferSmartBannerConfig,
@@ -41,6 +46,11 @@ interface BannerMockupInspectorProps {
   draftCategory?: string;
   /** Nonce da CSP desta resposta, para o <style> da prévia em iframe. */
   styleNonce?: string;
+  /** Peça aberta no Studio, onde o design é salvo. */
+  piece?: ScenePiece | null;
+  /** Design salvo na peça aberta, para reabrir no formulário certo. */
+  savedScene?: SceneDocument | null;
+  onSceneSaved?: (saved: SavedScene) => void;
 }
 
 export function BannerMockupInspector({
@@ -48,6 +58,9 @@ export function BannerMockupInspector({
   draftProduct,
   draftCategory,
   styleNonce,
+  piece = null,
+  savedScene = null,
+  onSceneSaved,
 }: BannerMockupInspectorProps = {}) {
   const [activeTab, setActiveTab] = useState<StudioViewTab>("smkon-brand");
 
@@ -55,6 +68,23 @@ export function BannerMockupInspector({
   const [smartBannerConfig, setSmartBannerConfig] = useState<SmartBannerConfig>(() =>
     OFFICIAL_SMKON_PRESETS["top-perifericos"]
   );
+
+  // Design salvo na peça aberta: reabre no formulário de origem (capa ou post).
+  // Ajuste durante a renderização (padrão do React para estado derivado de prop).
+  const [appliedScene, setAppliedScene] = useState<SceneDocument | null>(null);
+  const [loadedPost, setLoadedPost] = useState<{ post: SmartPostPackage; key: number } | null>(null);
+  if (savedScene !== appliedScene) {
+    setAppliedScene(savedScene);
+    const banner = savedScene ? bannerConfigFromScene(savedScene) : null;
+    const post = savedScene && !banner ? postPackageFromScene(savedScene) : null;
+    if (banner) {
+      setSmartBannerConfig(banner);
+      setActiveTab("smkon-brand");
+    } else if (post) {
+      setLoadedPost((current) => ({ post, key: (current?.key ?? 0) + 1 }));
+      setActiveTab("post-carousel");
+    }
+  }
 
   // Estado Mockup 3D
   const [mockupKind, setMockupKind] = useState<MockupKind>("ebook-3d");
@@ -185,6 +215,12 @@ export function BannerMockupInspector({
         <div className="smkon-brand-studio-grid">
           <div className="smkon-brand-stage-pane">
             <SMKONBannerCanvas config={smartBannerConfig} />
+            <SceneSaveControl
+              piece={piece}
+              what="capa"
+              buildScene={() => bannerConfigToScene(smartBannerConfig)}
+              onSaved={(saved) => onSceneSaved?.(saved)}
+            />
           </div>
 
           <div className="mockup-controls-card">
@@ -434,8 +470,12 @@ export function BannerMockupInspector({
       {/* ABA 2: Posts de Feed & Carrosséis Inteligentes (IA) */}
       {activeTab === "post-carousel" && (
         <PostCarouselStudio
+          key={loadedPost?.key ?? 0}
           draftTitle={draftTitle}
           draftProduct={draftProduct}
+          initialPost={loadedPost?.post ?? null}
+          piece={piece}
+          onSceneSaved={onSceneSaved}
         />
       )}
 

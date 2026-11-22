@@ -12,12 +12,15 @@ import {
   LABEL_TO_STATUS,
   LEGACY_STORAGE_KEY,
   LegacyDraft,
+  STATUS_TO_LABEL,
   emptyItem,
   itemToPayload,
   migrationKey,
   rowToItem,
 } from "@/lib/content/types";
 import { ReelsPreviewPlayer } from "@/components/studio/ReelsPreviewPlayer";
+import type { SavedScene, ScenePiece } from "@/components/studio/SceneSaveControl";
+import type { SceneDocument } from "@/lib/scene/types";
 import { CreativeInspector } from "@/components/studio/CreativeInspector";
 import { BannerMockupInspector } from "@/components/studio/BannerMockupInspector";
 import { type SubtitleStyle } from "@/lib/media/subtitles";
@@ -69,6 +72,8 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
   const [role, setRole] = useState<string | null>(null);
   const [counts, setCounts] = useState<StatusCounts | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  /** Design salvo na peça aberta (documento de cena), carregado ao abrir. */
+  const [savedScene, setSavedScene] = useState<SceneDocument | null>(null);
 
   // Estados do Content Studio Pro (S20 & S22 · CapCut / Canva REA)
   const [subtitleStyle, setSubtitleStyle] = useState<SubtitleStyle>("hormozi");
@@ -384,6 +389,34 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
     setActiveId(item.id);
     setError("");
     setNotice("");
+    setSavedScene(null);
+    void loadScene(item.id);
+  }
+
+  /** Busca o design salvo na peça; a lista da biblioteca não traz a cena. */
+  async function loadScene(id: string) {
+    try {
+      const res = await fetch(`/api/content/scene?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const body = (await res.json()) as SavedScene;
+      if (body.id === id) setSavedScene(body.scene ?? null);
+    } catch {
+      // Sem design salvo na tela: a peça continua editável normalmente.
+    }
+  }
+
+  /** Design gravado: o banco criou uma versão nova (e, se estava aprovada, voltou para rascunho). */
+  function handleSceneSaved(saved: SavedScene) {
+    const patch = {
+      version: saved.version,
+      contentHash: saved.content_hash,
+      status: STATUS_TO_LABEL[saved.status as keyof typeof STATUS_TO_LABEL] ?? "Rascunho",
+      approvedVersion: saved.status === "approved" ? draft.approvedVersion : null,
+      approvedAt: saved.status === "approved" ? draft.approvedAt : null,
+    } satisfies Partial<ContentItem>;
+    setDraft((current) => (current.id === saved.id ? { ...current, ...patch } : current));
+    setItems((current) => current.map((item) => (item.id === saved.id ? { ...item, ...patch } : item)));
+    setNotice(`Design salvo na peça (versão ${saved.version}).`);
   }
 
   function newDraft() {
@@ -391,6 +424,7 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
     setActiveId("");
     setError("");
     setNotice("");
+    setSavedScene(null);
   }
 
   async function removeDraft(id: string) {
@@ -426,6 +460,11 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
   }
 
   const fullCaption = [draft.caption, draft.cta, draft.hashtags].filter(Boolean).join("\n\n");
+  // Peça persistida onde o design é gravado, na versão que está aberta.
+  const scenePiece: ScenePiece | null =
+    activeId && draft.id === activeId && draft.contentHash
+      ? { id: activeId, contentHash: draft.contentHash, approved: draft.status === "Aprovado" }
+      : null;
 
   return (
     <div className="page">
@@ -585,6 +624,9 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
         draftTitle={draft.title}
         draftProduct={draft.product}
         styleNonce={styleNonce}
+        piece={scenePiece}
+        savedScene={savedScene}
+        onSceneSaved={handleSceneSaved}
       />
 
       <section className="studio-preview">

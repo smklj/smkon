@@ -252,3 +252,26 @@
   cursor: pointer;
   white-space: nowrap;
 }
+
+/* Salvar o design (documento de cena) na peça aberta */
+.scene-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+.scene-save-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  flex: 1 1 240px;
+}
+.scene-save-ok,
+.scene-save-error {
+  margin: 0;
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.scene-save-ok { color: var(--ok); }
+.scene-save-error { color: var(--danger); }

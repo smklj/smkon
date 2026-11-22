@@ -37,3 +37,37 @@ test("Content Studio: revisão de conformidade aponta promessa de renda (sem sal
   await expect(review.locator(".ai-issue-bloqueio").first()).toBeVisible();
   await snap(page, "21-studio-conformidade");
 });
+
+test("Content Studio: design da capa salvo na peça cria versão nova, é aprovado e reabre", async ({ page }) => {
+  const title = `E2E Design ${runId}`;
+  await page.goto("/studio");
+  await page.getByRole("button", { name: "Novo conteúdo" }).click();
+
+  // Sem peça salva, não há onde gravar o design.
+  await expect(page.locator(".scene-save-hint").first()).toContainText("Salve a peça");
+
+  await page.getByLabel("Título interno *").fill(title);
+  await page.getByLabel("Legenda").fill("Legenda do teste de design");
+  await page.getByRole("button", { name: "Salvar rascunho" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Rascunho salvo" })).toBeVisible();
+
+  // Escolhe um preset diferente do padrão e grava a capa na peça.
+  await page.getByRole("button", { name: "Achado Shopee R$ 79,90" }).click();
+  await expect(page.locator(".banner-canvas-frame")).toContainText("ACHADO DA SHOPEE");
+  await page.getByRole("button", { name: "Salvar capa na peça" }).click();
+  await expect(page.locator(".scene-save-ok")).toContainText(/Design salvo na peça \(versão 2\)/);
+
+  // A aprovação vale para a versão com o design.
+  await page.getByRole("button", { name: /Aprovar esta versão/ }).click();
+  await expect(page.getByRole("status").filter({ hasText: /Versão 2 aprovada\./ })).toBeVisible();
+  await snap(page, "22-studio-design-salvo");
+
+  // Reabrir a peça traz a capa salva, não o preset padrão.
+  await page.reload();
+  await page.locator(".studio-draft", { hasText: title }).first().click();
+  await expect(page.locator(".banner-canvas-frame")).toContainText("ACHADO DA SHOPEE");
+
+  // Aprovada não é apagada: arquiva para não acumular dados de teste.
+  await page.getByRole("button", { name: "Arquivar" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Conteúdo arquivado." })).toBeVisible();
+});
