@@ -429,3 +429,15 @@ A tentativa de deployment explícito do head retornou HTTP 402 api-deployments-f
 - AI Gateway 7d: 0 requests/tokens/custo; budgets/rules externos ausentes. Staging 121 runs killed, sem steps/grants/usage; Production sem runs/usage. Ledger consistente com agregado zero, sem chamada real.
 - Assinaturas de colunas, constraints, policies, RLS/ACL e funções selecionadas coincidem nos dois Supabase; versões de migration S14 ainda diferem. Nenhum repair executado.
 - A flag Production não foi alterada. Recomendação: manter executor desabilitado até credenciais, grants, budget e OIDC/CRON homologados em Staging.
+
+
+## S14 — checkpoint operacional 22/11/2026 01:57 BRT
+
+- GitHub: main SHA 84afe632; PR #113 Draft/mergeable, head 7d957275, 15 ahead / 0 behind, somente cinco arquivos documentais. PRs #35–#42 e #46 verificadas como merged; #82/#97 merged; #102 fechada sem merge.
+- CI #44983092682: 2/2 jobs success, 418/418 unit tests, typecheck/lint/audit/build e SQL/migrations tests aprovados. E2E de deployment_status #44983114589: 36/36 no Preview exato 7d957275, artifact [14738303182](https://github.com/smklj/smkon/actions/runs/44983114589/artifacts/14738303182). O job Staging do evento pull_request foi skipped; o run de deployment_status é a evidência válida de Staging.
+- Preview dpl_Exi3uZxvFqmX5mugDtKWsuuG9oKi READY. Production mais recente dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY, main SHA 84afe632, aliases públicos ativos. vercel.json e src/app/api/agents/worker/route.ts estão em main; Cron 17 11 * * * UTC = 08:17 BRT.
+- Runtime Production: GET /api/agents/worker às 04:49:13Z terminou em unauthorized. Como o handler valida flag e formato do CRON_SECRET antes do Bearer, esse request prova AGENT_EXECUTOR_ENABLED=true e CRON_SECRET utilizável no runtime; não prova chamada autenticada do Cron ou OIDC. Não houve claim.
+- Vercel env inventory sem decrypt: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive em targets separados; AGENT_EXECUTOR_ENABLED=true nos dois; AGENT_MODEL_PROVIDER=vercel-ai-gateway, AGENT_MODEL_AUTH=oidc, AGENT_MODEL=anthropic/claude-haiku-5.5, AGENT_MONTHLY_BUDGET_USD=5. Nenhum valor secreto foi lido. OIDC não comprovado em runtime.
+- Supabase staging: 148 runs, todas killed; 0 steps, 0 tool grants, 0 usage, 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14. agent_model_usage soma 0 linhas/tokens/custo em ambos. Os dois bancos têm 31 nomes de migrations e 0/31 version IDs iguais.
+- AI Gateway 7d: 0 requests/tokens/custo; budget específico de projeto e defaults ausentes; regras de roteamento ausentes. Ledger zero é consistente, mas não valida reconciliação de cobrança.
+- Gate: não executar operations_review real até haver chave service exclusiva de staging, grants mínimos, budget externo isolado e prova de OIDC. Nenhum merge, mudança de Production, migration, secret, grant, budget ou chamada paga nesta rodada.
