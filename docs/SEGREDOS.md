@@ -1,3 +1,22 @@
+## Checkpoint de credenciais S14 — 21/11/2026 22:58 BRT (decrypt=false)
+
+| Controle | Production | Preview/Staging |
+|---|---|---|
+| SUPABASE_SECRET_KEY | Ausente | Ausente |
+| CRON_SECRET | Sensitive presente; comprimento não validado | Sensitive presente; GET sem Bearer gerou evento unauthorized, provando validação do mínimo de 32 caracteres/trim antes da comparação |
+| AGENT_EXECUTOR_ENABLED | true | true |
+| AGENT_MODEL_PROVIDER | vercel-ai-gateway | vercel-ai-gateway |
+| AGENT_MODEL_AUTH | oidc | oidc |
+| AGENT_MODEL | anthropic/claude-haiku-5.5 | anthropic/claude-haiku-5.5 |
+| AGENT_MONTHLY_BUDGET_USD | US$5 (limite interno soft) | US$5 (limite interno soft) |
+| AI_GATEWAY_API_KEY | Ausente; OIDC selecionado | Ausente; OIDC selecionado |
+| Budget externo AI Gateway | Nenhum | Nenhum |
+
+Nenhum valor Sensitive foi descriptografado ou incluído. O evento unauthorized do Preview prova apenas que a rota passou pela validação do CRON_SECRET e rejeitou a ausência do Bearer; não prova OIDC nem execução do worker. Em Production, não há invocação autenticada/log que permita validar comprimento do CRON_SECRET.
+
+O worker usa especificamente SUPABASE_SECRET_KEY para o cliente service_role. Sem essa variável, após as barreiras anteriores, retorna 503 service_not_configured antes de claim/steps/model call. Recomenda-se ao Owner manter AGENT_EXECUTOR_ENABLED=false em Production até homologação; nenhuma configuração foi alterada nesta auditoria.
+
+---
 ## Inventário S14 — 21/11/2026 22:00 BRT (sem descriptografar)
 
 | Variável/controle | Production | Preview (staging) |

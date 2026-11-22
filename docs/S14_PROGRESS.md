@@ -1,3 +1,19 @@
+## Checkpoint de progresso S14 — 21/11/2026 22:58 BRT
+
+- PR #113 permanece Draft, mergeable, 8 ahead/0 behind no checkpoint; apenas documentação. Splits #35–#42 e #46, PR #82 e #97 confirmadas mergeadas; #102 fechada sem merge.
+- CI #44969883730 no SHA exato 6bb47d: 2/2 jobs success; logs confirmam 418/418 unit tests e job de migrations/SQL tests success.
+- E2E #44969902121 no SHA exato 6bb47d: Playwright · Staging success, 36/36 pass, 0 fail/flaky/skipped. Artifact #14732778783. Inclui agents.spec.mjs (fila/kill switch) e CSP. Não chama o AI Gateway.
+- Preview do HEAD 6bb47d READY: dpl_CGeGDLMA5mn9bKTMRdaGJtVvb1Jz. Production READY em dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 84afe632 está 7 commits à frente, sem alterações S14 no diff.
+- Cron em Production: /api/agents/worker, 17 11 UTC (08:17 BRT), próxima janela 22/11/2026 08:17. Sem runtime logs Production na janela de 50 min; Preview registrou GET sem Bearer como unauthorized, antes de OIDC/claim.
+- Vercel env (decrypt=false): SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive em ambos (Preview passou validação indireta de tamanho; Production não validado); AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/Haiku 5.5/US$5 interno configurados.
+- Supabase Staging: 142 runs, todas killed; 0 steps, grants, usage, tokens, custo e conteúdos ligados; settings kill_switch=false, 500/dia, 12 steps/run. Production sem dados S14.
+- RLS nas seis tabelas auditadas; policies 1 em cada tabela S14 e 4 em content_items. 19 funções agent_*: anon=0, authenticated=6, service_role=12.
+- Migrations: 31 nomes presentes nos dois ambientes, 0/31 version IDs iguais; não fazer repair/db push.
+- AI Gateway 7 dias: 0 requests/tokens/custo, sem budgets externos/default; catálogo do Haiku 5.5 disponível. agent_model_usage 0 linhas nos dois ambientes, coerente com uso zero, sem prova de reconciliação de cobrança.
+- Bloqueio real: chave service de staging ausente, grants mínimos ausentes, budget externo ausente, OIDC runtime sem prova. Não fazer chamada paga nem simular sucesso.
+- Sem merge, sem alteração em Production, sem migration remota, sem alteração de secrets/grants/budgets.
+
+---
 ## Checkpoint S14 — 21/11/2026 22:00 BRT
 
 - Splits #35–#42 e #46: todos fechados e mergeados. PR #82 e #97 mergeadas; #102 fechada sem merge; #113 é a única PR aberta, Draft e mergeable, com cinco arquivos apenas documentais.

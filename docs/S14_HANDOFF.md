@@ -1,3 +1,53 @@
+## Checkpoint operacional S14 — 21/11/2026 22:58 BRT
+
+> Auditoria direta de GitHub, Vercel e Supabase. Nenhum secret foi descriptografado. Nenhuma alteração em Production, migration remota ou chamada paga foi realizada.
+
+### GitHub e splits
+- main: 84afe632464cc83c347ca1cfe5923efe9bbc91fe.
+- PR #113 aberta, Draft, mergeable, head 6bb47d7697f654d9a381600b6d04b03df3518b94, base main; comparação: 8 commits à frente, 0 atrás. Só documentação.
+- PRs #35–#42 e #46 confirmadas individualmente como fechadas e mergeadas; #82 e #97 também mergeadas; #102 fechada sem merge. #113 é a única PR aberta.
+- Branches antigas feature/smkon-production-readiness (2 ahead/36 behind) e release/s14-mainline-integration-20261121 (34 ahead/289 behind) não devem ser promovidas.
+
+### CI e E2E no HEAD exato
+- CI #44969883730, SHA 6bb47d: 2/2 jobs success. Logs do job unitário confirmam 418 testes, 418 pass, 0 fail, 0 skipped; typecheck, lint, audit e build concluídos. Job de migrations/SQL tests também success.
+- E2E #44969902121, SHA exato 6bb47d: job Playwright · Staging success. Log confirma 36 testes, 36 passed, 0 falhas. Artifact smkon-e2e-281 (ID 14732778783) reporta total=36, expected=36, unexpected=0, flaky=0, skipped=0.
+- A suíte usou o Preview https://smkon-4nhyma870-smkon.vercel.app e o Supabase staging xoyasrizivadxnpmzzno. O teste agents.spec.mjs passou: limites, criação de run na fila e kill switch interrompendo/bloqueando. CSP passou em /, /produtos, /studio, /agentes, /financeiro, /calendario, /midia, /admin e /conta/senha.
+- Esse E2E valida UI/fila/kill switch; não chama o modelo nem o AI Gateway.
+
+### Vercel, Preview, Production e Cron
+- Preview do HEAD 6bb47d: deployment dpl_CGeGDLMA5mn9bKTMRdaGJtVvb1Jz, READY.
+- Production: deployment dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, READY, SHA 86bd67c; main está 7 commits à frente. O compare de 17 arquivos cobre workflows, dependências e CSS; nenhum arquivo S14 mudou nesse intervalo.
+- O deployment Production contém vercel.json e src/app/api/agents/worker/route.ts. Cron: /api/agents/worker, 17 11 * * * UTC = 08:17 BRT; próxima execução em 22/11/2026 às 08:17 BRT.
+- Runtime logs Production: nenhum log nos últimos 50 minutos. Runtime logs Preview: um GET sem Bearer válido para /api/agents/worker em 22/11/2026 01:12:13Z (22:12:13 BRT), evento unauthorized. Como o handler só emite esse evento depois de validar CRON_SECRET, isso comprova indiretamente que o segredo de Preview passa o mínimo de 32 caracteres e não tem whitespace nas pontas; a chamada foi recusada antes de OIDC/cliente/claim. Não houve erro agregado da rota em 24h.
+- Não há invocação autenticada do worker/Cron comprovada em Production no período consultado.
+
+### Credenciais e configuração (inventário Vercel com decrypt=false)
+- SUPABASE_SECRET_KEY: ausente em Preview e Production; também não há SUPABASE_SERVICE_ROLE_KEY no inventário. O cliente server-only exige especificamente SUPABASE_SECRET_KEY.
+- CRON_SECRET: Sensitive separado em Production e Preview. Preview passou indiretamente a validação de comprimento pelo evento unauthorized; Production permanece sem validação de comprimento/whitespace.
+- AGENT_EXECUTOR_ENABLED=true nos dois targets.
+- AGENT_MODEL_PROVIDER=vercel-ai-gateway, AGENT_MODEL_AUTH=oidc, AGENT_MODEL=anthropic/claude-haiku-5.5, AGENT_MONTHLY_BUDGET_USD=5 em ambos.
+- AI_GATEWAY_API_KEY ausente; OIDC é o caminho selecionado. model.ts aceita x-vercel-oidc-token ou VERCEL_OIDC_TOKEN, mínimo de 20 caracteres sem whitespace. Nenhuma chamada autenticada comprovou emissão/aceitação do token em runtime.
+- A flag de Production continua true. Sem chave Supabase, após as barreiras de auth/model/budget o handler retorna 503 service_not_configured antes de claim; se OIDC não estiver disponível, retorna 503 model_not_configured antes disso. Recomenda-se o Owner desabilitar o executor em Production até a homologação; nenhuma variável foi alterada.
+
+### Supabase, ACL/RLS e migrations
+- Staging: 142 runs, todas killed; 0 steps, 0 tool grants, 0 agent_model_usage, 0 tokens, US$0 e 0 conteúdos ligados a runs. Settings: kill switch=false, 500 runs/dia, 12 steps/run.
+- Production: 0 runs, 0 steps, 0 grants, 0 usage e 0 conteúdos ligados a runs.
+- RLS ativo nas seis tabelas auditadas nos dois bancos: uma policy em cada uma das cinco tabelas S14 e quatro em content_items.
+- 19 funções agent_*: EXECUTE anon=0, authenticated=6, service_role=12 em ambos os ambientes.
+- 31 nomes de migrations presentes nos dois projetos, mas 0/31 version IDs coincidem; a ordem de audience_consent e workspace_members também difere. Não executar db repair ou db push sem reconciliação formal.
+
+### AI Gateway, preços e ledger
+- Catálogo confirma anthropic/claude-haiku-5.5 disponível. Preço local coincide com o catálogo na faixa de até 100k tokens: input US$0.0000001/token, output US$0.0000005/token; estimativa local aplica 10% de margem.
+- Uso AI Gateway nos últimos 7 dias: 0 requests, 0 tokens e US$0. Sem budget de projeto/default e sem regras de roteamento.
+- agent_model_usage: 0 linhas em Staging e Production; somas de tokens e custo também zero. Isso é consistente com uso zero, mas não valida reconciliação após uma cobrança real.
+- rpcUsageRecorder grava via agent_record_model_usage antes de usar a resposta; o adaptador tenta custo de pior caso em falha de leitura do body/ausência de usage. Não há outbox durável nem reserva atômica do custo máximo antes de cada chamada. O teto interno US$5 é soft e uma execução em andamento pode ultrapassá-lo.
+
+### Decisão de homologação
+- Não executar chamada paga nem teste real: faltam a chave exclusiva de staging, grants mínimos e budget externo isolado; OIDC runtime não foi comprovado. Não simular sucesso.
+- Próximo gate: provisionamento pelo Owner da chave exclusiva de Staging/Preview, grants mínimos, budget externo restrito ao projeto, validação de CRON_SECRET sem revelar valor e uma única operations_review controlada; depois reconciliar request/tokens/custo do Gateway com agent_model_usage.
+- Sem merge, sem alterações em main/Production, sem migrations remotas, sem alteração de secrets/grants/budgets e sem chamadas pagas nesta rodada.
+
+---
 ## Checkpoint operacional S14 — 21/11/2026 22:00 BRT
 
 > Auditoria ao vivo. Este bloco substitui os checkpoints anteriores; CI, Preview e código publicado não equivalem a uma execução real de IA.

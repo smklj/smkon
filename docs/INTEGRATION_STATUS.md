@@ -1,3 +1,15 @@
+## Estado de integração S14 — 21/11/2026 22:58 BRT
+
+- main HEAD 84afe632; PR #113 aberta/Draft/mergeable, head 6bb47d7, 8 ahead/0 behind. PRs #35–#42 e #46, #82 e #97 mergeadas; #102 fechada sem merge.
+- CI #44969883730: 2/2 jobs success, 418/418 unitários; migrations/SQL tests success. E2E #44969902121: Playwright · Staging 36/36 no SHA exato 6bb47d7, artifact #14732778783; inclui agents.spec.mjs e CSP. Nenhum teste chamou o modelo.
+- Preview #113 READY: dpl_CGeGDLMA5mn9bKTMRdaGJtVvb1Jz. Production READY: dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2, SHA 86bd67c; main 7 commits à frente, sem arquivo S14 no diff.
+- Cron /api/agents/worker às 17:11 UTC (08:17 BRT). Production sem logs de runtime nos últimos 50 min. Preview recebeu GET sem Bearer e registrou unauthorized, antes de OIDC/claim; valida indiretamente o mínimo do CRON_SECRET de Preview.
+- Vercel: SUPABASE_SECRET_KEY ausente em ambos os targets; CRON_SECRET Sensitive presente em ambos; AGENT_EXECUTOR_ENABLED=true em Preview e Production; provider Gateway/OIDC/Haiku 5.5; budget interno US$5. OIDC runtime não comprovado.
+- Supabase: staging 142 runs, todas killed, sem steps/grants/usage; Production zero dados S14. RLS ativo nas seis tabelas; ACL de 19 funções agent_*: anon=0/authenticated=6/service_role=12. 31 nomes de migrations nos dois bancos, 0/31 version IDs iguais.
+- AI Gateway 7 dias: 0 requests/tokens/custo; budgets de projeto/default ausentes. agent_model_usage vazio nos dois ambientes.
+- Não homologado: falta service key exclusiva de staging, grants mínimos e budget externo isolado. Sem chamada real, merge, alteração Production ou migration remota.
+
+---
 ## Estado de integração S14 — 21/11/2026 22:00 BRT
 
 - `main` HEAD: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
