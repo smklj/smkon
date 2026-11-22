@@ -1,15 +1,19 @@
-## Checkpoint S14 — 21/11/2026 21:00 BRT
+## Checkpoint S14 — 21/11/2026 22:00 BRT
 
-- Splits de implementação #35–#42 e #46: fechados e mergeados. PR #82 e PR #97 mergeadas; PR #102 fechada sem merge; PR #113 aberta, Draft, 5 ahead/0 behind.
-- CI do head anterior da PR #113 (#44959989807): 418/418, sem falhas. Playwright #44959989796: 36/36 no build local com Supabase isolado de staging; job dedicado de Preview/Staging foi skipped pelo evento pull_request.
-- Preview PR #113 READY em SHA `cbf4d2e`; head anterior `2943fb6` recebeu somente documentação depois desse deploy.
-- Production READY em SHA `86bd67c`; `main` `84afe632` está 7 commits à frente. Diff posterior: workflows, dependências e CSS, sem arquivos S14. Worker e Cron estão presentes no deployment.
-- Cron diário 08:17 BRT; sem runtime log de função na janela consultada de 30 min.
-- Staging: 138 runs, todas killed; 0 steps, grants, usage e conteúdo ligado a agent_run_id; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero registros S14.
-- Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. agent_model_usage: zero linhas nos dois bancos.
-- Bloqueio operacional: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive presente mas não validado; OIDC sem prova runtime; AGENT_EXECUTOR_ENABLED=true nos dois ambientes; nenhum grant e nenhum budget externo.
-- Não houve chamada real ao Gateway. Não executar staging real até provisionar chave exclusiva, grants mínimos, budget externo e comprovar OIDC.
+- Splits #35–#42 e #46: todos fechados e mergeados. PR #82 e #97 mergeadas; #102 fechada sem merge; #113 é a única PR aberta, Draft e mergeable, com cinco arquivos apenas documentais.
+- CI #44964877160 no head \`334a3d9\`: 2/2 jobs success; 418/418 testes (0 falhas, cancelados ou skipped), typecheck/lint/audit/build e migrations/SQL tests aprovados.
+- Playwright #44964877243: 36/36 no job Build local, conectado ao Supabase isolado de staging; job dedicado Playwright · Staging skipped por evento \`pull_request\`. Não houve chamada ao modelo.
+- Preview exato do head #113 READY: \`dpl_6RhTSSuzeHaPRin4CbjDZ63oVyak\`. Production READY em SHA \`86bd67c\`; \`main\` está 7 commits à frente, sem arquivos S14 no diff.
+- Worker e Cron estão no deployment Production: \`/api/agents/worker\`, \`17 11 * * *\` UTC (08:17 BRT). Sem runtime logs em Production na janela de 50 min; Preview registrou um GET do worker rejeitado como unauthorized, sem execução autenticada comprovada.
+- Vercel env sem decrypt: \`SUPABASE_SECRET_KEY\` ausente em Preview/Production; \`CRON_SECRET\` Sensitive presente, comprimento não validado; \`AGENT_EXECUTOR_ENABLED=true\` nos dois; Gateway/OIDC/Haiku 5.5 e teto interno US$ 5 configurados.
+- Staging: 140 runs, todas killed; 0 steps, grants, usage e conteúdos ligados a run; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production: zero dados S14 e zero settings.
+- Os dois bancos têm 31 nomes de migrations iguais, mas 0/31 version IDs iguais; não executar repair/db push sem reconciliação. RLS ativo nas seis tabelas auditadas; 19 funções agent_* com EXECUTE anon=0, authenticated=6, service_role=12.
+- AI Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. \`agent_model_usage\` vazio nos dois bancos. Nenhuma chamada real comprovada.
+- Bloqueio operacional: service key de staging ausente, grants zerados, budget externo ausente, CRON_SECRET sem validação e OIDC sem prova runtime. Não executar teste pago nem simular sucesso.
+- O limite interno de US$ 5 é soft, sem reserva atômica; não há outbox durável para reconciliar falha de gravação após cobrança.
 - Nenhuma alteração de código, schema, secrets, grants, budgets ou Production nesta rodada.
+
+---
 
 ## Checkpoint atual — 21/11/2026 20:00 BRT
 

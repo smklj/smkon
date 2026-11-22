@@ -1,17 +1,20 @@
-## Estado de integração S14 — 21/11/2026 21:00 BRT
+## Estado de integração S14 — 21/11/2026 22:00 BRT
 
-- main HEAD: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
-- Production Vercel READY: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, SHA `86bd67c`; main 7 commits ahead/0 behind. Compare: 17 arquivos de workflows/dependências/CSS, nenhum arquivo S14.
-- O deployment contém worker route e Cron `17 11 * * *` UTC (08:17 BRT). Sem runtime logs de função nos últimos 30 minutos.
-- Preview PR #113 READY: `dpl_7odjhLb3xjHpFmATUZgB2cYouNZW`, SHA `cbf4d2e`; head documental atual anterior `2943fb6`.
-- PR #113: Draft, mergeable, 5 ahead/0 behind; PRs #35–#42 e #46 integradas.
-- CI #44959989807: 418/418. E2E #44959989796: 36/36 no build local com staging; job dedicado de Preview/Staging skipped.
-- feature/smkon-production-readiness: 2 ahead/36 behind; release/s14-mainline-integration-20261121: 34 ahead/289 behind. Não promover.
-- Supabase staging/Production: 31 nomes de migrations iguais, 31 version IDs diferentes; sem repair/db push. Staging 138 runs (todas killed), 0 steps/grants/usage; Production sem dados S14.
-- Env Vercel: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive presente mas não validado; AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/model/US$5 interno configurados.
-- Gateway 7 dias: 0 requests/tokens/custo; sem budget de projeto/default e sem regras. agent_model_usage 0 linhas em ambos.
-- Nenhuma chamada real comprovada. Próximo gate: chave exclusiva de staging, validação segura de cron secret, OIDC runtime, grants mínimos, budget externo e uma única run controlada.
-- Sem merge, deploy ou alteração de Production nesta rodada.
+- \`main\` HEAD: \`84afe632464cc83c347ca1cfe5923efe9bbc91fe\`.
+- PR #113 aberta, Draft, mergeable, head \`334a3d9\`, base \`main\`; somente cinco arquivos documentais. É a única PR aberta encontrada.
+- Splits #35–#42 e #46, PR #82 e #97: mergeados. PR #102: fechada sem merge.
+- Production READY: \`dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2\`, SHA \`86bd67c\`; main 7 commits à frente/0 atrás. Compare: 17 arquivos de workflow/dependências/CSS, nenhum arquivo S14.
+- O deployment Production contém worker route e Cron \`17 11 * * *\` UTC (08:17 BRT). Nenhum runtime log de função em Production nos últimos 50 min. Preview #113 READY no head exato \`334a3d9\`, deployment \`dpl_6RhTSSuzeHaPRin4CbjDZ63oVyak\`; um GET ao worker no Preview foi rejeitado como unauthorized.
+- CI #44964877160: 2/2 jobs success, 418/418 unitários, build/typecheck/lint/audit e SQL/migrations aprovados. E2E #44964877243: 36/36 no build local; job Playwright · Staging skipped por evento pull_request.
+- \`feature/smkon-production-readiness\`: 2 ahead/36 behind; diff só documental. \`release/s14-mainline-integration-20261121\`: 34 ahead/289 behind e reintroduz arquivos S14 como adições por base antiga. Não promover.
+- Supabase staging/Production: 31 nomes de migrations iguais, 0/31 version IDs iguais; não executar repair/db push. Staging 140 runs, todas killed, 0 steps/grants/usage/conteúdo ligado; settings kill_switch=false, 500/dia, 12 steps/run. Production sem dados S14/settings.
+- RLS ativo nas seis tabelas auditadas nos dois ambientes; policies: uma em cada tabela S14 e quatro em content_items. 19 funções agent_*: EXECUTE anon=0, authenticated=6, service_role=12.
+- Vercel env sem decrypt: SUPABASE_SECRET_KEY ausente em Preview/Production; CRON_SECRET Sensitive presente, comprimento não validado; AGENT_EXECUTOR_ENABLED=true nos dois; Gateway/OIDC/Haiku 5.5/US$5 interno configurados.
+- AI Gateway últimos 7 dias: 0 requests/tokens/custo; budgets de projeto/default e regras de roteamento ausentes. agent_model_usage 0 linhas em ambos. Nenhuma chamada real comprovada.
+- Bloqueios: chave service exclusiva de staging, grants mínimos, budget externo, validação de CRON_SECRET e OIDC em runtime. O teto interno é soft e não há outbox durável. Não executar teste real até fechar esses gates.
+- Sem merge, deploy Production, migrations remotas, secrets, grants, budgets ou chamadas pagas nesta rodada.
+
+---
 
 ## Checkpoint de integração — 21/11/2026 20:00 BRT
 

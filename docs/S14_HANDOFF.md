@@ -1,54 +1,59 @@
-## Checkpoint operacional S14 — 21/11/2026 21:00 BRT
+## Checkpoint operacional S14 — 21/11/2026 22:00 BRT
 
-> Auditoria ao vivo. Esta seção substitui os checkpoints anteriores; não inferir operação real a partir de CI, E2E ou deployment READY.
+> Auditoria ao vivo. Este bloco substitui os checkpoints anteriores; CI, Preview e código publicado não equivalem a uma execução real de IA.
 
-### GitHub e splits
-- HEAD de `main`: `84afe632464cc83c347ca1cfe5923efe9bbc91fe`.
-- PR #113 aberta, Draft, mergeable, base `main`, 5 commits à frente e 0 atrás; branch `docs/s14-current-operational-handoff-20261121-2000`, head anterior `2943fb60e49215afc8dfff90740543c63a8ff8c5`.
-- PRs de implementação #35–#42 e #46: todas fechadas e mergeadas. PR #82 e #97 também mergeadas. PR #102 fechada sem merge. Nenhuma alteração de código ou migration nesta atualização.
-- `feature/smkon-production-readiness`: 2 ahead / 36 behind; branch de release antiga: 34 ahead / 289 behind. Não promover nenhuma delas.
+### GitHub, splits e branches
+- HEAD de \`main\`: \`84afe632464cc83c347ca1cfe5923efe9bbc91fe\`.
+- PR #113 aberta, Draft e mergeable, base \`main\`; head auditado \`334a3d9cfeeac62a9f85d8ce54a43600a370f9a8\`. A PR altera somente cinco arquivos de documentação.
+- PRs #35–#42 e #46: todas fechadas e mergeadas. PR #82 e #97 também mergeadas. PR #102 fechada sem merge. PR #113 é a única PR aberta encontrada.
+- \`feature/smkon-production-readiness\`: 2 commits à frente / 36 atrás; diff atual só em \`docs/INTEGRATION_STATUS.md\`. \`release/s14-mainline-integration-20261121\`: 34 à frente / 289 atrás, com todo o S14 reaparecendo como adição por partir de base antiga. Não promover nenhuma das duas.
 
-### CI e E2E do head documental anterior
-- CI #44959989807: 418/418 testes, 0 falhas, 0 skipped; typecheck, lint, audit, build e SQL/migrations aprovados.
-- Playwright #44959989796: 36/36 aprovados em build local. O log confirma login/bootstrapping de QA no Supabase isolado de staging; inclui teste da fila/kill switch e CSP em `/studio`.
-- O job separado `Playwright · Staging` foi skipped pelo evento `pull_request`; não houve E2E contra um deployment Preview.
-- Os dois runs são do head anterior `2943fb6`. Os novos commits desta atualização são somente documentação; CI deve ser reexecutado no novo head.
+### CI e E2E do head 334a3d9
+- CI #44964877160: 2/2 jobs success. Logs do job unitário: 418 testes, 418 pass, 0 fail, 0 cancelled, 0 skipped. Typecheck, lint, audit, build e job de migrations/SQL tests concluídos com sucesso.
+- Playwright #44964877243: job \`Playwright · Build local\` success, 36/36 pass. Inclui bootstrap QA no Supabase isolado de staging, fila/kill switch, CSP em \`/studio\`, rota do worker, navegação e Content Studio.
+- O job \`Playwright · Staging\` foi skipped pelo evento \`pull_request\`; portanto não houve E2E contra o deployment Preview. O teste de navegador local não chama o AI Gateway.
 
 ### Vercel, Production e Preview
-- Deployment Production mais recente consultado: `dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2`, READY, SHA `86bd67c928b834e472d2fc1eba180f138ddaeb11`, branch `main`, criado em 21/11/2026 19:37 BRT.
-- HEAD de `main` está 7 commits à frente e 0 atrás desse deployment. O compare lista somente workflows, dependências e extração de CSS; nenhum arquivo S14 mudou nesse intervalo.
-- O SHA implantado contém `vercel.json` e `src/app/api/agents/worker/route.ts`. Cron: `/api/agents/worker`, `17 11 * * *` UTC = 08:17 BRT. Não declarar execução do Cron: nenhum runtime log de função foi retornado na janela consultada de 30 minutos.
-- Preview da PR #113: READY em `dpl_7odjhLb3xjHpFmATUZgB2cYouNZW`, SHA `cbf4d2ebfdd7133f8dd0ca1c824ff5b7b7ef8cae`. O head da PR avançou depois apenas com documentação; este Preview mantém o mesmo código de aplicação, mas não contém os últimos documentos.
+- Preview da PR #113, exatamente no head \`334a3d9\`: deployment \`dpl_6RhTSSuzeHaPRin4CbjDZ63oVyak\`, READY, [abrir Preview](https://smkon-kgnit1tsw-smkon.vercel.app).
+- Production: deployment \`dpl_AH8JfHj4Maoub95UCSRoFyyqYNx2\`, READY, SHA \`86bd67c928b834e472d2fc1eba180f138ddaeb11\`. \`main\` está 7 commits à frente / 0 atrás. O compare mostra 17 arquivos de workflows, dependências e CSS; nenhum arquivo S14 mudou nesse intervalo.
+- O deployment Production contém \`vercel.json\` e \`src/app/api/agents/worker/route.ts\`. Cron: \`/api/agents/worker\`, \`17 11 * * *\` UTC = 08:17 BRT; próxima janela em 22/11/2026 às 08:17 BRT.
+- Runtime logs de Production: nenhum registro na janela consultada de 50 minutos. No Preview houve um GET a \`/api/agents/worker\` rejeitado como \`unauthorized\`; isso comprova apenas a rejeição de uma chamada sem Bearer válido, não execução autenticada nem Cron.
 
-### Variáveis e autenticação (inventário sem descriptografar)
-- `SUPABASE_SECRET_KEY`: ausente em Preview e Production.
-- `CRON_SECRET`: registro Sensitive presente em ambos; valor não lido e comprimento mínimo de 32 caracteres não validado.
-- `AGENT_EXECUTOR_ENABLED=true` em Preview e Production.
-- `AGENT_MODEL_PROVIDER=vercel-ai-gateway`, `AGENT_MODEL_AUTH=oidc`, `AGENT_MODEL=anthropic/claude-haiku-5.5`, `AGENT_MONTHLY_BUDGET_USD=5` em ambos.
-- `AI_GATEWAY_API_KEY` ausente; o caminho selecionado é OIDC. Emissão/aceitação do token não comprovada em runtime.
-- O handler valida flag, cron secret, Bearer, modelo/OIDC e orçamento antes de criar o cliente Supabase. Sem `SUPABASE_SECRET_KEY`, `createServiceClient()` retorna null e o worker responde `503 service_not_configured` antes de claim/steps/model call, desde que as barreiras anteriores passem.
-- Recomendação: manter o executor desabilitado em Production até homologação. Nenhuma variável de Production foi alterada.
+### Variáveis e autenticação (Vercel, decrypt=false)
+- \`SUPABASE_SECRET_KEY\`: ausente em Preview e Production.
+- \`CRON_SECRET\`: Sensitive presente separadamente em Preview e Production; valor não lido e comprimento mínimo de 32 caracteres/ausência de whitespace não validados.
+- \`AGENT_EXECUTOR_ENABLED=true\` em Preview e Production.
+- \`AGENT_MODEL_PROVIDER=vercel-ai-gateway\`, \`AGENT_MODEL_AUTH=oidc\`, \`AGENT_MODEL=anthropic/claude-haiku-5.5\`, \`AGENT_MONTHLY_BUDGET_USD=5\` em ambos.
+- \`AI_GATEWAY_API_KEY\` ausente; OIDC é o caminho selecionado. Emissão e aceitação do token em runtime ainda não comprovadas.
+- O handler verifica flag, cron secret, Bearer, modelo/OIDC e orçamento antes de criar o cliente service_role. Sem \`SUPABASE_SECRET_KEY\`, \`createServiceClient()\` retorna null e o worker responde \`503 service_not_configured\` antes de claim/steps/model call, se as barreiras anteriores passarem.
+- Recomendação: manter o Executor desabilitado em Production até a homologação. Nenhuma variável foi alterada.
 
 ### Supabase — staging e Production
-- Projetos ativos: staging `xoyasrizivadxnpmzzno` (sa-east-1); Production `hpplboyysmfcjsnjrdmw` (us-west-2).
-- Ambos listam 31 nomes de migrations correspondentes, mas os 31 version IDs diferem. Não executar `db repair`/`db push`; a equivalência do conteúdo das migrations não foi demonstrada por essa listagem.
-- Staging: 138 `agent_runs`, todas `killed`; 0 `agent_steps`; 0 `agent_tool_grants`; 0 `agent_model_usage`; 1 `agent_settings` (`kill_switch=false`, 500 runs/dia, 12 steps/run).
-- Production: 0 runs, steps, grants, usage e settings.
-- `agent_model_usage`: 0 linhas e somas de input/output tokens/custo = 0 em ambos.
-- `agent_draft_content` é uma RPC FUNCTION, não uma tabela. `content_items` tem 308 linhas e 150 status=draft no staging, mas 0 linhas com `agent_run_id` (nenhum rascunho atribuível ao Executor); Production tem 0 itens.
-- Nas seis tabelas auditadas (cinco tabelas S14 + `content_items`), RLS está habilitado; cada tabela S14 tem 1 policy e `content_items` tem 4. Existem 19 funções `agent_*`: EXECUTE anon=0, authenticated=6, service_role=12.
+- Projetos ativos: staging \`xoyasrizivadxnpmzzno\` (sa-east-1); Production \`hpplboyysmfcjsnjrdmw\` (us-west-2).
+- Os dois bancos têm 31 nomes de migrations correspondentes, mas 0/31 version IDs iguais. Isso é divergência do histórico, não prova isolada de divergência de schema. Não executar \`db repair\`/\`db push\` sem comparar os arquivos aplicados e planejar backup.
+- Staging: 140 \`agent_runs\`, todas \`killed\` (mais recente em 21/11 às 21:10:46 BRT); 0 \`agent_steps\`, 0 \`agent_tool_grants\`, 0 \`agent_model_usage\`, 0 conteúdos ligados por \`agent_run_id\`; 1 \`agent_settings\` com \`kill_switch=false\`, 500 runs/dia e 12 steps/run.
+- Production: 0 runs, steps, grants, usage, conteúdos ligados e settings.
+- \`agent_model_usage\`: 0 linhas e somas de input/output tokens/custo iguais a zero nos dois bancos.
+- Nas seis tabelas auditadas (cinco S14 + \`content_items\`), RLS está habilitado; cada tabela S14 tem uma policy e \`content_items\` tem quatro. Existem 19 funções \`agent_*\`: EXECUTE por anon=0, authenticated=6, service_role=12.
+
+### Revisão do fluxo Planner → Executor → Verifier
+- Planner/Executor/Verifier estão implementados. O Verifier é determinístico e exige evidência verificada observada na execução para afirmações sobre produtos.
+- Ferramentas de leitura usam allowlist de tabelas/colunas e filtro obrigatório por \`organization_id\` vindo do RunContext; limite de 50 itens e saída de 60 KB.
+- \`draft_content\` chama a RPC \`agent_draft_content\`, vincula o run e só aceita retorno \`status=draft\`; não aprova, agenda ou publica.
+- O worker aplica flag, autenticação, modelo, preço/orçamento e cliente service_role antes de claim. O E2E validou fila/kill switch, não o ciclo real com modelo.
+- O adaptador Gateway usa endpoint fixo e aguarda o callback de uso antes de validar conteúdo. Se o registro de uso falhar depois de uma resposta cobrada, a execução falha, mas não existe outbox durável para reconciliar esse custo. O orçamento interno é consultado antes de cada claim, sem reserva atômica; uma execução em andamento pode ultrapassar o teto por até o custo dessa execução.
 
 ### AI Gateway e orçamento
-- Uso do projeto nos últimos 7 dias: 0 requests, 0 input/output tokens, US$ 0.
+- Uso do projeto nos últimos 7 dias (15/11 01:00 UTC a 22/11 01:00 UTC): 0 requests, 0 input/output tokens, US$ 0.
 - Budget específico do projeto: nenhum; budgets default: nenhum; regras de roteamento: nenhuma.
-- Modelo disponível no catálogo não prova chamada. Nenhuma chamada real ao AI Gateway foi comprovada.
-- `agent_model_usage` zerado é consistente com ausência de requests, mas não valida reconciliação após cobrança.
-- Teto interno de US$ 5 é soft, sem reserva atômica por chamada; não há outbox durável comprovada para reconciliar falha de gravação após resposta cobrada.
+- O modelo constar no catálogo não prova chamada. Nenhuma chamada real ao AI Gateway foi comprovada.
+- Ledger zerado é consistente com uso agregado zero, mas não valida reconciliação depois de uma cobrança real.
 
 ### Gate para teste real
-- Não executar teste real: chave exclusiva de staging ausente, grants de leitura zerados, budget externo ausente e OIDC runtime não comprovado.
-- Próximos passos: provisionar somente a chave do projeto staging no target Preview; validar `CRON_SECRET` sem revelar valor; comprovar OIDC; aprovar grants mínimos; definir budget externo limitado ao projeto; então executar uma única `operations_review` e reconciliar request ID, modelo, tokens/custo com `agent_model_usage`.
-- Sem merge, deploy, migration remota, alteração de Production/secrets, grants, budgets ou chamadas pagas nesta rodada.
+Não executar \`operations_review\` real enquanto faltarem: (1) chave service exclusiva de staging no target Preview; (2) grants mínimos de leitura aprovados; (3) budget externo isolado do projeto; (4) validação segura do \`CRON_SECRET\`; (5) OIDC comprovado em runtime. Depois, executar uma única run e reconciliar request/modelo/tokens/custo com \`agent_model_usage\`, verificando draft e Verifier.
+
+### Segurança
+Somente consultas read-only e atualização documental em branch. Sem merge, alteração de \`main\`, deploy Production, migration remota, alteração de secrets, grants, budgets ou chamada paga.
 
 ---
 

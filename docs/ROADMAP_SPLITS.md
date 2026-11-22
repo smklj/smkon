@@ -1,23 +1,27 @@
-## Checkpoint de fechamento S14 — 21/11/2026 21:00 BRT
+## Checkpoint de fechamento S14 — 21/11/2026 22:00 BRT
 
-### Implementação
-- [x] Planner (#35), Executor core (#36), read tools (#37), draft RPC (#38), claim queue (#39), worker (#40), model adapter (#41), budget/OIDC (#42), run detail (#46): PRs fechadas e mergeadas.
-- [x] Correções de timeout/ledger S14 incorporadas ao histórico de main.
-- [x] CI atual do checkpoint anterior: 418/418; E2E local com staging: 36/36.
-- [x] Worker e Cron presentes no deployment Production READY.
+### Implementação integrada
+- [x] Planner (#35), Executor core (#36), read tools (#37), draft RPC (#38), claim queue (#39), worker (#40), model adapter (#41), budget/OIDC (#42) e run detail (#46): 9/9 PRs fechadas e mergeadas.
+- [x] Correções de timeout e contabilização incorporadas ao histórico de \`main\`.
+- [x] CI no head documental auditado: 418/418 testes, 0 falhas; migrations/SQL tests aprovados.
+- [x] Playwright: 36/36 no build local com staging isolado; job dedicado de Staging foi skipped pelo evento \`pull_request\`.
+- [x] Preview da PR #113 READY no head \`334a3d9\`; Production READY em SHA \`86bd67c\`, sete commits atrás da main e sem arquivos S14 no diff.
 
 ### Homologação ainda aberta
-- [ ] Provisionar SUPABASE_SECRET_KEY exclusiva do Supabase staging somente em Preview.
-- [ ] Validar CRON_SECRET por verificação de comprimento/entropia sem imprimir o valor.
+- [ ] Provisionar \`SUPABASE_SECRET_KEY\` exclusiva do Supabase staging somente em Preview.
+- [ ] Validar \`CRON_SECRET\` (mínimo 32 caracteres e sem whitespace) sem imprimir o valor.
 - [ ] Comprovar emissão e aceitação do token OIDC em runtime.
 - [ ] Aprovar apenas grants mínimos de leitura no workspace de staging.
-- [ ] Criar budget externo restrito ao projeto SMKON; o budget interno de US$ 5 não é reserva atômica.
-- [ ] Rodar uma única operations_review em staging.
-- [ ] Comprovar Planner → Executor → Verifier, read tools e draft_content.
-- [ ] Reconciliar request do Gateway, tokens/custo e agent_model_usage.
+- [ ] Criar budget externo restrito ao projeto; o teto interno de US$ 5 é soft e não reserva atomicamente.
+- [ ] Resolver a ausência de outbox/reconciliação durável para cobranças após falha de gravação do ledger.
+- [ ] Rodar uma única \`operations_review\` em staging.
+- [ ] Comprovar Planner → Executor → Verifier, read tools e \`draft_content\` real.
+- [ ] Reconciliar request ID, modelo, tokens/custo e \`agent_model_usage\`.
 
 ### Critério de conclusão
-Não marcar S14 operacional até existir request real do AI Gateway, run/steps verificáveis, draft vinculado por agent_run_id, Verifier concluído e ledger reconciliado. Não fazer merge nem alterações de Production sem autorização específica.
+Não marcar S14 operacional até existir request real do AI Gateway, run/steps verificáveis, draft vinculado por \`agent_run_id\`, Verifier concluído e ledger reconciliado. Não fazer merge nem alterações de Production sem autorização específica.
+
+---
 
 ## Reconciliação S14 — 21/11/2026 20:00 BRT
 
