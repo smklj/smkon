@@ -275,3 +275,16 @@ Status verificado diretamente no GitHub, Supabase e Vercel nesta rodada:
 - Staging 121 runs killed, sem steps/grants/usage; Production sem runs. Assinaturas de objetos auditados coincidem, mas versões de migrations S14 diferem; reconciliar histórico antes de qualquer repair/db push.
 - Gate operacional: chave exclusiva de Staging, grants mínimos, budget externo isolado, validação de CRON_SECRET/OIDC, Preview/E2E do SHA de homologação, uma operations_review e reconciliação de tokens/custo com agent_model_usage.
 - Nenhuma mudança de Production nesta auditoria.
+
+
+## S14 — checkpoint operacional 22/11/2026 01:57 BRT
+
+- Os nove splits originais (#35–#42 e #46) foram confirmados individualmente como merged. #82/#97 também merged; #102 fechada sem merge; PR #113 é a única aberta, Draft/mergeable, 15 ahead / 0 behind e docs-only.
+- CI #44983092682 no head 7d957275: 418/418 testes unitários e 2/2 jobs success; migrations/SQL tests aprovados.
+- E2E deployment_status #44983114589: 36/36 no Preview exato do SHA 7d957275; artifact 14738303182. O teste valida UI, fila, limites e kill switch; não chama o AI Gateway.
+- Preview atual dpl_Exi3uZxvFqmX5mugDtKWsuuG9oKi READY. Production atual dpl_3RdCGJ2THbYE9aajDZGgGzwWTUnV READY no main SHA 84afe632. Cron /api/agents/worker, 17 11 UTC (08:17 BRT).
+- Production registrou uma requisição GET não autenticada ao worker às 04:49:13Z, recusada como unauthorized. Isso prova que flag e formato do CRON_SECRET passaram suas validações nessa requisição; não prova Cron, OIDC, claim ou execução de IA.
+- Staging: 148 runs, todas killed; 0 steps, 0 grants, 0 usage, 0 conteúdo vinculado; settings kill_switch=false, 500 runs/dia, 12 steps/run. Production sem dados S14.
+- AI Gateway 7d: 0 requests/tokens/custo; budgets de projeto/default e regras ausentes. agent_model_usage zerado nos dois bancos, consistente com uso zero, sem provar reconciliação de cobrança.
+- Gate operacional permanece: SUPABASE_SECRET_KEY exclusiva de staging ausente, grants mínimos ausentes, budget externo isolado ausente e OIDC não comprovado em runtime. Não executar operations_review real até fechar esses gates.
+- Nenhum merge, alteração de Production, migration remota, secret, grant, budget ou chamada paga foi executado.
