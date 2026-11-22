@@ -11,7 +11,7 @@
  *   validação do conteúdo; se o registro falhar, a chamada falha (gasto não registrado não passa pelo teto).
  *   Sem `usage` na resposta, cobra o pior caso (prompt/3 caracteres por token e o teto de saída).
  */
-import { estimateCost, modelPrice } from "./model-pricing.ts";
+import { estimateCost, modelPrice, modelRequestProfile } from "./model-pricing.ts";
 import { planSystemPrompt, planUserPrompt, summarySystemPrompt, summaryUserPrompt } from "./model-prompt.ts";
 import type { AgentModel } from "./types.ts";
 
@@ -82,6 +82,7 @@ export function createGatewayModel(options: GatewayModelOptions): AgentModel {
   const summaryMaxTokens = options.summaryMaxTokens ?? DEFAULT_SUMMARY_MAX_TOKENS;
   const price = modelPrice(options.model);
   if (options.onUsage && !price) throw new ModelCallError("model_unpriced");
+  const profile = modelRequestProfile(options.model);
 
   async function recordUsage(phase: "plan" | "verify", system: string, user: string, maxTokens: number, data: unknown): Promise<void> {
     if (!options.onUsage || !price) return;
@@ -91,7 +92,9 @@ export function createGatewayModel(options: GatewayModelOptions): AgentModel {
     await options.onUsage({ phase, model: options.model, inputTokens, outputTokens, costUsd: estimateCost(price, inputTokens, outputTokens) });
   }
 
-  async function complete(phase: "plan" | "verify", system: string, user: string, maxTokens: number, signal: AbortSignal): Promise<unknown> {
+  async function complete(phase: "plan" | "verify", system: string, user: string, answerTokens: number, signal: AbortSignal): Promise<unknown> {
+    // Modelos que raciocinam gastam parte do limite de saída antes da resposta.
+    const maxTokens = answerTokens + (profile.outputHeadroom ?? 0);
     let response;
     try {
       response = await doFetch(`${GATEWAY_BASE_URL}/chat/completions`, {
@@ -101,6 +104,7 @@ export function createGatewayModel(options: GatewayModelOptions): AgentModel {
           model: options.model,
           temperature: 0,
           max_tokens: maxTokens,
+          ...(profile.reasoningEffort ? { reasoning: { effort: profile.reasoningEffort } } : {}),
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },
