@@ -59,7 +59,7 @@ test("Content Studio: design da capa salvo na peça cria versão nova, é aprova
 
   // A aprovação vale para a versão com o design.
   await page.getByRole("button", { name: /Aprovar esta versão/ }).click();
-  await expect(page.getByRole("status").filter({ hasText: /Versão 2 aprovada\./ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Versão 2 aprovada\. Nenhuma publicação/ })).toBeVisible();
   await snap(page, "22-studio-design-salvo");
 
   // Reabrir a peça traz a capa salva, não o preset padrão.
