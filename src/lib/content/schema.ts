@@ -5,6 +5,8 @@
  */
 import { ValidationError } from "../http/errors.ts";
 import { isOptionalHttpsUrl, isPlainObject, isUuid } from "../validation/fields.ts";
+import { parseSceneDocument } from "../scene/schema.ts";
+import type { SceneDocument } from "../scene/types.ts";
 import { CHANNELS, type ContentPayload, type ContentStatusApi, type WritableContentStatus } from "./types.ts";
 
 export const CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/;
@@ -112,4 +114,29 @@ export function parseApproveInput(body: unknown): ApproveInput {
   }
   const note = typeof value.note === "string" ? value.note.slice(0, 1000) : undefined;
   return { id: value.id as string, contentHash, note };
+}
+
+/** Gravação do design da peça (PUT /api/content/scene). */
+export type SceneWriteInput = {
+  id: string;
+  /** null remove o design da peça (também é uma edição versionada). */
+  scene: SceneDocument | null;
+  /** Hash da versão que o editor abriu: protege contra sobrescrever uma edição mais nova. */
+  expectedHash: string | null;
+};
+
+export function parseSceneWrite(body: unknown): SceneWriteInput {
+  if (!isPlainObject(body)) throw new ValidationError("Corpo da requisição inválido.");
+  const value = body as { id?: unknown; scene?: unknown; expectedHash?: unknown };
+  if (!isUuid(value.id)) throw new ValidationError("Identificador inválido.");
+  if (!("scene" in value)) throw new ValidationError("Informe o documento de cena (ou null para remover).");
+  const expectedHash = value.expectedHash ?? null;
+  if (expectedHash !== null && (typeof expectedHash !== "string" || !CONTENT_HASH_PATTERN.test(expectedHash))) {
+    throw new ValidationError("Hash da versão inválido.");
+  }
+  return {
+    id: value.id as string,
+    scene: value.scene === null ? null : parseSceneDocument(value.scene),
+    expectedHash: expectedHash as string | null,
+  };
 }

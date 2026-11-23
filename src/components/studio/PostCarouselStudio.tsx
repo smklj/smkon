@@ -9,20 +9,30 @@ import {
   generatePostSlideSvg,
 } from "@/lib/content/smart-post-generator";
 import { MASCOT_EXPRESSIONS, type MascotExpression } from "@/lib/media/brand-system";
+import { postPackageToScene } from "@/lib/scene/templates/smkon-post";
+import { SceneSaveControl, type SavedScene, type ScenePiece } from "./SceneSaveControl";
 
 interface PostCarouselStudioProps {
   draftTitle?: string;
   draftProduct?: string;
   onApplyPostToDraft?: (post: SmartPostPackage) => void;
+  /** Post salvo na peça aberta (documento de cena), para reabrir no formulário. */
+  initialPost?: SmartPostPackage | null;
+  /** Peça aberta no Studio, onde o carrossel é salvo. */
+  piece?: ScenePiece | null;
+  onSceneSaved?: (saved: SavedScene) => void;
 }
 
 export function PostCarouselStudio({
   draftTitle,
   draftProduct,
   onApplyPostToDraft,
+  initialPost,
+  piece = null,
+  onSceneSaved,
 }: PostCarouselStudioProps) {
   const [activePost, setActivePost] = useState<SmartPostPackage>(() =>
-    OFFICIAL_POST_PRESETS["carrossel-5-achados"]
+    initialPost ?? OFFICIAL_POST_PRESETS["carrossel-5-achados"]
   );
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [copiedCaption, setCopiedCaption] = useState(false);
@@ -166,6 +176,13 @@ export function PostCarouselStudio({
             </button>
           </div>
         </div>
+
+        <SceneSaveControl
+          piece={piece}
+          what={activePost.slides.length > 1 ? "carrossel" : "arte"}
+          buildScene={() => postPackageToScene(activePost)}
+          onSaved={(saved) => onSceneSaved?.(saved)}
+        />
 
         {/* Visual Stage */}
         <div className="carousel-stage-frame">

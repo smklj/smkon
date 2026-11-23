@@ -666,6 +666,7 @@ export type Database = {
           organization_id: string
           product: string
           rights_confirmed: boolean
+          scene: Json | null
           script: string
           source_url: string
           status: string
@@ -691,6 +692,7 @@ export type Database = {
           organization_id: string
           product?: string
           rights_confirmed?: boolean
+          scene?: Json | null
           script?: string
           source_url?: string
           status?: string
@@ -716,6 +718,7 @@ export type Database = {
           organization_id?: string
           product?: string
           rights_confirmed?: boolean
+          scene?: Json | null
           script?: string
           source_url?: string
           status?: string

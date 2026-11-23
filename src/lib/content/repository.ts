@@ -10,6 +10,7 @@
 import type { createClient } from "../supabase/server.ts";
 import { applyKeyset, toPage, type KeysetSpec } from "../pagination/keyset.ts";
 import { CONTENT_STATUSES, type ContentWrite } from "./schema.ts";
+import type { SceneDocument } from "../scene/types.ts";
 import type { ContentStatusApi } from "./types.ts";
 
 export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -125,4 +126,45 @@ export async function approveContentVersion(supabase: SupabaseClient, contentId:
   const { data, error: readError } = await supabase.from("content_items").select(CONTENT_SELECT_COLUMNS).eq("id", contentId).single();
   if (readError) throw readError;
   return data;
+}
+
+/** Colunas da leitura do design: a lista da biblioteca não carrega a cena (até 256 KB por peça). */
+export const SCENE_SELECT_COLUMNS = "id,version,content_hash,status,scene";
+
+export type SceneRow = { id: string; version: number; content_hash: string; status: string; scene: SceneDocument | null };
+
+/** Design da peça; null quando a peça não existe no workspace (ou a RLS a esconde). */
+export async function getContentScene(supabase: SupabaseClient, organizationId: string, contentId: string): Promise<SceneRow | null> {
+  const { data, error } = await supabase
+    .from("content_items")
+    .select(SCENE_SELECT_COLUMNS)
+    .eq("id", contentId)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as SceneRow | null) ?? null;
+}
+
+/**
+ * Grava só o design. Com expectedHash, só grava se a peça ainda estiver na versão que o
+ * editor abriu (senão devolve "stale"). O banco recalcula hash e versão e derruba a aprovação.
+ */
+export async function updateContentScene(
+  supabase: SupabaseClient,
+  organizationId: string,
+  contentId: string,
+  scene: SceneDocument | null,
+  expectedHash: string | null,
+): Promise<SceneRow | "not_found" | "stale"> {
+  let query = supabase
+    .from("content_items")
+    .update({ scene })
+    .eq("id", contentId)
+    .eq("organization_id", organizationId);
+  if (expectedHash) query = query.eq("content_hash", expectedHash);
+  const { data, error } = await query.select(SCENE_SELECT_COLUMNS).maybeSingle();
+  if (error) throw error;
+  if (data) return data as SceneRow;
+  if (!expectedHash) return "not_found";
+  return (await getContentScene(supabase, organizationId, contentId)) ? "stale" : "not_found";
 }
