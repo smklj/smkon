@@ -36,13 +36,13 @@ Correções que vieram junto:
 
 ## Banco
 
-Migration `20261122140000_content_scene.sql`:
+Migration `20261122170000_content_scene.sql`:
 
 - coluna `scene jsonb` com `check` de forma mínima e tamanho;
 - `content_canonical_hash` inclui a cena **só quando ela existe**: peças sem cena mantêm o hash anterior, então nada aprovado ou agendado muda;
 - `content_versions.snapshot` passa a guardar a cena.
 
-Teste SQL `018_content_scene.test.sql`: hash anterior preservado, versão e queda da aprovação, jsonb com chaves em outra ordem não gera versão, snapshot por versão, aprovação pelo hash novo, limites do `check`, viewer só lê, outro workspace não vê.
+Teste SQL `019_content_scene.test.sql`: hash anterior preservado, versão e queda da aprovação, jsonb com chaves em outra ordem não gera versão, snapshot por versão, aprovação pelo hash novo, limites do `check`, viewer só lê, outro workspace não vê.
 
 ## API e interface
 
@@ -53,7 +53,7 @@ Teste SQL `018_content_scene.test.sql`: hash anterior preservado, versão e qued
 ## Testes
 
 - Unitários: `scene.test.ts` (22) e `content-scene.test.ts` (4). A suíte completa tem 451 testes.
-- SQL: 29 arquivos, incluindo o 018.
+- SQL: 29 arquivos, incluindo o 019.
 - E2E: "design da capa salvo na peça cria versão nova, é aprovado e reabre".
 
 ## Próximo (F2)
