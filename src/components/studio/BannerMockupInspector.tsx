@@ -22,6 +22,7 @@ import {
 import { SMKONBannerCanvas } from "./SMKONBannerCanvas";
 import { PostCarouselStudio } from "./PostCarouselStudio";
 import { SceneSaveControl, type SavedScene, type ScenePiece } from "./SceneSaveControl";
+import { SceneEditor } from "./scene-editor/SceneEditor";
 import type { SmartPostPackage } from "@/lib/content/smart-post-generator";
 import type { SceneDocument } from "@/lib/scene/types";
 import { bannerConfigFromScene, bannerConfigToScene } from "@/lib/scene/templates/smkon-banner";
@@ -51,6 +52,8 @@ interface BannerMockupInspectorProps {
   /** Design salvo na peça aberta, para reabrir no formulário certo. */
   savedScene?: SceneDocument | null;
   onSceneSaved?: (saved: SavedScene) => void;
+  /** Papel no workspace: travas da marca e quem salva. */
+  role?: string | null;
 }
 
 export function BannerMockupInspector({
@@ -61,8 +64,14 @@ export function BannerMockupInspector({
   piece = null,
   savedScene = null,
   onSceneSaved,
+  role = null,
 }: BannerMockupInspectorProps = {}) {
   const [activeTab, setActiveTab] = useState<StudioViewTab>("smkon-brand");
+  /** Documento aberto no editor de camadas (F2); a chave remonta o editor a cada abertura. */
+  const [editor, setEditor] = useState<{ doc: SceneDocument; label: string; key: number } | null>(null);
+  /** Design salvo editado à mão: não volta para nenhum formulário, só para o editor. */
+  const [layeredScene, setLayeredScene] = useState<SceneDocument | null>(null);
+  const openEditor = (doc: SceneDocument, label: string) => setEditor((current) => ({ doc, label, key: (current?.key ?? 0) + 1 }));
 
   // Estado Banner Oficial SMKON (Design System & IA)
   const [smartBannerConfig, setSmartBannerConfig] = useState<SmartBannerConfig>(() =>
@@ -77,6 +86,8 @@ export function BannerMockupInspector({
     setAppliedScene(savedScene);
     const banner = savedScene ? bannerConfigFromScene(savedScene) : null;
     const post = savedScene && !banner ? postPackageFromScene(savedScene) : null;
+    setEditor(null);
+    setLayeredScene(savedScene && !banner && !post ? savedScene : null);
     if (banner) {
       setSmartBannerConfig(banner);
       setActiveTab("smkon-brand");
@@ -210,8 +221,32 @@ export function BannerMockupInspector({
         </div>
       </div>
 
+      {layeredScene && !editor && (
+        <div className="scene-layered-note" role="status">
+          <p>Esta peça tem um design editado em camadas. Ele não volta para o formulário do template: continue no editor.</p>
+          <button type="button" className="btn-canvas-action primary" onClick={() => openEditor(layeredScene, layeredScene.pages.length > 1 ? "carrossel" : "capa")}>
+            Abrir no editor de camadas
+          </button>
+        </div>
+      )}
+
+      {editor && (
+        <SceneEditor
+          key={editor.key}
+          initialScene={editor.doc}
+          label={editor.label}
+          piece={piece}
+          role={role}
+          onSaved={(saved) => {
+            if (saved.scene) setLayeredScene(saved.scene);
+            onSceneSaved?.(saved);
+          }}
+          onClose={() => setEditor(null)}
+        />
+      )}
+
       {/* ABA 1: Banners SMKON Oficial (Diretrizes da Marca, Mascote SMK 3D & IA) */}
-      {activeTab === "smkon-brand" && (
+      {!editor && activeTab === "smkon-brand" && (
         <div className="smkon-brand-studio-grid">
           <div className="smkon-brand-stage-pane">
             <SMKONBannerCanvas config={smartBannerConfig} />
@@ -221,6 +256,9 @@ export function BannerMockupInspector({
               buildScene={() => bannerConfigToScene(smartBannerConfig)}
               onSaved={(saved) => onSceneSaved?.(saved)}
             />
+            <button type="button" className="btn-canvas-action scene-open-editor" onClick={() => openEditor(bannerConfigToScene(smartBannerConfig), "capa")}>
+              Editar em camadas
+            </button>
           </div>
 
           <div className="mockup-controls-card">
@@ -468,7 +506,7 @@ export function BannerMockupInspector({
       )}
 
       {/* ABA 2: Posts de Feed & Carrosséis Inteligentes (IA) */}
-      {activeTab === "post-carousel" && (
+      {!editor && activeTab === "post-carousel" && (
         <PostCarouselStudio
           key={loadedPost?.key ?? 0}
           draftTitle={draftTitle}
@@ -476,6 +514,7 @@ export function BannerMockupInspector({
           initialPost={loadedPost?.post ?? null}
           piece={piece}
           onSceneSaved={onSceneSaved}
+          onEditLayers={(doc) => openEditor(doc, doc.pages.length > 1 ? "carrossel" : "post")}
         />
       )}
 

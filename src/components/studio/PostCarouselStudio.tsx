@@ -10,6 +10,7 @@ import {
 } from "@/lib/content/smart-post-generator";
 import { MASCOT_EXPRESSIONS, type MascotExpression } from "@/lib/media/brand-system";
 import { postPackageToScene } from "@/lib/scene/templates/smkon-post";
+import type { SceneDocument } from "@/lib/scene/types";
 import { SceneSaveControl, type SavedScene, type ScenePiece } from "./SceneSaveControl";
 
 interface PostCarouselStudioProps {
@@ -21,6 +22,8 @@ interface PostCarouselStudioProps {
   /** Peça aberta no Studio, onde o carrossel é salvo. */
   piece?: ScenePiece | null;
   onSceneSaved?: (saved: SavedScene) => void;
+  /** Abre o post no editor de camadas. */
+  onEditLayers?: (doc: SceneDocument) => void;
 }
 
 export function PostCarouselStudio({
@@ -30,6 +33,7 @@ export function PostCarouselStudio({
   initialPost,
   piece = null,
   onSceneSaved,
+  onEditLayers,
 }: PostCarouselStudioProps) {
   const [activePost, setActivePost] = useState<SmartPostPackage>(() =>
     initialPost ?? OFFICIAL_POST_PRESETS["carrossel-5-achados"]
@@ -183,6 +187,11 @@ export function PostCarouselStudio({
           buildScene={() => postPackageToScene(activePost)}
           onSaved={(saved) => onSceneSaved?.(saved)}
         />
+        {onEditLayers && (
+          <button type="button" className="btn-canvas-action scene-open-editor" onClick={() => onEditLayers(postPackageToScene(activePost))}>
+            Editar em camadas
+          </button>
+        )}
 
         {/* Visual Stage */}
         <div className="carousel-stage-frame">

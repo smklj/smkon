@@ -30,6 +30,8 @@ export type ElementRender = { defs: string[]; body: string };
 
 export type BrandElementSpec = {
   label: string;
+  /** Ocupa a peça inteira (desenha com width/height do documento): não se move nem escala ao mudar o formato. */
+  fullBleed?: boolean;
   props: Record<string, PropSpec>;
   render(props: ElementProps, ctx: ElementContext): ElementRender;
 };
@@ -108,6 +110,7 @@ function hudPanel(content: string, accent: string, x: number, y: number): string
 export const BRAND_ELEMENTS: Record<string, BrandElementSpec> = {
   "smk-backdrop": {
     label: "Fundo cósmico SMKON",
+    fullBleed: true,
     props: { variant: { type: "enum", values: ["banner", "post"], required: true } },
     render(props, ctx) {
       const post = str(props, "variant") === "post";
@@ -124,6 +127,7 @@ export const BRAND_ELEMENTS: Record<string, BrandElementSpec> = {
 
   "smk-grid": {
     label: "Grade tecnológica",
+    fullBleed: true,
     props: {
       rows: { type: "int", min: 1, max: 64, required: true },
       cols: { type: "int", min: 1, max: 64, required: true },

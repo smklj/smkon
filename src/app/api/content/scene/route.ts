@@ -6,6 +6,9 @@ import { getContentScene, updateContentScene } from "@/lib/content/repository";
 import { parseSceneWrite } from "@/lib/content/schema";
 import { canEditContent } from "@/lib/content/service";
 import { isUuid } from "@/lib/validation/fields";
+import { findActiveMedia } from "@/lib/media/repository";
+import { assertLocksRespected, canEditBrand } from "@/lib/scene/locks";
+import { sceneAssetIds } from "@/lib/scene/geometry";
 
 const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" };
 
@@ -52,6 +55,20 @@ export async function PUT(request: Request) {
     const workspace = await findWorkspace(supabase, user.id);
     if (!workspace) return jsonError(404, "content_not_found", "Conteúdo não encontrado.");
     if (!canEditContent(workspace.role)) return jsonError(403, "forbidden", "Seu papel não permite editar conteúdo.");
+
+    // Travas: a API recebe o documento inteiro, então confere contra o que está gravado.
+    const current = await getContentScene(supabase, workspace.organizationId, input.id);
+    if (!current) return jsonError(404, "content_not_found", "Conteúdo não encontrado.");
+    assertLocksRespected(current.scene, input.scene, { allowBrand: canEditBrand(workspace.role) });
+
+    // Imagens do design: só mídia não arquivada do próprio workspace (licença é conferida na fila).
+    const assetIds = sceneAssetIds(input.scene);
+    if (assetIds.length > 0) {
+      const found = await findActiveMedia(supabase, workspace.organizationId, assetIds);
+      if (found.length !== assetIds.length) {
+        throw new ValidationError("O design usa mídia que não está na biblioteca deste workspace ou foi arquivada.");
+      }
+    }
 
     const result = await updateContentScene(supabase, workspace.organizationId, input.id, input.scene, input.expectedHash);
     if (result === "not_found") return jsonError(404, "content_not_found", "Conteúdo não encontrado.");

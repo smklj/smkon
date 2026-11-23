@@ -19,9 +19,13 @@ export async function GET(request: Request) {
     const workspace = await findWorkspace(supabase, user.id);
     if (!workspace) return NextResponse.json({ items: [] });
     const today = todayInBrazil();
+    const params = new URL(request.url).searchParams;
+    // ?signed=1: o editor de camadas mostra miniaturas (URLs assinadas de 10 min).
+    const signUrls = params.get("signed") === "1";
     const media = await listMedia(supabase, workspace.organizationId, {
-      cursor: new URL(request.url).searchParams.get("cursor"),
+      cursor: params.get("cursor"),
       pageSize: SELECTOR_PAGE_SIZE,
+      signUrls,
     });
     return NextResponse.json(
       {
@@ -31,6 +35,7 @@ export async function GET(request: Request) {
           name: asset.original_name,
           kind: asset.kind,
           licenseStatus: licenseStatus(asset.licenses, today),
+          ...(signUrls ? { mimeType: asset.mime_type, url: asset.signedUrl } : {}),
         })),
       },
       { headers: { "Cache-Control": "no-store" } },
