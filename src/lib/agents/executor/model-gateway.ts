@@ -12,10 +12,11 @@
  *   Sem `usage` na resposta, cobra o pior caso (prompt/3 caracteres por token e o teto de saída).
  */
 import { estimateCost, modelPrice, modelRequestProfile } from "./model-pricing.ts";
+import { GATEWAY_BASE_URL, reasoningFields } from "./transport.ts";
 import { planSystemPrompt, planUserPrompt, summarySystemPrompt, summaryUserPrompt } from "./model-prompt.ts";
 import type { AgentModel } from "./types.ts";
 
-export const GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
+export { GATEWAY_BASE_URL } from "./transport.ts";
 export const MAX_RESPONSE_BYTES = 256 * 1024;
 export const DEFAULT_PLAN_MAX_TOKENS = 1_500;
 export const DEFAULT_SUMMARY_MAX_TOKENS = 3_000;
@@ -44,10 +45,16 @@ export interface ModelUsage {
 }
 
 export interface GatewayModelOptions {
-  /** Credencial do Gateway: chave (AI_GATEWAY_API_KEY) ou token OIDC do deployment. */
+  /** Credencial do destino: chave do Gateway, token OIDC do deployment ou GEMINI_API_KEY (Google direto). */
   apiKey: string;
-  /** Formato "provedor/modelo" do AI Gateway (ex.: anthropic/…); escolhido pelo Owner. */
+  /** Formato "provedor/modelo" do catálogo (ex.: anthropic/…); escolhido pelo Owner. Define preço e perfil. */
   model: string;
+  /** Destino OpenAI-compatível; padrão: Vercel AI Gateway. */
+  baseUrl?: string;
+  /** Id enviado ao destino (Google direto não usa o prefixo "google/"); padrão: model. */
+  modelId?: string;
+  /** true quando a chamada vai direto ao provedor (raciocínio em reasoning_effort). */
+  direct?: boolean;
   fetch?: FetchLike;
   planMaxTokens?: number;
   summaryMaxTokens?: number;
@@ -97,14 +104,14 @@ export function createGatewayModel(options: GatewayModelOptions): AgentModel {
     const maxTokens = answerTokens + (profile.outputHeadroom ?? 0);
     let response;
     try {
-      response = await doFetch(`${GATEWAY_BASE_URL}/chat/completions`, {
+      response = await doFetch(`${options.baseUrl ?? GATEWAY_BASE_URL}/chat/completions`, {
         method: "POST",
         headers: { Authorization: `Bearer ${options.apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: options.model,
+          model: options.modelId ?? options.model,
           temperature: 0,
           max_tokens: maxTokens,
-          ...(profile.reasoningEffort ? { reasoning: { effort: profile.reasoningEffort } } : {}),
+          ...reasoningFields(profile.reasoningEffort, options.direct === true),
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },

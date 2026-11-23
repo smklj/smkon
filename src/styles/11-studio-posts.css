@@ -252,3 +252,26 @@
   border-color: #2563ff;
   color: #00f0ff;
 }
+
+/* Content Studio — assistente de IA (Gemini) */
+.ai-assist { display: grid; gap: 10px; padding: 14px; margin: 0 0 18px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: linear-gradient(180deg, rgba(120, 140, 255, 0.06), transparent 70%); }
+.ai-assist-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.ai-assist-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+.ai-assist-mark { color: #8ea2ff; font-size: 14px; }
+.ai-assist-field { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.ai-assist-field input { height: 38px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); padding: 0 10px; font-size: 13px; font-weight: 400; }
+.ai-assist-field input:focus-visible { outline: none; box-shadow: var(--focus); }
+.ai-assist-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai-assist-hint { margin: 0; font-size: 12px; }
+.ai-assist-message { margin: 0; font-size: 13px; color: var(--text-2); }
+.ai-assist-message.is-error { color: var(--danger); }
+.ai-assist-subtitle { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.ai-assist-notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }
+.ai-issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ai-issue { padding: 10px 12px; border: 1px solid var(--line); border-left-width: 3px; border-radius: var(--radius-sm); }
+.ai-issue-bloqueio { border-left-color: var(--danger); }
+.ai-issue-atencao { border-left-color: var(--warn); }
+.ai-issue-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.ai-issue-type { font-size: 13px; font-weight: 600; color: var(--text); }
+.ai-issue-excerpt { margin: 2px 0; font-size: 13px; color: var(--text); font-style: italic; }
+.ai-issue .row-meta { margin: 2px 0 0; }

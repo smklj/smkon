@@ -48,6 +48,9 @@ test("tudo configurado fica pronto", () => {
     MERCADO_LIVRE_CLIENT_SECRET: "segredo",
     MERCADO_LIVRE_REDIRECT_URI: "https://smkon.vercel.app/api/integrations/mercado-livre/oauth/callback",
     MERCADO_LIVRE_TOKEN_ENCRYPTION_KEY: KEY,
+    AGENT_MODEL: "google/gemini-3.8-flash",
+    AGENT_MONTHLY_BUDGET_USD: "5",
+    GEMINI_API_KEY: "g".repeat(39),
   });
   const summary = readinessSummary(checks);
   assert.equal(summary.pending, 0);
@@ -96,4 +99,20 @@ test("agentes: mostra o modelo e recusa modelo sem preço cadastrado", () => {
   assert.equal(unpriced.status, "invalid");
   assert.deepEqual(unpriced.invalid, ["AGENT_MODEL"]);
   assert.match(unpriced.hint ?? "", /sem preço cadastrado/);
+});
+
+test("IA nos módulos: Gemini direto com GEMINI_API_KEY; sem chave do Google aponta o que falta", () => {
+  const base = { ...BASE, AGENT_MODEL: "google/gemini-3.8-flash", AGENT_MONTHLY_BUDGET_USD: "5" };
+  const direct = byId({ ...base, GEMINI_API_KEY: "g".repeat(39) })["ai-assist"];
+  assert.equal(direct.status, "ready");
+  assert.match(direct.hint ?? "", /direto na conta Google/);
+  const none = byId(base)["ai-assist"];
+  assert.equal(none.status, "action");
+  assert.deepEqual(none.missing, ["GEMINI_API_KEY"]);
+  const gateway = byId({ ...base, AGENT_MODEL_AUTH: "oidc" })["ai-assist"];
+  assert.equal(gateway.status, "ready");
+  assert.match(gateway.hint ?? "", /créditos do AI Gateway/);
+  const bad = byId({ ...base, GEMINI_API_KEY: "curta" })["ai-assist"];
+  assert.equal(bad.status, "invalid");
+  assert.ok(!JSON.stringify(byId({ ...base, GEMINI_API_KEY: "g".repeat(39) })).includes("g".repeat(39)), "nunca expõe a chave");
 });
