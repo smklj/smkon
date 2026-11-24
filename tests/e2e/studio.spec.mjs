@@ -202,7 +202,9 @@ test("Content Studio: oferta gerada em lote a partir do produto, com preço veri
   // O rascunho abre no editor; o preço é ligado ao produto e não aceita digitação.
   const title = `OFERTA DO DIA — ${name}`;
   await page.locator(".studio-draft", { hasText: title }).first().click();
-  await page.getByRole("button", { name: "Abrir no editor de camadas" }).click();
+  // Espera o design salvo da peça chegar (aviso da oferta) antes de abrir o editor.
+  const offerNote = page.getByRole("status").filter({ hasText: "oferta montada a partir do produto" });
+  await offerNote.getByRole("button", { name: "Abrir no editor de camadas" }).click();
   const editor = page.getByRole("region", { name: "Editor de camadas" });
   const canvas = editor.getByTestId("scene-canvas");
   await expect(canvas).toContainText("R$ 149,90");

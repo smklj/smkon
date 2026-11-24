@@ -262,7 +262,7 @@ export function OfferStudio({
           </button>
           {preview && (
             <button type="button" className="btn-canvas-action" onClick={() => onEditLayers(preview)}>
-              Abrir no editor de camadas
+              Editar a prévia em camadas
             </button>
           )}
         </div>

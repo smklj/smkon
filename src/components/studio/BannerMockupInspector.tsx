@@ -86,11 +86,18 @@ export function BannerMockupInspector({
   // Ajuste durante a renderização (padrão do React para estado derivado de prop).
   const [appliedScene, setAppliedScene] = useState<SceneDocument | null>(null);
   const [loadedPost, setLoadedPost] = useState<{ post: SmartPostPackage; key: number } | null>(null);
+  // Trocar de peça fecha o editor. O design salvo chega depois (busca assíncrona) e não
+  // fecha um editor que o operador acabou de abrir na mesma peça.
+  const pieceId = piece?.id ?? null;
+  const [appliedPieceId, setAppliedPieceId] = useState<string | null>(pieceId);
+  if (pieceId !== appliedPieceId) {
+    setAppliedPieceId(pieceId);
+    setEditor(null);
+  }
   if (savedScene !== appliedScene) {
     setAppliedScene(savedScene);
     const banner = savedScene ? bannerConfigFromScene(savedScene) : null;
     const post = savedScene && !banner ? postPackageFromScene(savedScene) : null;
-    setEditor(null);
     setLayeredScene(savedScene && !banner && !post ? savedScene : null);
     if (banner) {
       setSmartBannerConfig(banner);
