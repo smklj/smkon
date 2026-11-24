@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_missions: {
+        Row: {
+          agent: string
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          enabled: boolean
+          goal: string
+          id: string
+          interval_hours: number | null
+          last_enqueued_at: string | null
+          last_run_id: string | null
+          last_skip_reason: string | null
+          last_skipped_at: string | null
+          max_steps: number
+          name: string
+          next_run_at: string | null
+          organization_id: string
+          owner_id: string
+          run_hour: number | null
+          run_minute: number | null
+          run_weekday: number | null
+          schedule_kind: string
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent: string
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          goal: string
+          id?: string
+          interval_hours?: number | null
+          last_enqueued_at?: string | null
+          last_run_id?: string | null
+          last_skip_reason?: string | null
+          last_skipped_at?: string | null
+          max_steps: number
+          name: string
+          next_run_at?: string | null
+          organization_id: string
+          owner_id: string
+          run_hour?: number | null
+          run_minute?: number | null
+          run_weekday?: number | null
+          schedule_kind: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent?: string
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          goal?: string
+          id?: string
+          interval_hours?: number | null
+          last_enqueued_at?: string | null
+          last_run_id?: string | null
+          last_skip_reason?: string | null
+          last_skipped_at?: string | null
+          max_steps?: number
+          name?: string
+          next_run_at?: string | null
+          organization_id?: string
+          owner_id?: string
+          run_hour?: number | null
+          run_minute?: number | null
+          run_weekday?: number | null
+          schedule_kind?: string
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       agent_model_usage: {
         Row: {
           cost_usd: number
@@ -63,6 +144,7 @@ export type Database = {
           goal: string
           id: string
           max_steps: number
+          mission_id: string | null
           organization_id: string
           outcome: Json | null
           started_at: string | null
@@ -81,6 +163,7 @@ export type Database = {
           goal: string
           id?: string
           max_steps: number
+          mission_id?: string | null
           organization_id: string
           outcome?: Json | null
           started_at?: string | null
@@ -99,6 +182,7 @@ export type Database = {
           goal?: string
           id?: string
           max_steps?: number
+          mission_id?: string | null
           organization_id?: string
           outcome?: Json | null
           started_at?: string | null
@@ -1763,6 +1847,10 @@ export type Database = {
       }
     }
     Functions: {
+      agent_archive_mission: {
+        Args: { p_mission_id: string }
+        Returns: undefined
+      }
       agent_cancel_run: {
         Args: { p_reason: string; p_run_id: string }
         Returns: undefined
@@ -1781,6 +1869,22 @@ export type Database = {
           step_count: number
         }[]
       }
+      agent_create_mission: {
+        Args: {
+          p_agent: string
+          p_goal: string
+          p_interval_hours?: number
+          p_max_steps: number
+          p_name: string
+          p_organization_id: string
+          p_run_hour?: number
+          p_run_minute?: number
+          p_run_weekday?: number
+          p_schedule_kind: string
+          p_timezone?: string
+        }
+        Returns: string
+      }
       agent_draft_content: {
         Args: { p_draft: Json; p_run_id: string }
         Returns: {
@@ -1789,6 +1893,26 @@ export type Database = {
           content_status: string
           content_version: number
         }[]
+      }
+      agent_enqueue_due_missions: {
+        Args: { p_limit?: number }
+        Returns: {
+          mission_id: string
+          run_id: string | null
+          skip_reason: string | null
+        }[]
+      }
+      agent_mission_next_run: {
+        Args: {
+          p_after: string
+          p_hour: number
+          p_interval_hours: number
+          p_kind: string
+          p_minute: number
+          p_timezone: string
+          p_weekday: number
+        }
+        Returns: string
       }
       agent_model_spend_since: {
         Args: { p_since: string }
@@ -1812,6 +1936,10 @@ export type Database = {
       agent_set_kill_switch: {
         Args: { p_on: boolean; p_organization_id: string; p_reason?: string }
         Returns: number
+      }
+      agent_set_mission_enabled: {
+        Args: { p_enabled: boolean; p_mission_id: string }
+        Returns: string
       }
       agent_set_tool: {
         Args: { p_enabled: boolean; p_organization_id: string; p_tool: string }

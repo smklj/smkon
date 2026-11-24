@@ -8,7 +8,7 @@
  */
 import { ValidationError } from "../http/errors.ts";
 import { isUuid } from "../validation/fields.ts";
-import { isAgentKind, isAgentTool, type AgentKind, type AgentTool } from "./types.ts";
+import { isAgentKind, isAgentTool, isMissionScheduleKind, type AgentKind, type AgentTool } from "./types.ts";
 
 export type RunInput = { agent: AgentKind; goal: string; maxSteps: number };
 export type LimitsInput = { maxRunsPerDay: number; maxStepsPerRun: number };
@@ -85,4 +85,74 @@ export function parseToolForm(formData: FormData): ToolInput {
   const enabled = formData.get("enabled") === "true";
   if (!isAgentTool(tool)) throw new ValidationError("Ferramenta fora da allowlist.");
   return { tool, enabled };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// S24 — missões
+// ---------------------------------------------------------------------------------------------------------------
+
+export type MissionSchedule =
+  | { kind: "daily"; hour: number; minute: number }
+  | { kind: "weekly"; weekday: number; hour: number; minute: number }
+  | { kind: "interval"; hours: number };
+
+export type MissionInput = { name: string; agent: AgentKind; goal: string; maxSteps: number; schedule: MissionSchedule };
+export type MissionToggleInput = { missionId: string; enabled: boolean };
+export type MissionArchiveInput = { missionId: string };
+
+/** "HH:MM" (input type=time) → hora e minuto. */
+function parseTime(value: string): { hour: number; minute: number } {
+  const match = /^(\d{2}):(\d{2})$/.exec(value.trim());
+  const hour = match ? Number(match[1]) : Number.NaN;
+  const minute = match ? Number(match[2]) : Number.NaN;
+  if (!match || hour > 23 || minute > 59) throw new ValidationError("Informe o horário no formato HH:MM.");
+  return { hour, minute };
+}
+
+/** Valida a agenda: só os campos do tipo escolhido são lidos (os demais são descartados). */
+export function parseMissionSchedule(kind: string, time: string, weekday: string, intervalHours: string): MissionSchedule {
+  if (!isMissionScheduleKind(kind)) throw new ValidationError("Escolha a frequência da missão.");
+  if (kind === "interval") {
+    const hours = Number(intervalHours);
+    if (!Number.isInteger(hours) || hours < 1 || hours > 168) throw new ValidationError("Intervalo: de 1 a 168 horas.");
+    return { kind, hours };
+  }
+  const { hour, minute } = parseTime(time);
+  if (kind === "daily") return { kind, hour, minute };
+  const day = Number(weekday);
+  if (weekday.trim() === "" || !Number.isInteger(day) || day < 0 || day > 6) throw new ValidationError("Escolha o dia da semana.");
+  return { kind, weekday: day, hour, minute };
+}
+
+/** Formulário de nova missão: nome, agente, objetivo, passos (até o teto do workspace) e agenda. */
+export function parseMissionForm(formData: FormData): MissionInput {
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 3 || name.length > 120) throw new ValidationError("Dê um nome de 3 a 120 caracteres à missão.");
+  const run = parseRunInput(
+    String(formData.get("agent") ?? ""),
+    String(formData.get("goal") ?? ""),
+    String(formData.get("max_steps") ?? ""),
+    stepLimitFromForm(formData.get("limit")),
+  );
+  const schedule = parseMissionSchedule(
+    String(formData.get("schedule_kind") ?? ""),
+    String(formData.get("time") ?? ""),
+    String(formData.get("weekday") ?? ""),
+    String(formData.get("interval_hours") ?? ""),
+  );
+  return { name, ...run, schedule };
+}
+
+/** Pausar/retomar: id (UUID estrito) e o estado desejado. */
+export function parseMissionToggleForm(formData: FormData): MissionToggleInput {
+  const missionId = String(formData.get("mission_id") ?? "");
+  if (!isUuid(missionId)) throw new ValidationError("Missão inválida.");
+  return { missionId, enabled: formData.get("enabled") === "true" };
+}
+
+/** Arquivar: id (UUID estrito). */
+export function parseMissionArchiveForm(formData: FormData): MissionArchiveInput {
+  const missionId = String(formData.get("mission_id") ?? "");
+  if (!isUuid(missionId)) throw new ValidationError("Missão inválida.");
+  return { missionId };
 }

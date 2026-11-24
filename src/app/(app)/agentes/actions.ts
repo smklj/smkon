@@ -6,15 +6,34 @@ import {
   parseCancelForm,
   parseKillSwitchForm,
   parseLimitsForm,
+  parseMissionArchiveForm,
+  parseMissionForm,
+  parseMissionToggleForm,
   parseRunForm,
   parseToolForm,
   type CancelInput,
   type KillSwitchInput,
   type LimitsInput,
+  type MissionArchiveInput,
+  type MissionInput,
+  type MissionToggleInput,
   type RunInput,
   type ToolInput,
 } from "@/lib/agents/schema";
-import { cancelAgentRun, canControlAgents, canManageTools, canOperateRuns, queueRun, saveLimits, setToolGrant, switchAgents } from "@/lib/agents/service";
+import {
+  addMission,
+  cancelAgentRun,
+  canControlAgents,
+  canManageMissions,
+  canManageTools,
+  canOperateRuns,
+  queueRun,
+  retireMission,
+  saveLimits,
+  setToolGrant,
+  switchAgents,
+  toggleMission,
+} from "@/lib/agents/service";
 import { dbErrorMessage } from "@/lib/http/errors";
 import { errorFields, log } from "@/lib/observability/log";
 import { createClient } from "@/lib/supabase/server";
@@ -129,4 +148,62 @@ export async function limitsAction(_prev: AgentState, formData: FormData): Promi
     return { error: dbErrorMessage(error, "Não foi possível salvar os limites.") };
   }
   return done("Limites salvos.");
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// S24 — missões
+// ---------------------------------------------------------------------------------------------------------------
+
+export async function createMissionAction(_prev: AgentState, formData: FormData): Promise<AgentState> {
+  let input: MissionInput;
+  try {
+    input = parseMissionForm(formData);
+  } catch (error) {
+    return invalid(error, "Dados inválidos.");
+  }
+  const { supabase, workspace, allowed } = await context(canManageMissions);
+  if (!allowed || !workspace) return { error: "Apenas owner ou admin criam missões." };
+  try {
+    await addMission(supabase, workspace.organizationId, input);
+  } catch (error) {
+    log("warn", "agents.mission.create", errorFields(error));
+    return { error: dbErrorMessage(error, "Não foi possível criar a missão.") };
+  }
+  return done("Missão criada. Na próxima hora agendada, o worker coloca uma execução na fila.");
+}
+
+export async function toggleMissionAction(_prev: AgentState, formData: FormData): Promise<AgentState> {
+  let input: MissionToggleInput;
+  try {
+    input = parseMissionToggleForm(formData);
+  } catch (error) {
+    return invalid(error, "Missão inválida.");
+  }
+  const { supabase, allowed } = await context(canManageMissions);
+  if (!allowed) return { error: "Apenas owner ou admin pausam ou retomam missões." };
+  try {
+    await toggleMission(supabase, input);
+  } catch (error) {
+    log("warn", "agents.mission.toggle", errorFields(error));
+    return { error: dbErrorMessage(error, "Não foi possível alterar a missão.") };
+  }
+  return done(input.enabled ? "Missão retomada. Você passa a ser o responsável por ela." : "Missão pausada.");
+}
+
+export async function archiveMissionAction(_prev: AgentState, formData: FormData): Promise<AgentState> {
+  let input: MissionArchiveInput;
+  try {
+    input = parseMissionArchiveForm(formData);
+  } catch (error) {
+    return invalid(error, "Missão inválida.");
+  }
+  const { supabase, allowed } = await context(canManageMissions);
+  if (!allowed) return { error: "Apenas owner ou admin arquivam missões." };
+  try {
+    await retireMission(supabase, input);
+  } catch (error) {
+    log("warn", "agents.mission.archive", errorFields(error));
+    return { error: dbErrorMessage(error, "Não foi possível arquivar a missão.") };
+  }
+  return done("Missão arquivada. As execuções que ela criou continuam no histórico.");
 }

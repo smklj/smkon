@@ -108,7 +108,7 @@ export async function handleWorkerRequest(request: Request, deps: WorkerHandlerD
     }
     // Só identificadores e códigos: nada de objetivo, saídas de ferramenta ou dados de produto.
     return Response.json(
-      { reaped: result.reaped, stoppedBy: result.stoppedBy, runs: result.runs },
+      { reaped: result.reaped, missions: result.missions, stoppedBy: result.stoppedBy, runs: result.runs },
       { status: 200, headers: NO_STORE },
     );
   } catch (error) {

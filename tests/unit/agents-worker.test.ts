@@ -449,8 +449,11 @@ test("handler autorizado: fila vazia → 200 só com contadores; falha do banco 
     now: () => new Date("2026-11-19T10:00:00Z"),
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { reaped: 0, stoppedBy: "empty_queue", runs: [] });
+  assert.deepEqual(await response.json(), {
+    reaped: 0, missions: { enqueued: 0, skipped: 0, error: false }, stoppedBy: "empty_queue", runs: [],
+  });
   assert.deepEqual(calls.map((c) => c.kind === "rpc" && [c.fn, c.args]), [
+    ["agent_enqueue_due_missions", { p_limit: 20 }],
     ["agent_reap_stale_runs", { p_lease_seconds: 600 }],
     ["agent_model_spend_since", { p_since: "2026-11-01T00:00:00.000Z" }],
     ["agent_claim_next_run", undefined],
