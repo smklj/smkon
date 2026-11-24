@@ -48,7 +48,11 @@ Migration `20261124010000_scene_evidence_checks`. As checagens anteriores não m
 | `scene_evidence` | erro | Produto do workspace; evidência do mesmo produto e verificada; preço observado **no máximo 7 dias** antes do dia da publicação (Brasília) |
 | `scene_price_text` | aviso | Texto com preço (R$, US$, €) digitado sem vínculo a evidência |
 
-As duas regras de negócio são decisões iniciais, fáceis de mudar: o prazo de 7 dias (`v_max_age`) e preço digitado à mão ser aviso, não erro.
+**Regras confirmadas pelo owner em 24/11/2026:**
+- o preço ligado vale por até **7 dias** antes do dia da publicação (`v_max_age` em `publication_scene_evidence_check`);
+- preço digitado à mão no design, sem vínculo, gera **aviso** e não bloqueia a publicação.
+
+Para mudar qualquer uma das duas, é preciso uma migration nova, com os testes em `021_scene_evidence_checks`.
 
 ## Arquivos
 
