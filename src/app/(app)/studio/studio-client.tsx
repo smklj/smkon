@@ -627,6 +627,7 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
         piece={scenePiece}
         savedScene={savedScene}
         onSceneSaved={handleSceneSaved}
+        role={role}
       />
 
       <section className="studio-preview">

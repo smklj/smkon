@@ -96,3 +96,35 @@ export async function archiveMedia(supabase: SupabaseClient, mediaId: string) {
   const { error } = await supabase.rpc("archive_media_asset", { p_media_id: mediaId });
   if (error) throw error;
 }
+
+/** Mídias do workspace, não arquivadas, entre os ids pedidos (ids de outro workspace ficam de fora). */
+export async function findActiveMedia(
+  supabase: SupabaseClient,
+  organizationId: string,
+  ids: readonly string[],
+): Promise<Array<Pick<MediaRow, "id" | "storage_path" | "original_name">>> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("media_assets")
+    .select("id,storage_path,original_name")
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .in("id", [...ids]);
+  if (error) throw error;
+  return (data ?? []) as Array<Pick<MediaRow, "id" | "storage_path" | "original_name">>;
+}
+
+/** URLs assinadas (10 min) das mídias do workspace pedidas; ids desconhecidos não voltam. */
+export async function signMediaUrls(supabase: SupabaseClient, organizationId: string, ids: readonly string[]): Promise<Record<string, string>> {
+  const assets = await findActiveMedia(supabase, organizationId, ids);
+  if (assets.length === 0) return {};
+  const result = await supabase.storage.from(MEDIA_BUCKET).createSignedUrls(assets.map((asset) => asset.storage_path), 600);
+  if (result.error) throw result.error;
+  const byPath = new Map(assets.map((asset) => [asset.storage_path, asset.id]));
+  const urls: Record<string, string> = {};
+  for (const item of result.data ?? []) {
+    const id = item.path ? byPath.get(item.path) : undefined;
+    if (id && item.signedUrl) urls[id] = item.signedUrl;
+  }
+  return urls;
+}

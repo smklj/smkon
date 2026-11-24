@@ -1,0 +1,215 @@
+/*
+ * Editor de camadas do Content Studio (F2): palco com o SVG do documento de cena,
+ * seleção e alça por cima, painéis de propriedades e camadas ao lado.
+ */
+.scene-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.scene-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 16px;
+}
+.scene-toolbar-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.scene-toolbar-end { margin-left: auto; }
+.scene-pages { margin: 0; }
+
+.scene-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 344px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .scene-editor-grid { grid-template-columns: 1fr; }
+}
+
+.scene-stage-wrap { display: grid; gap: 8px; justify-items: center; }
+.scene-stage {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--line-strong);
+  touch-action: none;
+  user-select: none;
+}
+.scene-svg { position: absolute; inset: 0; cursor: default; }
+.scene-svg svg { display: block; width: 100%; height: 100%; }
+.scene-svg [data-layer] { cursor: move; }
+
+.scene-selection {
+  position: absolute;
+  pointer-events: none;
+  outline: 1.5px solid #6ea8fe;
+  outline-offset: 1px;
+}
+.scene-selection.locked { outline-style: dashed; outline-color: var(--warn); }
+.scene-handle {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #fff;
+  border: 1.5px solid #6ea8fe;
+  cursor: nwse-resize;
+  pointer-events: auto;
+}
+
+.scene-inline-text {
+  position: absolute;
+  z-index: 2;
+  padding: 0 4px;
+  border: 1.5px solid #6ea8fe;
+  border-radius: 4px;
+  background: rgba(11, 11, 11, 0.92);
+  color: var(--text);
+  font-family: var(--font-display-stack);
+  font-weight: 800;
+}
+.scene-inline-text:focus-visible { outline: none; box-shadow: var(--focus); }
+
+.scene-side { display: grid; gap: 12px; }
+.scene-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.scene-panel-title { margin: 0; font-size: 13px; font-weight: 700; color: var(--text); }
+
+.scene-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.scene-field { display: grid; gap: 4px; font-size: 11px; color: var(--muted); min-width: 0; }
+.scene-field-wide { grid-column: 1 / -1; }
+.scene-field input,
+.scene-field select {
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+.scene-field input[type="color"] { padding: 2px; cursor: pointer; }
+.scene-field input:focus-visible,
+.scene-field select:focus-visible { outline: none; box-shadow: var(--focus); }
+.scene-format { min-width: 96px; }
+
+.scene-layers { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 420px; overflow-y: auto; overflow-x: hidden; }
+.scene-layer { display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: var(--radius-sm); }
+.scene-layer.selected { background: rgba(110, 168, 254, 0.12); }
+.scene-layer[data-hidden] .scene-layer-label { opacity: 0.45; text-decoration: line-through; }
+.scene-layer-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 6px 8px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: left;
+}
+.scene-layer-name:focus-visible,
+.scene-layer-actions button:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
+.scene-layer-type { flex: none; width: 42px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.scene-layer-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scene-lock { flex: none; padding: 1px 6px; border-radius: 9999px; border: 1px solid var(--line-strong); font-size: 10px; color: var(--muted); }
+.scene-lock-brand { border-color: rgba(245, 181, 71, 0.4); color: var(--warn); }
+.scene-layer-actions { display: flex; flex: none; }
+.scene-layer-actions button {
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+.scene-layer-actions button:hover:not(:disabled) { background: var(--elevated); color: var(--text); }
+
+.scene-picker {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.scene-picker-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.scene-picker-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 300px;
+  overflow: auto;
+}
+.scene-picker-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-2);
+  text-align: left;
+}
+.scene-picker-item:hover { border-color: var(--line-strong); }
+.scene-picker-item:focus-visible { outline: none; box-shadow: var(--focus); }
+.scene-picker-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; }
+.scene-picker-name { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.scene-license { margin: 0; font-size: 10px; font-weight: 600; }
+.scene-license-ok { color: var(--ok); }
+.scene-license-warn { color: var(--warn); }
+.scene-license-danger { color: var(--danger); }
+.scene-license-neutral { color: var(--muted); }
+
+.scene-open-editor { margin-top: 8px; }
+.scene-layered-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.scene-layered-note p { margin: 0; flex: 1 1 280px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .scene-layer-actions button { transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
+}

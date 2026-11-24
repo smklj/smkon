@@ -17,6 +17,8 @@ export type RenderOptions = {
   resolveAsset?: (assetId: string) => string | undefined;
   /** Prefixo dos ids de gradientes: vários SVGs na mesma página (miniaturas) não colidem. */
   idPrefix?: string;
+  /** Editor: envolve cada camada em <g data-layer="id"> para seleção e medida (não usar na exportação). */
+  annotate?: boolean;
 };
 
 const FONT_CLASS: Record<FontRole, string> = {
@@ -114,20 +116,23 @@ export function renderPageSvg(doc: SceneDocument, options: RenderOptions = {}): 
   const body: string[] = [];
   for (const layer of page.layers) {
     if (layer.hidden) continue;
+    let markup = "";
     switch (layer.type) {
       case "text":
-        body.push(renderText(layer));
+        markup = renderText(layer);
         break;
       case "rect":
-        body.push(renderRect(layer, page));
+        markup = renderRect(layer, page);
         break;
       case "image":
-        body.push(renderImage(layer, options));
+        markup = renderImage(layer, options);
         break;
       case "brand":
-        body.push(renderBrand(layer, doc, `${idPrefix}${pageIndex}`, defs));
+        markup = renderBrand(layer, doc, `${idPrefix}${pageIndex}`, defs);
         break;
     }
+    // O id da camada segue SCENE_ID_PATTERN ([a-z0-9-]), seguro em atributo.
+    body.push(options.annotate ? `<g data-layer="${layer.id}">${markup}</g>` : markup);
   }
   const uniqueDefs = [...new Set(defs)];
   return applySvgTypography(

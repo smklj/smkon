@@ -124,6 +124,10 @@ export function applyOperation(doc: SceneDocument, operation: SceneOperation, op
       if ((layer.locked === "brand" || operation.locked === "brand") && !options.allowBrand) {
         throw new SceneOperationError("Só owner ou admin trava ou destrava camadas da marca.");
       }
+      // Mesma regra do servidor (locks.ts): qualquer um trava a posição; só owner/admin destrava.
+      if (layer.locked === "position" && operation.locked !== "position" && !options.allowBrand) {
+        throw new SceneOperationError(`A trava da camada "${layer.name ?? layer.id}" só pode ser removida por owner ou admin.`);
+      }
       if (operation.locked === null) delete layer.locked;
       else layer.locked = operation.locked;
       break;
