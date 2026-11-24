@@ -73,7 +73,7 @@ export async function insertContent(
   supabase: SupabaseClient,
   organizationId: string,
   userId: string,
-  row: ContentWrite,
+  row: ContentWrite & { scene?: SceneDocument },
 ) {
   const { data, error } = await supabase
     .from("content_items")

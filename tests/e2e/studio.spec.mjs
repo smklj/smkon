@@ -154,3 +154,95 @@ test("Content Studio: editor de camadas move, edita texto, respeita a trava da m
   await page.getByRole("button", { name: "Arquivar" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Conteúdo arquivado." })).toBeVisible();
 });
+
+test("Content Studio: oferta gerada em lote a partir do produto, com preço verificado, fonte e data", async ({ page }) => {
+  const name = `E2E Oferta ${runId}`;
+  const form = page.getByRole("region", { name: "Registrar evidência" });
+  const evidenceRow = (claim) => page.getByRole("listitem").filter({ hasText: claim });
+  async function verifiedEvidence(kind, claim, value) {
+    await form.getByLabel("Tipo de evidência").selectOption(kind);
+    await form.getByLabel("O que a fonte mostra").fill(claim);
+    await form.getByLabel("Link da fonte (https)").fill("https://loja.example.com/e2e-oferta");
+    await form.getByLabel(/^Valor/).fill(value);
+    await form.getByRole("button", { name: "Registrar evidência" }).click();
+    await expect(evidenceRow(claim).getByText("Pendente", { exact: true })).toBeVisible();
+    await evidenceRow(claim).getByRole("button", { name: "Verificar" }).click();
+    await expect(evidenceRow(claim).getByText("Verificada", { exact: true })).toBeVisible();
+  }
+
+  // Produto com preço e avaliação verificados (evidência com fonte e data).
+  await page.goto("/produtos");
+  await page.getByLabel("Nome do produto").fill(name);
+  await page.getByLabel("Fonte").selectOption("manual");
+  await page.getByLabel("Tipo").selectOption("physical");
+  await page.getByRole("button", { name: "Cadastrar produto" }).click();
+  await expect(page).toHaveURL(/\/produtos\/[0-9a-f-]{36}$/);
+  const productUrl = page.url();
+  await verifiedEvidence("price", `Preço 149,90 ${runId}`, "149,90");
+  await verifiedEvidence("rating", `Nota 4,6 ${runId}`, "4,6");
+
+  // Lote: o design sai do catálogo, sem digitar preço.
+  await page.goto("/studio");
+  await page.getByRole("button", { name: "Ofertas de produto" }).click();
+  const offers = page.locator(".offer-studio");
+  await offers.getByLabel("Buscar produto pelo nome").fill(name);
+  await offers.getByRole("button", { name: "Buscar", exact: true }).click();
+  const box = offers.getByRole("checkbox", { name: new RegExp(name) });
+  await expect(page.locator(".offer-product", { hasText: name })).toContainText(/R\$ 149,90 · Preço em loja\.example\.com em \d{2}\/\d{2}\/\d{4}/);
+  await box.check();
+  await offers.getByLabel("Formato").selectOption("1:1");
+  const preview = offers.getByTestId("offer-preview");
+  await expect(preview).toContainText("R$ 149,90");
+  await expect(preview).toContainText(/Preço em loja\.example\.com em \d{2}\/\d{2}\/\d{4}/);
+  await expect(preview).toContainText("★ 4,6/5");
+  await offers.getByRole("button", { name: "Gerar 1 rascunho" }).click();
+  await expect(page.locator(".offer-result")).toContainText("1 rascunho(s) criado(s)");
+  await snap(page, "24-studio-oferta-lote");
+
+  // O rascunho abre no editor; o preço é ligado ao produto e não aceita digitação.
+  const title = `OFERTA DO DIA — ${name}`;
+  await page.locator(".studio-draft", { hasText: title }).first().click();
+  // Espera o design salvo da peça chegar (aviso da oferta) antes de abrir o editor.
+  const offerNote = page.getByRole("status").filter({ hasText: "oferta montada a partir do produto" });
+  await offerNote.getByRole("button", { name: "Abrir no editor de camadas" }).click();
+  const editor = page.getByRole("region", { name: "Editor de camadas" });
+  const canvas = editor.getByTestId("scene-canvas");
+  await expect(canvas).toContainText("R$ 149,90");
+  await editor.getByRole("region", { name: "Camadas" }).getByRole("button", { name: /^Selecionar Preço$/ }).click();
+  await expect(editor.getByRole("region", { name: "Propriedades" }).getByLabel("Texto", { exact: true })).toBeDisabled();
+  await canvas.locator('[data-layer="price"]').dblclick();
+  await expect(editor.getByRole("alert")).toContainText("vem dos dados do produto");
+
+  // Nem pela API: o servidor recalcula o preço a partir da evidência.
+  const forged = await page.evaluate(async (pieceTitle) => {
+    const list = await (await fetch("/api/content?limit=50")).json();
+    const item = (list.items ?? []).find((entry) => entry.title === pieceTitle);
+    const current = await (await fetch(`/api/content/scene?id=${item.id}`)).json();
+    const scene = current.scene;
+    scene.pages[0].layers.find((layer) => layer.id === "price").text = "R$ 9,90";
+    const res = await fetch("/api/content/scene", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, scene, expectedHash: current.content_hash }),
+    });
+    return { status: res.status, body: await res.json() };
+  }, title);
+  expect(forged.status).toBe(400);
+  expect(forged.body.error).toContain('deve mostrar "R$ 149,90"');
+
+  // Trocar o formato usa o template e mantém os vínculos; salvar passa na conferência.
+  await editor.getByLabel("Formato").selectOption("9:16");
+  await expect(editor.locator(".scene-save-ok")).toContainText("gerado pelo template");
+  await editor.getByRole("button", { name: "Salvar na peça" }).click();
+  await expect(editor.locator(".scene-save-ok")).toContainText(/Design salvo na peça \(versão 2\)/);
+
+  await editor.getByRole("button", { name: "Fechar editor" }).click();
+  await page.getByRole("button", { name: "Arquivar" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Conteúdo arquivado." })).toBeVisible();
+
+  // Produto com evidência não é apagado: arquivar.
+  await page.goto(productUrl);
+  await page.getByLabel("Status do produto").selectOption("archived");
+  await page.getByRole("button", { name: "Alterar status" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Status atualizado." })).toBeVisible();
+});

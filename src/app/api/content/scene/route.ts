@@ -9,6 +9,8 @@ import { isUuid } from "@/lib/validation/fields";
 import { findActiveMedia } from "@/lib/media/repository";
 import { assertLocksRespected, canEditBrand } from "@/lib/scene/locks";
 import { sceneAssetIds } from "@/lib/scene/geometry";
+import { assertBindingsMatch, bindingRefs } from "@/lib/scene/bindings";
+import { getBindingData } from "@/lib/products/repository";
 
 const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" };
 
@@ -68,6 +70,12 @@ export async function PUT(request: Request) {
       if (found.length !== assetIds.length) {
         throw new ValidationError("O design usa mídia que não está na biblioteca deste workspace ou foi arquivada.");
       }
+    }
+
+    // Campos ligados ao produto: o texto tem de ser o dado verificado formatado (nada digitado à mão).
+    const refs = bindingRefs(input.scene);
+    if (refs.productIds.length > 0) {
+      assertBindingsMatch(input.scene, await getBindingData(supabase, workspace.organizationId, refs));
     }
 
     const result = await updateContentScene(supabase, workspace.organizationId, input.id, input.scene, input.expectedHash);

@@ -628,6 +628,7 @@ export default function StudioClient({ styleNonce }: { styleNonce?: string }) {
         savedScene={savedScene}
         onSceneSaved={handleSceneSaved}
         role={role}
+        onBatchCreated={() => void loadItems()}
       />
 
       <section className="studio-preview">

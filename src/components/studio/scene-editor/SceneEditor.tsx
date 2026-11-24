@@ -18,6 +18,7 @@ import {
   type Box,
 } from "@/lib/scene/geometry";
 import { reformatScene } from "@/lib/scene/templates";
+import { bindingRefs, refreshBindings, type BindingData, type LatestEvidence } from "@/lib/scene/bindings";
 import type { SceneDocument, SceneLayer } from "@/lib/scene/types";
 import type { SavedScene, ScenePiece } from "../SceneSaveControl";
 import { downloadBlob, exportScenePage, fetchSignedUrls, type ExportType } from "./export";
@@ -75,6 +76,7 @@ export function SceneEditor({ initialScene, piece, role, label, onSaved, onClose
   const [preview, setPreview] = useState<SceneOperation | null>(null);
   const [box, setBox] = useState<Box | null>(null);
   const [viewWidth, setViewWidth] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -189,7 +191,38 @@ export function SceneEditor({ initialScene, piece, role, label, onSaved, onClose
   }
 
   function startTextEdit(layer: SceneLayer | null) {
-    if (layer?.type === "text" && layer.locked !== "brand") setTextEdit({ id: layer.id, value: layer.text });
+    if (layer?.type !== "text" || layer.locked === "brand") return;
+    if (layer.bind) {
+      editor.setError("Este texto vem dos dados do produto: use “Atualizar dados do produto” em vez de digitar.");
+      return;
+    }
+    setTextEdit({ id: layer.id, value: layer.text });
+  }
+
+  const bound = bindingRefs(doc);
+
+  /** Puxa a evidência verificada mais recente de cada produto ligado e recalcula os textos. */
+  async function refreshProductData() {
+    setRefreshing(true);
+    setNotice(null);
+    try {
+      const query = `ids=${bound.productIds.join(",")}${bound.evidenceIds.length ? `&evidence=${bound.evidenceIds.join(",")}` : ""}`;
+      const res = await fetch(`/api/products/bindings?${query}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Não foi possível carregar os dados dos produtos.");
+      const data: BindingData = { products: body.products ?? {}, evidence: body.evidence ?? {} };
+      const result = refreshBindings(doc, data, (body.latest ?? {}) as LatestEvidence);
+      if (result.changed === 0) {
+        setNotice("Os dados do produto já estão atualizados.");
+        return;
+      }
+      editor.replaceDoc(result.doc);
+      setNotice(`${result.changed} campo(s) atualizado(s) com a evidência verificada mais recente.`);
+    } catch (err) {
+      editor.setError(err instanceof Error ? err.message : "Não foi possível atualizar os dados do produto.");
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   function commitTextEdit() {
@@ -363,6 +396,11 @@ export function SceneEditor({ initialScene, piece, role, label, onSaved, onClose
             Refazer
           </button>
         </div>
+        {bound.productIds.length > 0 && (
+          <button type="button" className="btn-canvas-action" onClick={refreshProductData} disabled={refreshing}>
+            {refreshing ? "Atualizando…" : "Atualizar dados do produto"}
+          </button>
+        )}
         <label className="scene-field scene-format">
           <span>Formato</span>
           <select value={format ?? "custom"} onChange={(event) => changeFormat(event.target.value)}>

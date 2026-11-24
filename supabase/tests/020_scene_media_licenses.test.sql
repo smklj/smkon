@@ -45,9 +45,13 @@ from job_scene j;
 
 -- 1. Sem design: checagem presente e ok
 select tests.ok((select (c ->> 'ok')::boolean and c ->> 'detail' like '%não usa imagens%' from scene_check), '1a sem design, nada a conferir');
+-- Todas as checagens da base continuam presentes, na mesma ordem, no início da lista.
 select tests.ok(
-  (select jsonb_array_length(public.publication_checks(jsonb_populate_record(null::public.publication_jobs, to_jsonb(j)))) = jsonb_array_length(public.publication_checks_base(jsonb_populate_record(null::public.publication_jobs, to_jsonb(j)))) + 1 from job_scene j),
-  '1b checagens anteriores preservadas, mais a nova'
+  (select public.publication_checks(r) -> 0 = public.publication_checks_base(r) -> 0
+      and (select jsonb_agg(x) from jsonb_array_elements(public.publication_checks(r)) with ordinality t(x, n)
+           where n <= jsonb_array_length(public.publication_checks_base(r))) = public.publication_checks_base(r)
+   from job_scene j, lateral (select jsonb_populate_record(null::public.publication_jobs, to_jsonb(j)) as r) rr),
+  '1b checagens anteriores preservadas, mais as novas'
 );
 
 -- 2. Imagem com licença: ok

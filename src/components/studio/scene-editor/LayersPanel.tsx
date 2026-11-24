@@ -52,6 +52,7 @@ export function LayersPanel({ page, selectedId, onSelect, run, canBrand }: Props
                 <span className="scene-layer-label">{label}</span>
                 {brand && <span className="scene-lock scene-lock-brand">Marca</span>}
                 {layer.locked === "position" && <span className="scene-lock">Posição</span>}
+                {layer.type === "text" && layer.bind && <span className="scene-lock scene-lock-data">Produto</span>}
               </button>
               <div className="scene-layer-actions">
                 <button

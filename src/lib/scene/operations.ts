@@ -9,7 +9,7 @@
  */
 import { ValidationError } from "../http/errors.ts";
 import { parseSceneDocument, parseSceneLayer } from "./schema.ts";
-import type { LayerLock, SceneDocument, SceneLayer, ScenePage } from "./types.ts";
+import type { FieldBinding, LayerLock, SceneDocument, SceneLayer, ScenePage } from "./types.ts";
 
 /** Campos que uma atualização pode trocar (id e type nunca mudam). */
 export type LayerPatch = { [key: string]: unknown };
@@ -20,6 +20,8 @@ export type SceneOperation =
   | { op: "layer.remove"; pageId: string; layerId: string }
   | { op: "layer.move"; pageId: string; layerId: string; toIndex: number }
   | { op: "layer.lock"; pageId: string; layerId: string; locked: LayerLock | null }
+  /** Liga (ou troca o vínculo de) uma camada de texto a um dado do produto, com o texto já formatado. */
+  | { op: "layer.rebind"; pageId: string; layerId: string; bind: FieldBinding; text: string }
   | { op: "page.add"; page: ScenePage; index?: number }
   | { op: "page.remove"; pageId: string }
   | { op: "page.move"; pageId: string; toIndex: number };
@@ -37,7 +39,7 @@ export class SceneOperationError extends ValidationError {
 }
 
 const GEOMETRY_KEYS = new Set(["x", "y", "rotation", "width", "height", "scale"]);
-const IMMUTABLE_KEYS = new Set(["id", "type", "locked"]);
+const IMMUTABLE_KEYS = new Set(["id", "type", "locked", "bind"]);
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -85,6 +87,9 @@ export function applyOperation(doc: SceneDocument, operation: SceneOperation, op
       const patch = operation.patch ?? {};
       for (const key of Object.keys(patch)) {
         if (IMMUTABLE_KEYS.has(key)) throw new SceneOperationError(`"${key}" não pode ser alterado por atualização.`);
+        if (key === "text" && current.type === "text" && current.bind) {
+          throw new SceneOperationError(`O texto de "${current.name ?? current.id}" vem dos dados do produto: atualize pelo produto em vez de digitar.`);
+        }
         if (current.locked === "position" && GEOMETRY_KEYS.has(key) && !options.allowBrand) {
           throw new SceneOperationError(`A camada "${current.name ?? current.id}" tem posição travada.`);
         }
@@ -107,6 +112,13 @@ export function applyOperation(doc: SceneDocument, operation: SceneOperation, op
       const page = findPage(next, operation.pageId);
       const index = findLayerIndex(page, operation.layerId);
       assertEditable(page.layers[index], options, "remover");
+      const follower = page.layers.find((item) => item.type === "rect" && item.fitText?.layerId === operation.layerId);
+      if (follower) {
+        const target = page.layers[index];
+        throw new SceneOperationError(
+          `"${follower.name ?? follower.id}" acompanha o texto "${target.name ?? target.id}": remova "${follower.name ?? follower.id}" primeiro.`,
+        );
+      }
       page.layers.splice(index, 1);
       break;
     }
@@ -130,6 +142,15 @@ export function applyOperation(doc: SceneDocument, operation: SceneOperation, op
       }
       if (operation.locked === null) delete layer.locked;
       else layer.locked = operation.locked;
+      break;
+    }
+    case "layer.rebind": {
+      const page = findPage(next, operation.pageId);
+      const index = findLayerIndex(page, operation.layerId);
+      const current = page.layers[index];
+      assertEditable(current, options, "ligar a dados");
+      if (current.type !== "text") throw new SceneOperationError("Só camadas de texto se ligam a dados do produto.");
+      page.layers[index] = parseSceneLayer({ ...current, bind: clone(operation.bind), text: operation.text }, `camada ${current.id}`);
       break;
     }
     case "page.add": {

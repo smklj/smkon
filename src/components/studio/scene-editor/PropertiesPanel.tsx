@@ -5,6 +5,7 @@ import type { FontRole, SceneLayer, ScenePage, TextAnchor } from "@/lib/scene/ty
 import { LICENSE_STATUS_LABEL, LICENSE_STATUS_TONE, type LicenseStatus } from "@/lib/media/types";
 import { ColorField, NumberField, SelectField, TextField } from "./fields";
 import { layerLabel } from "./LayersPanel";
+import { BIND_FIELD_LABEL } from "@/lib/scene/bindings";
 
 const FONT_OPTIONS: readonly { value: FontRole; label: string }[] = [
   { value: "display", label: "Título (Sora)" },
@@ -56,9 +57,15 @@ export function PropertiesPanel({ page, layer, run, licenses }: Props) {
       {layer.locked === "position" && <p className="scene-save-hint">Posição e tamanho travados; conteúdo e cores seguem editáveis.</p>}
 
       <fieldset className="scene-fields" disabled={brandLocked}>
+        {layer.type === "text" && layer.bind && (
+          <p className="scene-bind-note scene-field-wide" role="note">
+            <strong>{BIND_FIELD_LABEL[layer.bind.field]}</strong> do produto. O texto vem do catálogo e das evidências
+            verificadas e não é digitado; use “Atualizar dados do produto” para puxar a evidência mais recente.
+          </p>
+        )}
         {layer.type === "text" && (
           <>
-            <TextField label="Texto" value={layer.text} maxLength={2000} onCommit={(text) => update({ text })} />
+            <TextField label="Texto" value={layer.text} maxLength={2000} disabled={Boolean(layer.bind)} onCommit={(text) => update({ text })} />
             <SelectField label="Fonte" value={layer.font} options={FONT_OPTIONS} onCommit={(font) => update({ font })} />
             <NumberField label="Tamanho" value={layer.size} min={1} max={512} disabled={geometryLocked} onCommit={(size) => update({ size })} />
             <SelectField label="Peso" value={layer.weight ?? DEFAULT_WEIGHT[layer.font]} options={WEIGHT_OPTIONS} onCommit={(weight) => update({ weight })} />

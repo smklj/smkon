@@ -23,6 +23,7 @@ import { SMKONBannerCanvas } from "./SMKONBannerCanvas";
 import { PostCarouselStudio } from "./PostCarouselStudio";
 import { SceneSaveControl, type SavedScene, type ScenePiece } from "./SceneSaveControl";
 import { SceneEditor } from "./scene-editor/SceneEditor";
+import { OfferStudio } from "./OfferStudio";
 import type { SmartPostPackage } from "@/lib/content/smart-post-generator";
 import type { SceneDocument } from "@/lib/scene/types";
 import { bannerConfigFromScene, bannerConfigToScene } from "@/lib/scene/templates/smkon-banner";
@@ -39,7 +40,7 @@ import {
   type MascotExpression,
 } from "@/lib/media/brand-system";
 
-type StudioViewTab = "smkon-brand" | "post-carousel" | "mockup-3d" | "banner-promo" | "infoproduct-factory";
+type StudioViewTab = "smkon-brand" | "post-carousel" | "product-offer" | "mockup-3d" | "banner-promo" | "infoproduct-factory";
 
 interface BannerMockupInspectorProps {
   draftTitle?: string;
@@ -54,6 +55,8 @@ interface BannerMockupInspectorProps {
   onSceneSaved?: (saved: SavedScene) => void;
   /** Papel no workspace: travas da marca e quem salva. */
   role?: string | null;
+  /** Lote de ofertas criou rascunhos: a lista do Studio recarrega. */
+  onBatchCreated?: () => void;
 }
 
 export function BannerMockupInspector({
@@ -65,6 +68,7 @@ export function BannerMockupInspector({
   savedScene = null,
   onSceneSaved,
   role = null,
+  onBatchCreated,
 }: BannerMockupInspectorProps = {}) {
   const [activeTab, setActiveTab] = useState<StudioViewTab>("smkon-brand");
   /** Documento aberto no editor de camadas (F2); a chave remonta o editor a cada abertura. */
@@ -82,11 +86,18 @@ export function BannerMockupInspector({
   // Ajuste durante a renderização (padrão do React para estado derivado de prop).
   const [appliedScene, setAppliedScene] = useState<SceneDocument | null>(null);
   const [loadedPost, setLoadedPost] = useState<{ post: SmartPostPackage; key: number } | null>(null);
+  // Trocar de peça fecha o editor. O design salvo chega depois (busca assíncrona) e não
+  // fecha um editor que o operador acabou de abrir na mesma peça.
+  const pieceId = piece?.id ?? null;
+  const [appliedPieceId, setAppliedPieceId] = useState<string | null>(pieceId);
+  if (pieceId !== appliedPieceId) {
+    setAppliedPieceId(pieceId);
+    setEditor(null);
+  }
   if (savedScene !== appliedScene) {
     setAppliedScene(savedScene);
     const banner = savedScene ? bannerConfigFromScene(savedScene) : null;
     const post = savedScene && !banner ? postPackageFromScene(savedScene) : null;
-    setEditor(null);
     setLayeredScene(savedScene && !banner && !post ? savedScene : null);
     if (banner) {
       setSmartBannerConfig(banner);
@@ -196,6 +207,14 @@ export function BannerMockupInspector({
           </button>
           <button
             type="button"
+            className={activeTab === "product-offer" ? "active" : ""}
+            aria-pressed={activeTab === "product-offer"}
+            onClick={() => setActiveTab("product-offer")}
+          >
+            Ofertas de produto
+          </button>
+          <button
+            type="button"
             className={activeTab === "mockup-3d" ? "active" : ""}
             aria-pressed={activeTab === "mockup-3d"}
             onClick={() => setActiveTab("mockup-3d")}
@@ -223,8 +242,12 @@ export function BannerMockupInspector({
 
       {layeredScene && !editor && (
         <div className="scene-layered-note" role="status">
-          <p>Esta peça tem um design editado em camadas. Ele não volta para o formulário do template: continue no editor.</p>
-          <button type="button" className="btn-canvas-action primary" onClick={() => openEditor(layeredScene, layeredScene.pages.length > 1 ? "carrossel" : "capa")}>
+          <p>
+            {layeredScene.template?.id === "smkon-oferta" && !layeredScene.template.detached
+              ? "Esta peça tem uma oferta montada a partir do produto. Abra no editor para ajustar, trocar o formato ou atualizar os dados."
+              : "Esta peça tem um design editado em camadas. Ele não volta para o formulário do template: continue no editor."}
+          </p>
+          <button type="button" className="btn-canvas-action primary" onClick={() => openEditor(layeredScene, layeredScene.template?.id === "smkon-oferta" ? "oferta" : layeredScene.pages.length > 1 ? "carrossel" : "capa")}>
             Abrir no editor de camadas
           </button>
         </div>
@@ -515,6 +538,16 @@ export function BannerMockupInspector({
           piece={piece}
           onSceneSaved={onSceneSaved}
           onEditLayers={(doc) => openEditor(doc, doc.pages.length > 1 ? "carrossel" : "post")}
+        />
+      )}
+
+      {/* Ofertas a partir do catálogo (F3): campos ligados às evidências verificadas */}
+      {!editor && activeTab === "product-offer" && (
+        <OfferStudio
+          piece={piece}
+          onSceneSaved={onSceneSaved}
+          onEditLayers={(doc) => openEditor(doc, "oferta")}
+          onBatchCreated={onBatchCreated}
         />
       )}
 
