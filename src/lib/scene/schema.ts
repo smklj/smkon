@@ -11,6 +11,8 @@ import { isPlainObject, isUuid } from "../validation/fields.ts";
 import { BRAND_ELEMENTS, type PropSpec } from "./elements.ts";
 import {
   SCENE_SCHEMA,
+  type BindField,
+  type FieldBinding,
   type BrandLayer,
   type BrandPropValue,
   type FitText,
@@ -131,8 +133,25 @@ function layerBase(raw: Raw, path: string) {
 
 const BASE_KEYS = ["id", "type", "name", "x", "y", "rotation", "opacity", "locked", "hidden"] as const;
 
+const BIND_FIELDS: readonly BindField[] = ["product.name", "price.value", "price.source", "rating.value"];
+
+function binding(value: unknown, path: string): FieldBinding {
+  const raw = object(value, path);
+  onlyKeys(raw, ["field", "productId", "evidenceId"], path);
+  const field = oneOf(raw.field, `${path}.field`, BIND_FIELDS);
+  if (!isUuid(raw.productId)) fail(`${path}.productId`, "produto inválido.");
+  const result: FieldBinding = { field, productId: raw.productId };
+  if (field === "product.name") {
+    if (raw.evidenceId !== undefined) fail(`${path}.evidenceId`, "o nome vem do produto, sem evidência.");
+  } else {
+    if (!isUuid(raw.evidenceId)) fail(`${path}.evidenceId`, "este campo exige uma evidência verificada.");
+    result.evidenceId = raw.evidenceId;
+  }
+  return result;
+}
+
 function textLayer(raw: Raw, path: string): TextLayer {
-  onlyKeys(raw, [...BASE_KEYS, "text", "font", "size", "weight", "color", "anchor", "letterSpacing"], path);
+  onlyKeys(raw, [...BASE_KEYS, "text", "font", "size", "weight", "color", "anchor", "letterSpacing", "bind"], path);
   const layer: TextLayer = {
     ...layerBase(raw, path),
     type: "text",
@@ -145,6 +164,7 @@ function textLayer(raw: Raw, path: string): TextLayer {
   if (raw.anchor !== undefined) layer.anchor = oneOf(raw.anchor, `${path}.anchor`, ANCHORS);
   const spacing = optionalNumber(raw.letterSpacing, `${path}.letterSpacing`, -1, 2);
   if (spacing !== undefined) layer.letterSpacing = spacing;
+  if (raw.bind !== undefined) layer.bind = binding(raw.bind, `${path}.bind`);
   return layer;
 }
 

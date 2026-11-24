@@ -36,8 +36,24 @@ type LayerBase = {
   hidden?: boolean;
 };
 
+/**
+ * Texto que vem de um dado do produto (F3). O vínculo aponta para o produto e, nos campos
+ * de evidência, para a evidência verificada: como a evidência é imutável depois da revisão,
+ * a versão aprovada fica presa àquele valor, fonte e data. O texto da camada precisa ser
+ * exatamente o dado formatado (bindings.ts), conferido no servidor ao salvar.
+ */
+export type BindField = "product.name" | "price.value" | "price.source" | "rating.value";
+
+export type FieldBinding = {
+  field: BindField;
+  productId: string;
+  /** Obrigatório em price.* e rating.value; ausente em product.name. */
+  evidenceId?: string;
+};
+
 export type TextLayer = LayerBase & {
   type: "text";
+  bind?: FieldBinding;
   text: string;
   font: FontRole;
   size: number;

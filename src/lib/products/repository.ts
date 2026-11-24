@@ -9,6 +9,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { applyKeyset, decodeCursor, DEFAULT_PAGE_SIZE, toPage, type KeysetSpec, type Page } from "@/lib/pagination/keyset";
 import type { EvidenceRow, ProductRow } from "./types";
 import type { EvidenceInput, ProductInput } from "./schema";
+import type { BindingData, BindingEvidence, BindingProduct, LatestEvidence } from "@/lib/scene/bindings";
 
 export type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -44,7 +45,12 @@ function toProduct(row: Record<string, unknown>): ProductRow {
   return { ...(row as unknown as ProductRow), score: row.score === null ? null : Number(row.score), score_reasons: toReasons(row.score_reasons) };
 }
 
-export type ListProductsOptions = { includeArchived?: boolean; cursor?: string | null; pageSize?: number };
+export type ListProductsOptions = { includeArchived?: boolean; cursor?: string | null; pageSize?: number; search?: string | null };
+
+/** Busca por nome (contém, sem diferenciar maiúsculas); % e _ do usuário são literais. */
+export function nameSearchPattern(search: string): string {
+  return `%${search.trim().replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+}
 
 /** Coluna score_rank ainda não existe no banco (código publicado antes da migration 20261119120000). */
 function isMissingScoreRank(error: { code?: string; message?: string } | null): boolean {
@@ -59,11 +65,12 @@ function isMissingScoreRank(error: { code?: string; message?: string } | null): 
 export async function listProducts(
   supabase: SupabaseClient,
   organizationId: string,
-  { includeArchived = false, cursor = null, pageSize = DEFAULT_PAGE_SIZE }: ListProductsOptions = {},
+  { includeArchived = false, cursor = null, pageSize = DEFAULT_PAGE_SIZE, search = null }: ListProductsOptions = {},
 ): Promise<Page<ProductRow>> {
   const after = decodeCursor(PRODUCTS_KEYSET, cursor);
   let query = supabase.from("products").select(PRODUCT_LIST_COLUMNS).eq("organization_id", organizationId);
   if (!includeArchived) query = query.neq("status", "archived");
+  if (search && search.trim()) query = query.ilike("name", nameSearchPattern(search));
   const { data, error } = await applyKeyset(query, PRODUCTS_KEYSET, after, pageSize);
   if (error && isMissingScoreRank(error)) return listProductsLegacy(supabase, organizationId, includeArchived);
   if (error) throw error;
@@ -145,4 +152,111 @@ export async function reviewEvidence(
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   return row?.product_score ?? null;
+}
+
+/* ---------- dados para peças (F3: campos ligados ao produto) ---------- */
+
+export type TemplateProduct = BindingProduct & { status: ProductRow["status"]; affiliateUrl: string | null };
+
+type EvidenceDbRow = {
+  id: string;
+  product_id: string;
+  kind: string;
+  value: number | string | null;
+  source_url: string;
+  observed_at: string;
+  review_status: BindingEvidence["reviewStatus"];
+};
+
+const BINDING_EVIDENCE_COLUMNS = "id,product_id,kind,value,source_url,observed_at,review_status";
+
+function toBindingEvidence(row: EvidenceDbRow): BindingEvidence {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    kind: row.kind,
+    value: row.value === null ? null : Number(row.value),
+    sourceUrl: row.source_url,
+    observedAt: row.observed_at,
+    reviewStatus: row.review_status,
+  };
+}
+
+export async function getTemplateProducts(
+  supabase: SupabaseClient,
+  organizationId: string,
+  ids: readonly string[],
+): Promise<Record<string, TemplateProduct>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("products")
+    .select("id,name,currency,status,affiliate_url")
+    .eq("organization_id", organizationId)
+    .in("id", [...ids]);
+  if (error) throw error;
+  const out: Record<string, TemplateProduct> = {};
+  for (const row of data ?? []) {
+    out[row.id] = { id: row.id, name: row.name, currency: row.currency, status: row.status as ProductRow["status"], affiliateUrl: row.affiliate_url };
+  }
+  return out;
+}
+
+/** Evidências pelos ids (qualquer status: quem chama decide; bindings.ts só aceita verificadas). */
+export async function getEvidenceByIds(
+  supabase: SupabaseClient,
+  organizationId: string,
+  ids: readonly string[],
+): Promise<Record<string, BindingEvidence>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase
+    .from("product_evidence")
+    .select(BINDING_EVIDENCE_COLUMNS)
+    .eq("organization_id", organizationId)
+    .in("id", [...ids]);
+  if (error) throw error;
+  const out: Record<string, BindingEvidence> = {};
+  for (const row of (data ?? []) as EvidenceDbRow[]) out[row.id] = toBindingEvidence(row);
+  return out;
+}
+
+/** Preço e avaliação verificados mais recentes de cada produto (observação mais nova). */
+export async function getLatestVerifiedEvidence(
+  supabase: SupabaseClient,
+  organizationId: string,
+  productIds: readonly string[],
+): Promise<{ evidence: Record<string, BindingEvidence>; latest: LatestEvidence }> {
+  const evidence: Record<string, BindingEvidence> = {};
+  const latest: LatestEvidence = {};
+  if (productIds.length === 0) return { evidence, latest };
+  const { data, error } = await supabase
+    .from("product_evidence")
+    .select(BINDING_EVIDENCE_COLUMNS)
+    .eq("organization_id", organizationId)
+    .in("product_id", [...productIds])
+    .in("kind", ["price", "rating"])
+    .eq("review_status", "verified")
+    .order("observed_at", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  for (const row of (data ?? []) as EvidenceDbRow[]) {
+    const kind = row.kind as "price" | "rating";
+    const slot = (latest[row.product_id] ??= {});
+    if (slot[kind]) continue;
+    slot[kind] = row.id;
+    evidence[row.id] = toBindingEvidence(row);
+  }
+  return { evidence, latest };
+}
+
+/** Tudo que o design precisa para conferir os campos ligados. */
+export async function getBindingData(
+  supabase: SupabaseClient,
+  organizationId: string,
+  refs: { productIds: readonly string[]; evidenceIds: readonly string[] },
+): Promise<BindingData> {
+  const [products, evidence] = await Promise.all([
+    getTemplateProducts(supabase, organizationId, refs.productIds),
+    getEvidenceByIds(supabase, organizationId, refs.evidenceIds),
+  ]);
+  return { products, evidence };
 }

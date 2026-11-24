@@ -18,6 +18,7 @@ async function context() {
 
 /**
  * Catálogo do workspace, paginado por cursor (?cursor=&limit=, até 100 por página).
+ * ?q= filtra pelo nome (contém).
  * O score vem do banco e só existe com evidência verificada.
  */
 export async function GET(request: Request) {
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
       includeArchived: params.get("archived") === "1",
       cursor: params.get("cursor"),
       pageSize: parsePageSize(params.get("limit")),
+      search: params.get("q")?.slice(0, 100) ?? null,
     });
     // Dados do workspace do usuário: nenhum cache compartilhado (CDN/proxy) nem do navegador (S16).
     return NextResponse.json({ items: page.items, nextCursor: page.nextCursor }, { headers: { "Cache-Control": "private, no-store" } });

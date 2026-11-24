@@ -8,11 +8,15 @@ import type { SmartBannerConfig } from "../../media/smart-banner-engine.ts";
 import { reflowScene, SCENE_FORMATS, type SceneFormat } from "../geometry.ts";
 import type { SceneDocument } from "../types.ts";
 import { bannerConfigFromScene, bannerConfigToScene } from "./smkon-banner.ts";
+import { offerFromScene, offerToScene } from "./smkon-oferta.ts";
 import { postPackageFromScene, postPackageToScene } from "./smkon-post.ts";
 
 export type ReformatResult = { doc: SceneDocument; via: "template" | "reflow" };
 
 export function reformatScene(doc: SceneDocument, format: SceneFormat): ReformatResult {
+  // Oferta: o template tem as três proporções e os textos ligados vêm do próprio documento.
+  const offer = offerFromScene(doc);
+  if (offer) return { doc: offerToScene({ ...offer.params, aspectRatio: format }, offer.texts), via: "template" };
   const banner = bannerConfigFromScene(doc);
   if (banner && (format === "1:1" || format === "9:16")) {
     const config: SmartBannerConfig = { ...banner, aspectRatio: format };

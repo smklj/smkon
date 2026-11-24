@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { canRedo, canUndo, commit, createHistory, redo, replace, undo, type SceneHistory } from "@/lib/scene/history";
 import type { OperationOptions, SceneOperation } from "@/lib/scene/operations";
 import type { SceneDocument } from "@/lib/scene/types";
+import { assertBindingStructure } from "@/lib/scene/bindings";
 
 /** Estado do editor: histórico do documento, página aberta, camada selecionada e último erro. */
 export function useSceneEditor(initial: SceneDocument) {
@@ -23,7 +24,10 @@ export function useSceneEditor(initial: SceneDocument) {
   const run = useCallback(
     (operation: SceneOperation, options?: OperationOptions): boolean => {
       try {
-        setHistory(commit(historyRef.current, operation, options));
+        const next = commit(historyRef.current, operation, options);
+        // Preço ligado sem fonte e data não chega a entrar no documento (o servidor também recusa).
+        assertBindingStructure(next.present);
+        setHistory(next);
         setError(null);
         return true;
       } catch (err) {

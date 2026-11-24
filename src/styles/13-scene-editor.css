@@ -213,3 +213,67 @@
 @media (prefers-reduced-motion: no-preference) {
   .scene-layer-actions button { transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
 }
+
+/* ---------- F3: campos ligados ao produto e ofertas ---------- */
+.scene-lock-data { border-color: rgba(110, 168, 254, 0.45); color: var(--info); }
+.scene-bind-note {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(110, 168, 254, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(110, 168, 254, 0.06);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.offer-studio {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .offer-studio { grid-template-columns: 1fr; }
+}
+.offer-pane {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.offer-products { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 420px; overflow-y: auto; }
+.offer-product {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.offer-product:hover { background: var(--elevated); }
+.offer-product.disabled { cursor: not-allowed; opacity: 0.6; }
+.offer-product input { grid-row: span 2; }
+.offer-product-name { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.offer-product-price { font-size: 11px; color: var(--text-2); }
+.offer-product-price.missing { color: var(--warn); }
+.offer-check { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-2); }
+.offer-channels { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 0; border: 0; }
+.offer-channels legend { width: 100%; margin-bottom: 4px; font-size: 11px; color: var(--muted); }
+.offer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.offer-result { display: grid; gap: 6px; }
+.offer-skipped { margin: 0; padding-left: 18px; font-size: 12px; color: var(--warn); }
+.offer-preview {
+  width: 100%;
+  max-width: 360px;
+  justify-self: center;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+.offer-preview svg { display: block; width: 100%; height: 100%; }
+.offer-search { display: flex; gap: 8px; align-items: flex-end; }
+.offer-search .scene-field { flex: 1; }
