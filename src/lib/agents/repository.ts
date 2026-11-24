@@ -253,3 +253,84 @@ export async function updateLimits(supabase: SupabaseClient, organizationId: str
   });
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// S24 — missões. Leitura sob RLS; escrita só pelas RPCs agent_create_mission, agent_set_mission_enabled e
+// agent_archive_mission, que conferem papel, limites e agenda no banco.
+// ---------------------------------------------------------------------------------------------------------------
+
+export type AgentMission = {
+  id: string;
+  name: string;
+  agent: string;
+  goal: string;
+  max_steps: number;
+  schedule_kind: string;
+  run_hour: number | null;
+  run_minute: number | null;
+  run_weekday: number | null;
+  interval_hours: number | null;
+  timezone: string;
+  enabled: boolean;
+  next_run_at: string | null;
+  last_enqueued_at: string | null;
+  last_run_id: string | null;
+  last_skip_reason: string | null;
+  last_skipped_at: string | null;
+  created_at: string;
+};
+
+/** unavailable = migration 20261124100000 (agent_missions) ainda não aplicada neste banco. */
+export type MissionList = { state: "ok"; missions: AgentMission[] } | { state: "unavailable" };
+
+const MISSION_COLUMNS =
+  "id,name,agent,goal,max_steps,schedule_kind,run_hour,run_minute,run_weekday,interval_hours,timezone,enabled," +
+  "next_run_at,last_enqueued_at,last_run_id,last_skip_reason,last_skipped_at,created_at";
+
+/** Missões não arquivadas do workspace (sob RLS: qualquer membro lê), as ativas primeiro. */
+export async function loadMissions(supabase: SupabaseClient, organizationId: string): Promise<MissionList> {
+  const { data, error } = await supabase
+    .from("agent_missions")
+    .select(MISSION_COLUMNS)
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .order("enabled", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(50);
+  if (error) {
+    if (isMissingSchemaObject(error)) return { state: "unavailable" };
+    throw error;
+  }
+  return { state: "ok", missions: (data ?? []) as unknown as AgentMission[] };
+}
+
+export type MissionRpcArgs = {
+  p_organization_id: string;
+  p_name: string;
+  p_agent: AgentKind;
+  p_goal: string;
+  p_max_steps: number;
+  p_schedule_kind: string;
+  p_run_hour?: number;
+  p_run_minute?: number;
+  p_run_weekday?: number;
+  p_interval_hours?: number;
+  p_timezone?: string;
+};
+
+export async function createMission(supabase: SupabaseClient, args: MissionRpcArgs): Promise<string> {
+  const { data, error } = await supabase.rpc("agent_create_mission", args);
+  if (error) throw error;
+  return data;
+}
+
+export async function setMissionEnabled(supabase: SupabaseClient, missionId: string, enabled: boolean): Promise<string | null> {
+  const { data, error } = await supabase.rpc("agent_set_mission_enabled", { p_mission_id: missionId, p_enabled: enabled });
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function archiveMission(supabase: SupabaseClient, missionId: string): Promise<void> {
+  const { error } = await supabase.rpc("agent_archive_mission", { p_mission_id: missionId });
+  if (error) throw error;
+}

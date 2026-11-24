@@ -87,3 +87,62 @@ export function isActive(status: RunStatus): boolean {
 export { parseLimits, parseRunInput } from "./schema.ts";
 
 export const DEFAULT_AGENT_SETTINGS = { kill_switch: false, kill_reason: null, max_runs_per_day: 20, max_steps_per_run: 12 } as const;
+
+// ---------------------------------------------------------------------------------------------------------------
+// S24 — missões (execuções recorrentes por agenda). Espelha a migration 20261124100000_agent_missions.
+// ---------------------------------------------------------------------------------------------------------------
+
+export const MISSION_SCHEDULE_KINDS = ["daily", "weekly", "interval"] as const;
+export type MissionScheduleKind = (typeof MISSION_SCHEDULE_KINDS)[number];
+
+export const MISSION_SCHEDULE_LABEL: Record<MissionScheduleKind, string> = {
+  daily: "Todo dia",
+  weekly: "Toda semana",
+  interval: "A cada N horas",
+};
+
+/** 0 = domingo, como `extract(dow ...)` no PostgreSQL. */
+export const WEEKDAY_LABEL = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"] as const;
+
+/** Teto de missões ativas (não arquivadas) por workspace, igual ao banco. */
+export const MAX_ACTIVE_MISSIONS = 20;
+
+/** Motivos que o worker registra quando uma missão vencida não vira execução. */
+export const MISSION_SKIP_REASON_LABEL: Record<string, string> = {
+  kill_switch: "kill switch ligado",
+  previous_run_active: "a execução anterior ainda estava ativa",
+  run_limit_reached: "limite de execuções em 24 h atingido",
+  max_steps_above_limit: "passos acima do limite atual do workspace",
+  owner_not_allowed: "o responsável deixou de ser owner ou admin; retome para assumir",
+};
+
+export function isMissionScheduleKind(value: string): value is MissionScheduleKind {
+  return (MISSION_SCHEDULE_KINDS as readonly string[]).includes(value);
+}
+
+export function missionSkipReason(code: string | null): string | null {
+  if (!code) return null;
+  return MISSION_SKIP_REASON_LABEL[code] ?? code;
+}
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+/** Descrição curta da agenda ("Toda segunda às 08:00", "A cada 6 h"). */
+export function describeSchedule(schedule: {
+  schedule_kind: string;
+  run_hour: number | null;
+  run_minute: number | null;
+  run_weekday: number | null;
+  interval_hours: number | null;
+}): string {
+  const time = schedule.run_hour !== null && schedule.run_minute !== null ? `${pad(schedule.run_hour)}:${pad(schedule.run_minute)}` : "";
+  if (schedule.schedule_kind === "daily" && time) return `Todo dia às ${time}`;
+  if (schedule.schedule_kind === "weekly" && time && schedule.run_weekday !== null) {
+    const day = WEEKDAY_LABEL[schedule.run_weekday] ?? "?";
+    return `${schedule.run_weekday === 0 || schedule.run_weekday === 6 ? "Todo" : "Toda"} ${day} às ${time}`;
+  }
+  if (schedule.schedule_kind === "interval" && schedule.interval_hours !== null) {
+    return schedule.interval_hours === 1 ? "A cada hora" : `A cada ${schedule.interval_hours} h`;
+  }
+  return "Agenda inválida";
+}

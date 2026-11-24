@@ -12,12 +12,14 @@
  * - Começa execuções novas só dentro do orçamento de tempo (budgetMs) e até maxRuns por disparo.
  *   Uma execução já iniciada não é interrompida pelo orçamento; se a função da Vercel for encerrada no meio,
  *   o lease (agent_reap_stale_runs) falha a execução com worker_timeout no disparo seguinte.
+ * - S24: antes de reservar, as missões vencidas viram execuções na fila (queue.enqueueDue). Uma falha aqui
+ *   (por exemplo, migration ainda não aplicada) só é registrada: a fila existente continua sendo processada.
  */
 import { log } from "../../observability/log.ts";
 import { runAgent, type ExecutorLogger } from "../executor/run.ts";
 import { DEFAULT_LIMITS, type AgentModel, type AgentStore, type ExecutorLimits, type RunContext, type RunResult, type ToolRegistry } from "../executor/types.ts";
 import type { Budget } from "./budget.ts";
-import { toRunContext, type WorkerQueue } from "./queue.ts";
+import { DEFAULT_MISSIONS_PER_TICK, toRunContext, type WorkerQueue } from "./queue.ts";
 
 export const DEFAULT_LEASE_SECONDS = 600;
 export const DEFAULT_MAX_RUNS_PER_TICK = 3;
@@ -45,15 +47,20 @@ export interface WorkerTickDeps {
   logger?: ExecutorLogger;
   /** Injeção para testes; padrão runAgent. */
   execute?: typeof runAgent;
+  /** Missões avaliadas por disparo; padrão DEFAULT_MISSIONS_PER_TICK. */
+  maxMissions?: number;
 }
 
 export type TickRun =
   | { runId: string; status: RunResult["status"]; code?: string }
   | { runId: string; status: "invalid"; code: "internal_error"; reason: string };
 
+/** Missões do disparo: execuções criadas, puladas (com motivo registrado no banco) ou erro ao avaliar. */
+export type TickMissions = { enqueued: number; skipped: number; error: boolean };
+
 export type WorkerTickResult =
   | { status: "model_not_configured" }
-  | { status: "ok"; reaped: number; runs: TickRun[]; stoppedBy: StoppedBy };
+  | { status: "ok"; reaped: number; missions: TickMissions; runs: TickRun[]; stoppedBy: StoppedBy };
 
 /** budget = orçamento de TEMPO do disparo; budget_exhausted = teto mensal de GASTO atingido. */
 export type StoppedBy = "empty_queue" | "max_runs" | "budget" | "budget_exhausted";
@@ -73,6 +80,26 @@ export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickRes
   const budgetMs = deps.budgetMs ?? DEFAULT_TICK_BUDGET_MS;
   const hardLimitMs = deps.hardLimitMs ?? DEFAULT_TICK_HARD_LIMIT_MS;
   const startedAt = now();
+
+  const missions: TickMissions = { enqueued: 0, skipped: 0, error: false };
+  if (deps.queue.enqueueDue) {
+    try {
+      const results = await deps.queue.enqueueDue(deps.maxMissions ?? DEFAULT_MISSIONS_PER_TICK);
+      for (const result of results) {
+        if (result.runId) missions.enqueued += 1;
+        else missions.skipped += 1;
+        // Só identificadores e o código do motivo: nada do objetivo da missão.
+        logger(result.runId ? "info" : "warn", SCOPE, {
+          event: result.runId ? "mission_enqueued" : "mission_skipped",
+          missionId: result.missionId,
+          ...(result.runId ? { runId: result.runId } : { reason: result.skipReason ?? "unknown" }),
+        });
+      }
+    } catch (error) {
+      missions.error = true;
+      logger("error", SCOPE, { event: "missions_error", message: String((error as Error)?.message ?? error) });
+    }
+  }
 
   const reaped = await deps.queue.reap(deps.leaseSeconds ?? DEFAULT_LEASE_SECONDS);
   if (reaped > 0) logger("warn", SCOPE, { event: "reaped", count: reaped });
@@ -126,6 +153,6 @@ export async function runWorkerTick(deps: WorkerTickDeps): Promise<WorkerTickRes
       : { runId: claimed.runId, status: result.status });
   }
 
-  logger("info", SCOPE, { event: "tick_done", reaped, runs: runs.length, stoppedBy, ms: now() - startedAt });
-  return { status: "ok", reaped, runs, stoppedBy };
+  logger("info", SCOPE, { event: "tick_done", reaped, missions, runs: runs.length, stoppedBy, ms: now() - startedAt });
+  return { status: "ok", reaped, missions, runs, stoppedBy };
 }

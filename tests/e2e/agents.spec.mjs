@@ -55,3 +55,42 @@ test("Agentes: limites, nova execução na fila, kill switch interrompe e bloque
   await expect(kill.getByRole("status")).toContainText("Kill switch desligado.");
   await expect(form.getByRole("button", { name: "Criar execução" })).toBeEnabled();
 });
+
+test("Agentes: missão agendada é criada, pausada, retomada e arquivada", async ({ page }) => {
+  const name = `E2E missão ${runId}`;
+  await page.goto("/agentes");
+  await expect(page.getByRole("heading", { level: 1, name: "Agentes de IA" })).toBeVisible();
+  const missions = page.getByRole("region", { name: "Missões" });
+  await expect(missions).toBeVisible();
+  // Ambiente sem a migration 20261124100000: a seção avisa e não oferece o formulário.
+  test.skip(await missions.getByText("migration pendente").isVisible(), "migration de missões não aplicada neste banco");
+
+  const kill = page.getByRole("region", { name: "Kill switch" });
+  if (await kill.getByRole("button", { name: "Desligar kill switch" }).isVisible()) {
+    await kill.getByRole("button", { name: "Desligar kill switch" }).click();
+    await expect(kill.getByRole("status")).toContainText("Kill switch desligado.");
+  }
+
+  await missions.getByLabel("Nome").fill(name);
+  await missions.locator('select[name="agent"]').selectOption("operations_review");
+  await missions.getByLabel("Frequência").selectOption("weekly");
+  await missions.getByLabel("Dia").selectOption("1");
+  await missions.getByLabel("Horário (Brasília)").fill("08:00");
+  await missions.getByLabel("Objetivo").fill("Resumo semanal da fila e do financeiro (E2E)");
+  await missions.getByRole("button", { name: "Criar missão" }).click();
+  await expect(missions.getByRole("status").filter({ hasText: "Missão criada" })).toBeVisible();
+
+  const item = missions.getByRole("listitem").filter({ hasText: name });
+  await expect(item.getByText("Ativa", { exact: true })).toBeVisible();
+  await expect(item).toContainText("Toda segunda às 08:00");
+  await expect(item).toContainText("Próxima:");
+  await snap(page, "63-agentes-missao");
+
+  await item.getByRole("button", { name: `Pausar missão ${name}` }).click();
+  await expect(item.getByText("Pausada", { exact: true })).toBeVisible();
+  await item.getByRole("button", { name: `Retomar missão ${name}` }).click();
+  await expect(item.getByText("Ativa", { exact: true })).toBeVisible();
+  await item.getByRole("button", { name: `Arquivar missão ${name}` }).click();
+  await expect(missions.getByRole("listitem").filter({ hasText: name })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /publicar|aprovar/i })).toHaveCount(0);
+});
