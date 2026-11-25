@@ -1297,13 +1297,29 @@ export type Database = {
       products: {
         Row: {
           affiliate_url: string | null
+          category: string | null
           commission_percent: number | null
+          compare_at_price_cents: number | null
           created_at: string
           created_by: string
           currency: string
+          description: string | null
+          digital_asset_path: string | null
+          digital_benefits: Json | null
+          digital_delivery_type: string | null
+          digital_external_url: string | null
+          digital_instructions: string | null
           evidence: Json
           external_id: string | null
+          fulfillment_mode: string | null
+          height_cm: number | null
           id: string
+          image_urls: Json | null
+          is_bestseller: boolean | null
+          is_featured: boolean | null
+          is_new_arrival: boolean | null
+          is_published_in_store: boolean | null
+          length_cm: number | null
           name: string
           organization_id: string
           price_cents: number | null
@@ -1311,20 +1327,44 @@ export type Database = {
           score: number | null
           score_rank: number
           score_reasons: Json
+          short_description: string | null
+          sku: string | null
+          slug: string | null
           source: string
           status: string
+          stock_quantity: number | null
+          subcategory: string | null
+          track_inventory: boolean | null
           type: string
           updated_at: string
+          weight_grams: number | null
+          width_cm: number | null
         }
         Insert: {
           affiliate_url?: string | null
+          category?: string | null
           commission_percent?: number | null
+          compare_at_price_cents?: number | null
           created_at?: string
           created_by?: string
           currency?: string
+          description?: string | null
+          digital_asset_path?: string | null
+          digital_benefits?: Json | null
+          digital_delivery_type?: string | null
+          digital_external_url?: string | null
+          digital_instructions?: string | null
           evidence?: Json
           external_id?: string | null
+          fulfillment_mode?: string | null
+          height_cm?: number | null
           id?: string
+          image_urls?: Json | null
+          is_bestseller?: boolean | null
+          is_featured?: boolean | null
+          is_new_arrival?: boolean | null
+          is_published_in_store?: boolean | null
+          length_cm?: number | null
           name: string
           organization_id: string
           price_cents?: number | null
@@ -1332,20 +1372,44 @@ export type Database = {
           score?: number | null
           score_rank?: never
           score_reasons?: Json
+          short_description?: string | null
+          sku?: string | null
+          slug?: string | null
           source: string
           status?: string
+          stock_quantity?: number | null
+          subcategory?: string | null
+          track_inventory?: boolean | null
           type?: string
           updated_at?: string
+          weight_grams?: number | null
+          width_cm?: number | null
         }
         Update: {
           affiliate_url?: string | null
+          category?: string | null
           commission_percent?: number | null
+          compare_at_price_cents?: number | null
           created_at?: string
           created_by?: string
           currency?: string
+          description?: string | null
+          digital_asset_path?: string | null
+          digital_benefits?: Json | null
+          digital_delivery_type?: string | null
+          digital_external_url?: string | null
+          digital_instructions?: string | null
           evidence?: Json
           external_id?: string | null
+          fulfillment_mode?: string | null
+          height_cm?: number | null
           id?: string
+          image_urls?: Json | null
+          is_bestseller?: boolean | null
+          is_featured?: boolean | null
+          is_new_arrival?: boolean | null
+          is_published_in_store?: boolean | null
+          length_cm?: number | null
           name?: string
           organization_id?: string
           price_cents?: number | null
@@ -1353,10 +1417,18 @@ export type Database = {
           score?: number | null
           score_rank?: never
           score_reasons?: Json
+          short_description?: string | null
+          sku?: string | null
+          slug?: string | null
           source?: string
           status?: string
+          stock_quantity?: number | null
+          subcategory?: string | null
+          track_inventory?: boolean | null
           type?: string
           updated_at?: string
+          weight_grams?: number | null
+          width_cm?: number | null
         }
         Relationships: [
           {
@@ -1730,6 +1802,443 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organization_members"
             referencedColumns: ["organization_id", "user_id"]
+          },
+        ]
+      }
+      store_settings: {
+        Row: {
+          accent_color: string
+          announcement_bar: Json
+          categories_nav: Json
+          created_at: string
+          featured_categories: Json
+          free_shipping_min_cents: number | null
+          hero_banners: Json
+          id: string
+          is_store_active: boolean
+          logo_url: string | null
+          organization_id: string
+          primary_color: string
+          shipping_origin_cep: string
+          social_links: Json
+          store_name: string
+          store_tagline: string | null
+          support_email: string | null
+          support_whatsapp: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          announcement_bar?: Json
+          categories_nav?: Json
+          created_at?: string
+          featured_categories?: Json
+          free_shipping_min_cents?: number | null
+          hero_banners?: Json
+          id?: string
+          is_store_active?: boolean
+          logo_url?: string | null
+          organization_id: string
+          primary_color?: string
+          shipping_origin_cep?: string
+          social_links?: Json
+          store_name?: string
+          store_tagline?: string | null
+          support_email?: string | null
+          support_whatsapp?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          announcement_bar?: Json
+          categories_nav?: Json
+          created_at?: string
+          featured_categories?: Json
+          free_shipping_min_cents?: number | null
+          hero_banners?: Json
+          id?: string
+          is_store_active?: boolean
+          logo_url?: string | null
+          organization_id?: string
+          primary_color?: string
+          shipping_origin_cep?: string
+          social_links?: Json
+          store_name?: string
+          store_tagline?: string | null
+          support_email?: string | null
+          support_whatsapp?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_discount_amount_cents: number | null
+          max_uses: number | null
+          min_order_amount_cents: number | null
+          organization_id: string
+          updated_at: string
+          used_count: number
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          max_discount_amount_cents?: number | null
+          max_uses?: number | null
+          min_order_amount_cents?: number | null
+          organization_id: string
+          updated_at?: string
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_discount_amount_cents?: number | null
+          max_uses?: number | null
+          min_order_amount_cents?: number | null
+          organization_id?: string
+          updated_at?: string
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_coupons_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_orders: {
+        Row: {
+          coupon_code: string | null
+          created_at: string
+          customer_document: string
+          customer_email: string
+          customer_name: string
+          customer_notes: string | null
+          customer_phone: string
+          discount_amount_cents: number
+          id: string
+          items_subtotal_cents: number
+          metadata: Json
+          order_code: string
+          organization_id: string
+          paid_at: string | null
+          payment_method: string
+          payment_status: string
+          sales_order_id: string | null
+          shipping_address: Json | null
+          shipping_amount_cents: number
+          shipping_carrier_name: string | null
+          shipping_estimated_days: number | null
+          shipping_service_name: string | null
+          status: string
+          total_amount_cents: number
+          tracking_code: string | null
+          tracking_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          coupon_code?: string | null
+          created_at?: string
+          customer_document: string
+          customer_email: string
+          customer_name: string
+          customer_notes?: string | null
+          customer_phone: string
+          discount_amount_cents?: number
+          id?: string
+          items_subtotal_cents?: number
+          metadata?: Json
+          order_code: string
+          organization_id: string
+          paid_at?: string | null
+          payment_method?: string
+          payment_status?: string
+          sales_order_id?: string | null
+          shipping_address?: Json | null
+          shipping_amount_cents?: number
+          shipping_carrier_name?: string | null
+          shipping_estimated_days?: number | null
+          shipping_service_name?: string | null
+          status?: string
+          total_amount_cents?: number
+          tracking_code?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coupon_code?: string | null
+          created_at?: string
+          customer_document?: string
+          customer_email?: string
+          customer_name?: string
+          customer_notes?: string | null
+          customer_phone?: string
+          discount_amount_cents?: number
+          id?: string
+          items_subtotal_cents?: number
+          metadata?: Json
+          order_code?: string
+          organization_id?: string
+          paid_at?: string | null
+          payment_method?: string
+          payment_status?: string
+          sales_order_id?: string | null
+          shipping_address?: Json | null
+          shipping_amount_cents?: number
+          shipping_carrier_name?: string | null
+          shipping_estimated_days?: number | null
+          shipping_service_name?: string | null
+          status?: string
+          total_amount_cents?: number
+          tracking_code?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_order_items: {
+        Row: {
+          created_at: string
+          fulfillment_mode: string
+          id: string
+          image_url: string | null
+          order_id: string
+          product_id: string
+          product_name: string
+          product_slug: string
+          quantity: number
+          sku: string | null
+          subtotal_cents: number
+          unit_price_cents: number
+        }
+        Insert: {
+          created_at?: string
+          fulfillment_mode?: string
+          id?: string
+          image_url?: string | null
+          order_id: string
+          product_id: string
+          product_name: string
+          product_slug: string
+          quantity: number
+          sku?: string | null
+          subtotal_cents: number
+          unit_price_cents: number
+        }
+        Update: {
+          created_at?: string
+          fulfillment_mode?: string
+          id?: string
+          image_url?: string | null
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          product_slug?: string
+          quantity?: number
+          sku?: string | null
+          subtotal_cents?: number
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_shipment_events: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          location: string | null
+          occurred_at: string
+          order_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          location?: string | null
+          occurred_at?: string
+          order_id: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          location?: string | null
+          occurred_at?: string
+          order_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_shipment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_digital_deliveries: {
+        Row: {
+          access_token: string
+          asset_path: string | null
+          created_at: string
+          delivery_type: string
+          download_count: number
+          expires_at: string
+          external_url: string | null
+          id: string
+          instructions: string | null
+          license_key: string | null
+          max_downloads: number
+          order_id: string
+          product_id: string
+          product_name: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          asset_path?: string | null
+          created_at?: string
+          delivery_type?: string
+          download_count?: number
+          expires_at: string
+          external_url?: string | null
+          id?: string
+          instructions?: string | null
+          license_key?: string | null
+          max_downloads?: number
+          order_id: string
+          product_id: string
+          product_name: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          asset_path?: string | null
+          created_at?: string
+          delivery_type?: string
+          download_count?: number
+          expires_at?: string
+          external_url?: string | null
+          id?: string
+          instructions?: string | null
+          license_key?: string | null
+          max_downloads?: number
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_digital_deliveries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          order_id: string
+          payload: Json
+          payload_hash: string
+          provider: string
+          provider_payment_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id: string
+          payload?: Json
+          payload_hash: string
+          provider: string
+          provider_payment_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id?: string
+          payload?: Json
+          payload_hash?: string
+          provider?: string
+          provider_payment_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
           },
         ]
       }

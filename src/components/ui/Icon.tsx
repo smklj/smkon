@@ -10,6 +10,7 @@ export type IconName =
   | "legal"
   | "audience"
   | "security"
+  | "store"
   | "menu"
   | "close"
   | "logout"
@@ -28,6 +29,7 @@ const PATHS: Record<IconName, string> = {
   legal: "M12 3v18M5 7h14M7 7l-3 7a3 3 0 006 0zM17 7l-3 7a3 3 0 006 0zM8 21h8",
   audience: "M16 19v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1M9.5 10a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM21 19v-1a4 4 0 00-3-3.87M15 3.13a3.5 3.5 0 010 6.75",
   security: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4",
+  store: "M3 9l1-5h16l1 5v1a3 3 0 01-6 0 3 3 0 01-6 0 3 3 0 01-5-1V9zm1 5v7h16v-7M9 21v-6h6v6",
   menu: "M4 7h16M4 12h16M4 17h16",
   close: "M6 6l12 12M18 6L6 18",
   logout: "M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11",

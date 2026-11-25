@@ -6,12 +6,42 @@ import { CSP_HEADER, NONCE_HEADER, contentSecurityPolicy, generateNonce } from "
 
 const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/robots.txt", "/icon.svg", "/apple-icon.png"]);
 
+function isLojaSubdomain(host: string | null): boolean {
+  if (!host) return false;
+  const hostname = host.split(":")[0]?.toLowerCase() ?? "";
+  return hostname.startsWith("loja.");
+}
+
+function resolveLojaRewrite(request: NextRequest): URL | null {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!isLojaSubdomain(host)) return null;
+
+  const pathname = request.nextUrl.pathname;
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/brand") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/loja") ||
+    PUBLIC_PATHS.has(pathname)
+  ) {
+    return null;
+  }
+
+  const url = request.nextUrl.clone();
+  url.pathname = pathname === "/" ? "/loja" : `/loja${pathname}`;
+  return url;
+}
+
 function isPublicRoute(pathname: string): boolean {
   return (
     PUBLIC_PATHS.has(pathname) ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/_next/") ||
-    pathname.startsWith("/brand/")
+    pathname.startsWith("/brand/") ||
+    pathname === "/loja" ||
+    pathname.startsWith("/loja/") ||
+    pathname === "/api/store" ||
+    pathname.startsWith("/api/store/")
   );
 }
 
@@ -42,21 +72,25 @@ function withCsp<T extends NextResponse>(response: T, csp: Csp): T {
 }
 
 /** Encaminha a requisição ao Next com o nonce. Lê os headers no momento da chamada (inclui cookies renovados). */
-function forward(request: NextRequest, csp: Csp): NextResponse {
+function forward(request: NextRequest, csp: Csp, rewriteUrl?: URL | null): NextResponse {
   const headers = new Headers(request.headers);
   headers.set(NONCE_HEADER, csp.nonce);
   headers.set(CSP_HEADER, csp.policy);
+  if (rewriteUrl) {
+    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), csp);
+  }
   return withCsp(NextResponse.next({ request: { headers } }), csp);
 }
 
 export async function updateSession(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const rewriteUrl = resolveLojaRewrite(request);
+  const pathname = rewriteUrl ? rewriteUrl.pathname : request.nextUrl.pathname;
   const env = getSupabaseEnv();
   const csp = buildCsp(env?.url ?? process.env.NEXT_PUBLIC_SUPABASE_URL);
 
   // Fail-closed: sem configuração de Auth, nada além das rotas públicas é servido.
   if (!env) {
-    if (isPublicRoute(pathname)) return forward(request, csp);
+    if (isPublicRoute(pathname)) return forward(request, csp, rewriteUrl);
     log("error", "proxy", { code: "auth_not_configured" });
     return withCsp(
       isApiRoute(pathname)
@@ -66,9 +100,9 @@ export async function updateSession(request: NextRequest) {
     );
   }
 
-  if (isMachineRoute(pathname)) return forward(request, csp);
+  if (isMachineRoute(pathname)) return forward(request, csp, rewriteUrl);
 
-  let response = forward(request, csp);
+  let response = forward(request, csp, rewriteUrl);
 
   const supabase = createServerClient(env.url, env.publishableKey, {
     cookies: {
@@ -77,7 +111,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet, headers) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = forward(request, csp);
+        response = forward(request, csp, rewriteUrl);
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });

@@ -26,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { area: "06", label: "Jurídico", href: "/midia", icon: "legal", status: "building", accent: "#F5B547", summary: "Mídia privada e licenças de uso exigidas na publicação. Disclosure e LGPD a seguir." },
   { area: "07", label: "Audiência e CRM", href: "/audiencia", icon: "audience", status: "building", accent: "#FB923C", summary: "Contatos com base legal, consentimento com prova e pedidos do titular (LGPD). Sem envio de mensagens." },
   { area: "08", label: "Segurança e admin", href: "/admin", icon: "security", status: "available", accent: "#FF6B6B", summary: "Modelo operacional, papéis, auditoria e integrações." },
+  { area: "09", label: "Loja Virtual", href: "/admin/loja", icon: "store", status: "available", accent: "#00F0FF", summary: "Gestão completa da loja: produtos físicos, digitais, Shopee, pedidos, frete e pagamentos." },
 ];
 
 export const STATUS_LABEL: Record<ModuleStatus, string> = {
