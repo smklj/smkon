@@ -1,6 +1,17 @@
 /** SMKON Product Intelligence — tipos e rótulos compartilhados (espelham as constraints do banco). */
 
-export const PRODUCT_SOURCES = ["kiwify", "hotmart", "shopify", "amazon", "manual", "other"] as const;
+export const PRODUCT_SOURCES = [
+  "kiwify",
+  "hotmart",
+  "shopify",
+  "amazon",
+  "shopee",
+  "shein",
+  "mercado_livre",
+  "smkon_store",
+  "manual",
+  "other",
+] as const;
 export type ProductSource = (typeof PRODUCT_SOURCES)[number];
 
 export const PRODUCT_TYPES = ["digital", "info", "physical", "service", "unknown"] as const;
@@ -23,6 +34,10 @@ export const SOURCE_LABEL: Record<ProductSource, string> = {
   hotmart: "Hotmart",
   shopify: "Shopify",
   amazon: "Amazon",
+  shopee: "Shopee",
+  shein: "Shein",
+  mercado_livre: "Mercado Livre",
+  smkon_store: "SMKON Loja",
   manual: "Manual",
   other: "Outra",
 };

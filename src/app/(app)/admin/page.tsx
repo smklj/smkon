@@ -24,9 +24,14 @@ export default function AdminPage() {
         title="Administração"
         description="Membros, modelo operacional, domínios financeiros e conexões reais do workspace."
         actions={
-          <Link className="link" href="/admin/studio">
-            🗄️ Abrir Data Studio (Prisma REA)
-          </Link>
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <Link className="link" href="/admin/loja" style={{ color: "#00F0FF" }}>
+              🛍️ Gestão da Loja Virtual
+            </Link>
+            <Link className="link" href="/admin/studio">
+              🗄️ Abrir Data Studio (Prisma REA)
+            </Link>
+          </div>
         }
       />
 

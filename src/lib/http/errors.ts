@@ -89,6 +89,15 @@ const DB_BUSINESS_ERRORS: Record<string, { status: number; message: string }> = 
   request_immutable: { status: 409, message: "Pedidos do titular não são editados." },
   invalid_request_status: { status: 400, message: "Decisão inválida para o pedido." },
   resolution_note_required: { status: 400, message: "Informe o motivo (3 a 1000 caracteres, sem dados pessoais)." },
+  product_unavailable: { status: 404, message: "Produto indisponível ou fora de estoque." },
+  external_product_cannot_checkout: { status: 400, message: "Produtos externos da Shopee são finalizados no site oficial da Shopee." },
+  product_price_unavailable: { status: 400, message: "Produto sem preço configurado." },
+  insufficient_stock: { status: 409, message: "Estoque insuficiente para a quantidade solicitada." },
+  coupon_invalid: { status: 400, message: "Cupom inválido, inativo ou expirado." },
+  coupon_limit_reached: { status: 409, message: "Este cupom atingiu o limite máximo de usos." },
+  coupon_min_order_not_met: { status: 400, message: "O subtotal do pedido não atinge o valor mínimo deste cupom." },
+  shipping_address_required: { status: 400, message: "Informe o endereço completo para entrega dos itens físicos." },
+  order_not_found: { status: 404, message: "Pedido não encontrado." },
 };
 
 /** Mensagem segura para um código de negócio conhecido (para Server Actions). */

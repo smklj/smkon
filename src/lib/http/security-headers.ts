@@ -50,8 +50,8 @@ export function contentSecurityPolicy({ nonce, supabaseUrl, isDev = false }: Csp
     "script-src": ["'self'", nonceSource, ...(isDev ? ["'unsafe-eval'"] : []), "https://vercel.live"],
     "style-src": ["'self'", nonceSource],
     "style-src-attr": ["'unsafe-inline'"],
-    // Mídia do workspace vem do Storage por URL assinada.
-    "img-src": ["'self'", "data:", "blob:", supabase.http],
+    // Mídia do workspace vem do Storage por URL assinada; imagens de catálogo externo (ex.: Shopee) usam HTTPS.
+    "img-src": ["'self'", "data:", "blob:", supabase.http, "https:"],
     "media-src": ["'self'", "blob:", supabase.http],
     "font-src": ["'self'", "data:"],
     "connect-src": ["'self'", supabase.http, supabase.ws, "https://vercel.live", ...(isDev ? ["ws:"] : [])],
