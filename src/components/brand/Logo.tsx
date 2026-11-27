@@ -4,7 +4,7 @@
  */
 
 type LogoProps = {
-  variant?: "symbol" | "symbol-gold" | "horizontal" | "horizontal-gold";
+  variant?: "symbol" | "symbol-gold" | "horizontal" | "horizontal-white" | "horizontal-gold";
   className?: string;
   title?: string;
   gradientId?: string;
@@ -57,6 +57,29 @@ export function Logo({
       <svg className={className} viewBox="0 0 840 760" role="img" aria-label={title}>
         <title>{title}</title>
         <Symbol />
+      </svg>
+    );
+  }
+
+  if (variant === "horizontal-white") {
+    return (
+      <svg className={className} viewBox="10 18 1075 244" role="img" aria-label={title}>
+        <title>{title}</title>
+        <g transform="translate(0 12) scale(0.32)">
+          <Symbol fill="#FFFFFF" stroke="#FFFFFF" />
+        </g>
+        <g
+          transform="translate(315 76) scale(1.22)"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="10.5"
+          strokeLinejoin="miter"
+          strokeMiterlimit="10"
+        >
+          {WORDMARK.map((letter) => (
+            <path key={letter.x} transform={`translate(${letter.x} 0)`} d={letter.d} />
+          ))}
+        </g>
       </svg>
     );
   }
