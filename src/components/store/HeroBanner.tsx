@@ -40,7 +40,11 @@ export function HeroBanner({ banners }: { banners: StoreBanner[] }) {
 
         <div className="store-hero-media">
           <Image
-            src={activeBanner.image_url || "/brand/brand-identity-board.jpg"}
+            src={
+              !activeBanner.image_url || activeBanner.image_url === "/brand/brand-identity-board.jpg"
+                ? "/brand/hero-luxury-gold.jpg"
+                : activeBanner.image_url
+            }
             alt={activeBanner.title}
             width={700}
             height={500}
