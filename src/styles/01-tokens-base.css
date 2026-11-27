@@ -1,94 +1,55 @@
 /* Tokens de cor, raio, movimento e tipografia; reset e utilitários de texto. Ordem de cascata: ver src/app/globals.css. */
-/* SMKON — Premium Dark SaaS Design Tokens */
+/* SMKON — design tokens (identidade monocromática oficial) */
 :root {
   color-scheme: dark;
 
-  /* Paleta Premium Dark SaaS */
-  --bg: #050914;
-  --bg-2: #080f20;
-  --surface: #0b1530;
-  --surface-2: #101d38;
-  --elevated: #162647;
-  --primary: #2563eb;
-  --primary-glow: #3b82f6;
-  --cyan: #22d3ee;
+  /* Marca */
+  --bg: #0b0b0b;
+  --surface: #121212;
+  --surface-2: #1a1a1a;
+  --elevated: #2a2a2a;
+  --text: #ffffff;
+  --text-2: #c9c9c9;
+  --muted: #8f8f8f;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
 
-  --text: #f8fafc;
-  --text-2: #cbd5e1;
-  --muted: #94a3b8;
-  --line: rgba(148, 163, 184, 0.14);
-  --line-strong: rgba(59, 130, 246, 0.28);
+  /* Cor só com função: estado e identificação de módulo */
+  --ok: #3ddc97;
+  --warn: #f5b547;
+  --danger: #ff6b6b;
+  --info: #6ea8fe;
 
-  /* Estados e feedback */
-  --ok: #10b981;
-  --warn: #f59e0b;
-  --danger: #ef4444;
-  --info: #3b82f6;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --sidebar: 248px;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px rgba(255, 255, 255, 0.55);
 
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --sidebar: 260px;
-  --sidebar-compact: 76px;
-  --focus: 0 0 0 2px var(--bg), 0 0 0 4px rgba(59, 130, 246, 0.55);
-
-  /* Movimento fluido */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-1: 140ms;
-  --dur-2: 240ms;
-  --dur-3: 360ms;
+  /* Movimento (S7.2): uma curva, três durações. Só transform e opacity nas animações. */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
 
   --font-display-stack: var(--font-display), "Space Grotesk", system-ui, sans-serif;
   --font-sans-stack: var(--font-sans), "Inter", system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
-html, body {
-  margin: 0;
-  min-height: 100%;
-  background: var(--bg);
-  color: var(--text);
-}
-body {
-  font: 400 14px/1.55 var(--font-sans-stack);
-  -webkit-font-smoothing: antialiased;
-  background-image:
-    radial-gradient(ellipse 75% 45% at 18% -5%, rgba(37, 99, 235, 0.16), transparent 65%),
-    radial-gradient(ellipse 55% 35% at 92% 8%, rgba(34, 211, 238, 0.08), transparent 60%);
-  background-attachment: fixed;
-}
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+body { font: 400 14px/1.55 var(--font-sans-stack); -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
 h1, h2, h3, p { margin: 0; }
-button, input, textarea, select { font: inherit; color: inherit; }
+button, input, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.55; }
 :focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
-::selection { background: rgba(59, 130, 246, 0.35); color: #fff; }
+::selection { background: rgba(255, 255, 255, 0.85); color: #000; }
 
-.eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--cyan);
-}
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .muted { color: var(--muted); font-size: 12px; }
-.link {
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-color: rgba(59, 130, 246, 0.45);
-  text-underline-offset: 3px;
-  font-size: 13px;
-}
-.link:hover { color: var(--cyan); text-decoration-color: var(--cyan); }
-.skip-link {
-  position: absolute;
-  left: -999px;
-  top: 8px;
-  z-index: 50;
-  background: var(--primary);
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-}
+.link { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; font-size: 13px; }
+.link:hover { text-decoration-color: var(--text); }
+.skip-link { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--text); color: #000; padding: 8px 12px; border-radius: var(--radius-sm); }
 .skip-link:focus { left: 8px; }

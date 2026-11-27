@@ -130,8 +130,8 @@ export function StoreShell({
 
         <nav className="store-sidebar-nav" aria-label="Seções da loja">
           <div ref={containerRef} className="store-sidebar-track">
-            <div ref={pillRef} className="sliding-pill store-sliding-pill" aria-hidden="true">
-              <div ref={sheenRef} className="sliding-pill-sheen store-sliding-pill-sheen" />
+            <div ref={pillRef} className="store-sliding-pill" aria-hidden="true">
+              <div ref={sheenRef} className="store-sliding-pill-sheen" />
             </div>
 
             <ul className="store-sidebar-list">

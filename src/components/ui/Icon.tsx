@@ -17,9 +17,7 @@ export type IconName =
   | "check"
   | "clock"
   | "archive"
-  | "arrow-right"
-  | "chevron-left"
-  | "chevron-right";
+  | "arrow-right";
 
 const PATHS: Record<IconName, string> = {
   overview: "M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",
@@ -39,8 +37,6 @@ const PATHS: Record<IconName, string> = {
   clock: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2",
   archive: "M3 4h18v4H3zM5 8v12h14V8M10 12h4",
   "arrow-right": "M5 12h14M13 6l6 6-6 6",
-  "chevron-left": "M15 6l-6 6 6 6",
-  "chevron-right": "M9 6l6 6-6 6",
 };
 
 type IconProps = {

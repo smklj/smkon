@@ -79,8 +79,8 @@
 .toast {
   pointer-events: auto; display: flex; align-items: flex-start; gap: 10px;
   padding: 12px 12px 12px 14px; border-radius: var(--radius); border: 1px solid var(--line-strong);
-  background: rgba(11, 21, 48, 0.94); backdrop-filter: blur(14px);
-  box-shadow: 0 12px 32px rgba(2, 6, 20, 0.55); font-size: 13px; color: var(--text);
+  background: rgba(26, 26, 26, 0.96); backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); font-size: 13px; color: var(--text);
   animation: toast-in var(--dur-3) var(--ease-out);
 }
 .toast p { flex: 1; padding-top: 1px; }

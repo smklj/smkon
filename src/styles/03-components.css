@@ -1,26 +1,10 @@
 /* Componentes compartilhados: indicadores, listas, badges, botões, feedback, admin, financeiro, convites. Ordem de cascata: ver src/app/globals.css. */
 /* Indicadores */
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(16, 29, 56, 0.92), rgba(11, 21, 48, 0.95));
-  box-shadow: 0 12px 32px rgba(2, 6, 20, 0.38);
-  overflow: hidden;
-}
-.metric {
-  padding: 18px 20px;
-  display: grid;
-  gap: 6px;
-  transition: background-color 0.2s var(--ease-out);
-}
-.metric:hover {
-  background: rgba(37, 99, 235, 0.08);
-}
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+.metric { padding: 16px 20px; display: grid; gap: 6px; }
 .metric + .metric { border-left: 1px solid var(--line); }
 .metric span { font-size: 12px; color: var(--muted); }
-.metric strong { font: 700 28px/1 var(--font-display-stack); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); }
+.metric strong { font: 600 28px/1 var(--font-display-stack); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 
 /* Listas */
 .rows { list-style: none; margin: 0; padding: 0; }
@@ -46,19 +30,12 @@
 
 /* Botões */
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
-.button-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-glow));
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
-}
-.button-primary:hover {
-  background: linear-gradient(135deg, var(--primary-glow), var(--cyan));
-  box-shadow: 0 6px 22px rgba(59, 130, 246, 0.45);
-}
+.button-primary { background: var(--text); color: #000; }
+.button-primary:hover { background: #e6e6e6; }
 .button-secondary { background: var(--surface-2); border-color: var(--line-strong); color: var(--text); }
-.button-secondary:hover { background: var(--elevated); border-color: var(--primary-glow); }
-.button-ghost { background: none; color: var(--muted); }
-.button-ghost:hover { color: var(--text); background: rgba(59, 130, 246, 0.12); }
+.button-secondary:hover { background: var(--elevated); }
+.button-ghost { background: none; color: var(--text-2); }
+.button-ghost:hover { color: var(--text); background: var(--surface-2); }
 
 /* Feedback */
 .feedback { font-size: 13px; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
@@ -75,21 +52,7 @@
 
 /* Admin */
 .domains { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.domain {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px;
-  background: rgba(5, 9, 20, 0.55);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: transform 0.2s var(--ease-out), border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-}
-.domain:hover {
-  transform: translateY(-2px);
-  border-color: var(--line-strong);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.14);
-}
+.domain { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; background: var(--bg); display: flex; flex-direction: column; gap: 6px; }
 .domain h3 { font: 600 16px var(--font-display-stack); margin-top: 4px; }
 .domain-label { font-size: 11px; color: var(--muted); margin-top: 10px; }
 .domain-metric { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
