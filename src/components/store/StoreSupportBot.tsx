@@ -311,12 +311,12 @@ export function StoreSupportBot({ storeName }: { storeName: string }) {
           gap: "10px",
           padding: "12px 18px",
           borderRadius: "999px",
-          background: "linear-gradient(135deg, var(--store-primary), var(--store-secondary))",
-          color: "#fff",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
-          boxShadow: "0 10px 30px rgba(37, 99, 255, 0.4)",
+          background: "linear-gradient(135deg, #d4af37 0%, #f3d37a 55%, #b8860b 100%)",
+          color: "#050507",
+          border: "1px solid rgba(255, 255, 255, 0.35)",
+          boxShadow: "0 10px 30px rgba(212, 175, 55, 0.38)",
           cursor: "pointer",
-          fontWeight: 700,
+          fontWeight: 800,
           fontSize: "13px",
         }}
       >

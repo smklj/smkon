@@ -111,6 +111,11 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
                 💻 Infoprodutos & Soluções
               </Link>
             </li>
+            <li className="store-subnav-item">
+              <Link href="/loja/orcamentos" style={{ color: "var(--store-accent)", fontWeight: 600 }}>
+                🛠️ Sites, APIs & Orçamentos
+              </Link>
+            </li>
           </ul>
         </nav>
       </header>

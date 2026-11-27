@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
@@ -128,6 +129,9 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    revalidatePath("/loja", "layout");
+    revalidatePath("/loja/produtos", "page");
+
     return NextResponse.json({ product: data });
   } catch (err) {
     return toErrorResponse("api.admin.store.products.post", err, "Falha ao cadastrar produto na loja.");
@@ -159,6 +163,9 @@ export async function PATCH(request: Request) {
       .single();
 
     if (error) throw error;
+
+    revalidatePath("/loja", "layout");
+    revalidatePath("/loja/produtos", "page");
 
     return NextResponse.json({ product: data });
   } catch (err) {

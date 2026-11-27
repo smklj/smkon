@@ -146,3 +146,26 @@ test("Regras de Carrinho: cálculo de descontos e totais respeitam invariantes",
   assert.equal(discount10, 2000);
   assert.equal(total, 20500); // R$ 205,00
 });
+
+test("Motor de Orçamento de Software: calcula faixa, prazo e entregáveis", async () => {
+  const { calculateSoftwareQuote } = await import("../../src/lib/store/quote-engine.ts");
+  const base = calculateSoftwareQuote({
+    projectType: "ecommerce_store",
+    addons: ["pix_checkout", "ai_bot"],
+    urgency: "standard",
+    pagesOrEndpoints: 5,
+  });
+
+  const express = calculateSoftwareQuote({
+    projectType: "ecommerce_store",
+    addons: ["pix_checkout", "ai_bot"],
+    urgency: "express",
+    pagesOrEndpoints: 5,
+  });
+
+  assert.ok(base.minEstimateCents > 0);
+  assert.ok(base.maxEstimateCents > base.minEstimateCents);
+  assert.ok(express.minEstimateCents > base.minEstimateCents);
+  assert.ok(express.estimatedDays < base.estimatedDays);
+  assert.ok(base.deliverables.some((d) => d.includes("Bot de Suporte Inteligente")));
+});

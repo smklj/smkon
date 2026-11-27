@@ -92,6 +92,16 @@ export default async function LojaHomePage() {
             Ofertas auditadas com direcionamento transparente e seguro para o site oficial da Shopee.
           </p>
         </Link>
+
+        <Link href="/loja/orcamentos" className="store-pillar-card">
+          <span className="store-pillar-tag" style={{ color: "var(--store-accent)" }}>
+            🛠️ Engenharia de Software
+          </span>
+          <h2 className="store-pillar-title">Sites, APIs, Sistemas & Bots</h2>
+          <p className="store-pillar-desc">
+            Simulador automático de orçamento para criação de sites, e-commerces, APIs e automações sob medida.
+          </p>
+        </Link>
       </section>
 
       {/* Destaques da Semana */}

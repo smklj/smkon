@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { jsonError, toErrorResponse } from "@/lib/http/errors";
 import { findWorkspace } from "@/lib/tenancy/service";
@@ -35,6 +36,8 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     const updated = await saveStoreSettings(ctx.workspace.organizationId, body);
+    revalidatePath("/loja", "layout");
+    revalidatePath("/loja", "page");
 
     return NextResponse.json({ settings: updated });
   } catch (err) {

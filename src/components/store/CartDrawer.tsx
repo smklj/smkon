@@ -235,6 +235,46 @@ export function CartDrawer() {
                 <span style={{ color: "#ef4444", fontSize: "11px" }}>{couponError}</span>
               )}
 
+              {/* Barra de Progresso de Frete Grátis */}
+              {(() => {
+                const freeGoalCents = 29900;
+                const progressPct = Math.min(100, Math.round((subtotalCents / freeGoalCents) * 100));
+                const remainingCents = Math.max(0, freeGoalCents - subtotalCents);
+                return (
+                  <div
+                    style={{
+                      background: "rgba(212, 175, 55, 0.06)",
+                      border: "1px solid rgba(212, 175, 55, 0.22)",
+                      borderRadius: "10px",
+                      padding: "10px 12px",
+                    }}
+                  >
+                    <div style={{ fontSize: "12px", color: "#f4f4f5", marginBottom: "6px", display: "flex", justifyContent: "space-between" }}>
+                      {remainingCents === 0 ? (
+                        <span style={{ color: "var(--store-accent)", fontWeight: 700 }}>
+                          ✨ Você desbloqueou Frete Grátis!
+                        </span>
+                      ) : (
+                        <span>
+                          Falta <strong style={{ color: "var(--store-accent)" }}>{formatBRL(remainingCents)}</strong> para Frete Grátis
+                        </span>
+                      )}
+                      <span style={{ color: "var(--store-muted)", fontSize: "11px" }}>{progressPct}%</span>
+                    </div>
+                    <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "999px", overflow: "hidden" }}>
+                      <div
+                        style={{
+                          width: `${progressPct}%`,
+                          height: "100%",
+                          background: "linear-gradient(90deg, #b8860b, #f3d37a)",
+                          transition: "width 0.35s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Totais */}
               <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--store-muted)" }}>

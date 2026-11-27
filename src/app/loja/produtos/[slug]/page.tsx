@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getStoreProductBySlug } from "@/lib/store/repository";
 import { ProductCard } from "@/components/store/ProductCard";
 import { ProductDetailActions } from "./ProductDetailActions";
+import { ProductGallery } from "@/components/store/ProductGallery";
 
 function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", {
@@ -69,47 +70,7 @@ export default async function ProductDetailPage({ params }: Props) {
         }}
       >
         {/* Gallery */}
-        <div>
-          <div
-            style={{
-              width: "100%",
-              aspectRatio: "1 / 1",
-              borderRadius: "12px",
-              overflow: "hidden",
-              background: "#0a0f16",
-              border: "1px solid var(--store-border)",
-              marginBottom: "16px",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={mainImage}
-              alt={product.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          </div>
-
-          {product.image_urls.length > 1 && (
-            <div style={{ display: "flex", gap: "10px", overflowX: "auto" }}>
-              {product.image_urls.map((url, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Imagem ${i + 1}`}
-                  style={{
-                    width: "70px",
-                    height: "70px",
-                    borderRadius: "8px",
-                    objectFit: "cover",
-                    border: "1px solid var(--store-border)",
-                    cursor: "pointer",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery images={product.image_urls} productName={product.name} />
 
         {/* Product Details */}
         <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>

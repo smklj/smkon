@@ -23,6 +23,15 @@ function buildRuleBasedReply(
 ): { reply: string; suggestions: string[]; links?: Array<{ label: string; href: string }> } {
   const q = text.toLowerCase();
 
+  if (q.includes("orçamento") || q.includes("orcamento") || q.includes("site") || q.includes("api") || q.includes("desenvolv") || q.includes("program") || q.includes("bot")) {
+    return {
+      reply:
+        "A SMKON Engineering desenvolve sites, lojas virtuais, APIs, sistemas SaaS e bots sob medida! Você pode calcular o investimento, prazo e escopo técnico na hora pelo nosso Simulador Automático de Orçamentos.",
+      suggestions: ["Como funciona a entrega digital?", "Falar com atendimento humano"],
+      links: [{ label: "Simular Orçamento de Software", href: "/loja/orcamentos" }],
+    };
+  }
+
   if (q.includes("digital") || q.includes("infoproduto") || q.includes("ebook") || q.includes("sistema") || q.includes("planilha")) {
     return {
       reply:
