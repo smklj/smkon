@@ -168,9 +168,9 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             <button
               type="button"
               onClick={() => addItem(product)}
-              className="store-btn store-btn-primary store-card-btn"
+              className="store-btn store-card-btn-luxury store-card-btn"
             >
-              Adicionar
+              Adicionar ao Carrinho
             </button>
           )}
         </div>

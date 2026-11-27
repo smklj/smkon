@@ -3,17 +3,13 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/store/cart-context";
 import { useWishlist } from "@/lib/store/wishlist-context";
-import { useSlidingPill } from "@/components/ui/SlidingPill";
 import type { StoreSettings } from "@/lib/store/types";
 import {
   IconArrowUpRight,
-  IconBag,
   IconCart,
-  IconCode,
-  IconCpu,
   IconHeart,
   IconPackage,
   IconSearch,
@@ -24,25 +20,6 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
   const { favorites } = useWishlist();
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const currentTipo = searchParams.get("tipo");
-  const currentCat = searchParams.get("categoria");
-  const activeNavKey = pathname.startsWith("/loja/orcamentos")
-    ? "orcamentos"
-    : currentTipo
-    ? `tipo-${currentTipo}`
-    : currentCat
-    ? `cat-${currentCat}`
-    : pathname.startsWith("/loja/produtos")
-    ? "todos"
-    : null;
-
-  const { containerRef, pillRef, sheenRef } = useSlidingPill({
-    activeKey: activeNavKey,
-    orientation: "horizontal",
-  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +54,9 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
             <Image
               src={settings.logo_url || "/brand/smkon-logo-horizontal-white.svg"}
               alt="SMKON"
-              width={120}
-              height={32}
-              style={{ height: 28, width: "auto", objectFit: "contain" }}
+              width={116}
+              height={28}
+              style={{ height: 26, width: "auto", objectFit: "contain" }}
             />
             <span className="store-logo-tagline">{settings.store_tagline}</span>
           </Link>
@@ -87,7 +64,7 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
           <form onSubmit={handleSearch} className="store-search-form">
             <input
               type="text"
-              placeholder="Buscar hardware, infoprodutos, achados..."
+              placeholder="Buscar produtos, infoprodutos ou códigos..."
               className="store-search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -124,78 +101,6 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
             </button>
           </div>
         </div>
-
-        <nav className="store-subnav" aria-label="Categorias da Loja">
-          <div ref={containerRef} className="store-subnav-track">
-            <div
-              ref={pillRef}
-              className="sliding-pill store-subnav-pill"
-              aria-hidden="true"
-            >
-              <div ref={sheenRef} className="sliding-pill-sheen" />
-            </div>
-            <ul className="store-subnav-list">
-              <li className="store-subnav-item">
-                <Link
-                  href="/loja/produtos"
-                  data-sliding-key="todos"
-                  className={activeNavKey === "todos" ? "active" : ""}
-                >
-                  Catálogo Geral
-                </Link>
-              </li>
-              {settings.categories_nav.map((cat) => {
-                const k = `cat-${cat.slug}`;
-                return (
-                  <li key={cat.id} className="store-subnav-item">
-                    <Link
-                      href={`/loja/produtos?categoria=${cat.slug}`}
-                      data-sliding-key={k}
-                      className={activeNavKey === k ? "active" : ""}
-                    >
-                      <span>{cat.name}</span>
-                      {cat.badge && (
-                        <span className="store-subnav-badge">{cat.badge}</span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-              <li className="store-subnav-item">
-                <Link
-                  href="/loja/produtos?tipo=shopee"
-                  data-sliding-key="tipo-shopee"
-                  className={activeNavKey === "tipo-shopee" ? "active" : ""}
-                  style={{ color: "#fdba74" }}
-                >
-                  <IconBag size={13} />
-                  <span>Shopee Oficial</span>
-                </Link>
-              </li>
-              <li className="store-subnav-item">
-                <Link
-                  href="/loja/produtos?tipo=digital"
-                  data-sliding-key="tipo-digital"
-                  className={activeNavKey === "tipo-digital" ? "active" : ""}
-                >
-                  <IconCpu size={13} />
-                  <span>Infoprodutos</span>
-                </Link>
-              </li>
-              <li className="store-subnav-item">
-                <Link
-                  href="/loja/orcamentos"
-                  data-sliding-key="orcamentos"
-                  className={activeNavKey === "orcamentos" ? "active" : ""}
-                  style={{ color: "var(--store-accent)", fontWeight: 600 }}
-                >
-                  <IconCode size={13} />
-                  <span>Sites & APIs</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </nav>
       </header>
     </>
   );

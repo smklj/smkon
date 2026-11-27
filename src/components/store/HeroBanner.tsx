@@ -71,22 +71,14 @@ export function HeroBanner({ banners }: { banners: StoreBanner[] }) {
       </div>
 
       {items.length > 1 && (
-        <>
+        <div className="store-hero-controls">
           <button
             type="button"
-            className="store-hero-arrow store-hero-arrow-left"
+            className="store-hero-arrow"
             aria-label="Banner anterior"
             onClick={() => setIndex((prev) => (prev - 1 + items.length) % items.length)}
           >
-            <IconChevronLeft size={18} />
-          </button>
-          <button
-            type="button"
-            className="store-hero-arrow store-hero-arrow-right"
-            aria-label="Próximo banner"
-            onClick={() => setIndex((prev) => (prev + 1) % items.length)}
-          >
-            <IconChevronRight size={18} />
+            <IconChevronLeft size={16} />
           </button>
 
           <div className="store-hero-dots" role="tablist" aria-label="Selecionar banner">
@@ -102,7 +94,16 @@ export function HeroBanner({ banners }: { banners: StoreBanner[] }) {
               />
             ))}
           </div>
-        </>
+
+          <button
+            type="button"
+            className="store-hero-arrow"
+            aria-label="Próximo banner"
+            onClick={() => setIndex((prev) => (prev + 1) % items.length)}
+          >
+            <IconChevronRight size={16} />
+          </button>
+        </div>
       )}
     </section>
   );
