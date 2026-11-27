@@ -33,6 +33,12 @@ export async function POST(request: NextRequest) {
 
     // 1. Busca os dados reais dos produtos no banco (nunca confia no preço enviado pelo navegador)
     const productIds = (items as Array<{ productId: string; quantity: number }>).map((i) => i.productId);
+    if (productIds.some((id) => String(id).startsWith("demo-"))) {
+      return NextResponse.json(
+        { error: "Item de demonstração visual: cadastre produtos reais no painel para realizar compras.", code: "demo_item_not_purchasable" },
+        { status: 400 },
+      );
+    }
     const { data: dbProducts, error: prodError } = await supabase
       .from("products")
       .select("*")

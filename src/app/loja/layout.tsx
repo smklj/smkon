@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getStoreSettings } from "@/lib/store/repository";
 import { CartProvider } from "@/lib/store/cart-context";
+import { WishlistProvider } from "@/lib/store/wishlist-context";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { CartDrawer } from "@/components/store/CartDrawer";
@@ -22,15 +24,19 @@ export default async function LojaLayout({
 
   return (
     <CartProvider>
-      <div className="store-body">
-        <StoreHeader settings={settings} />
-        <main className="store-container">
-          {children}
-        </main>
-        <CartDrawer />
-        <StoreSupportBot storeName={settings.store_name} />
-        <StoreFooter settings={settings} />
-      </div>
+      <WishlistProvider>
+        <div className="store-body">
+          <Suspense fallback={<div style={{ height: 108 }} />}>
+            <StoreHeader settings={settings} />
+          </Suspense>
+          <main className="store-container">
+            {children}
+          </main>
+          <CartDrawer />
+          <StoreSupportBot storeName={settings.store_name} />
+          <StoreFooter settings={settings} />
+        </div>
+      </WishlistProvider>
     </CartProvider>
   );
 }

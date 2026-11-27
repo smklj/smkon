@@ -39,7 +39,6 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const isShopee = product.fulfillment_mode === "external_affiliate";
   const isDigital = product.fulfillment_mode === "internal_digital";
-  const mainImage = product.image_urls[0] || "/brand/brand-identity-board.jpg";
 
   return (
     <div>
@@ -179,14 +178,14 @@ export default async function ProductDetailPage({ params }: Props) {
           {isDigital && product.digital_benefits.length > 0 && (
             <div
               style={{
-                background: "rgba(124, 58, 237, 0.08)",
-                border: "1px solid rgba(124, 58, 237, 0.3)",
+                background: "rgba(37, 99, 235, 0.08)",
+                border: "1px solid rgba(59, 130, 246, 0.3)",
                 borderRadius: "12px",
                 padding: "16px",
               }}
             >
-              <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#c084fc", marginBottom: "8px" }}>
-                ✨ O que está incluso nesta solução digital:
+              <h4 style={{ fontSize: "13px", fontWeight: "700", color: "var(--store-accent)", marginBottom: "8px" }}>
+                Incluso nesta solução digital:
               </h4>
               <ul style={{ paddingLeft: "20px", margin: 0, fontSize: "13px", color: "#e2e8f0" }}>
                 {product.digital_benefits.map((b, idx) => (
@@ -194,10 +193,31 @@ export default async function ProductDetailPage({ params }: Props) {
                 ))}
               </ul>
               <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--store-muted)" }}>
-                ⚡ Acesso liberado automaticamente por e-mail e na tela após confirmação do pagamento.
+                Acesso liberado automaticamente após confirmação do pagamento.
               </div>
             </div>
           )}
+
+          {/* Especificações Técnicas estilo Marketplace */}
+          <div style={{ marginTop: "8px", border: "1px solid var(--store-border)", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "10px 14px", background: "rgba(255,255,255,0.03)", fontSize: "12px", fontWeight: 700, color: "#fff" }}>
+              Especificações Técnicas
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", fontSize: "12px" }}>
+              <div style={{ padding: "9px 14px", color: "var(--store-muted)", borderTop: "1px solid var(--store-border)" }}>Categoria</div>
+              <div style={{ padding: "9px 14px", color: "#fff", borderTop: "1px solid var(--store-border)" }}>{product.category}</div>
+              {product.sku && (
+                <>
+                  <div style={{ padding: "9px 14px", color: "var(--store-muted)", borderTop: "1px solid var(--store-border)" }}>Código / SKU</div>
+                  <div style={{ padding: "9px 14px", color: "#fff", borderTop: "1px solid var(--store-border)" }}>{product.sku}</div>
+                </>
+              )}
+              <div style={{ padding: "9px 14px", color: "var(--store-muted)", borderTop: "1px solid var(--store-border)" }}>Modalidade</div>
+              <div style={{ padding: "9px 14px", color: "#fff", borderTop: "1px solid var(--store-border)" }}>
+                {isShopee ? "Compra Externa Shopee" : isDigital ? "Entrega Digital Automática" : "Produto Físico com Rastreio"}
+              </div>
+            </div>
+          </div>
 
           {/* Descrição */}
           <div style={{ marginTop: "12px" }}>

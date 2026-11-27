@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { getStoreSettings, listStoreProducts } from "@/lib/store/repository";
 import { HeroBanner } from "@/components/store/HeroBanner";
+import { FlashDealsBar } from "@/components/store/FlashDealsBar";
 import { ProductCard } from "@/components/store/ProductCard";
 import { TrustFeatures } from "@/components/store/TrustFeatures";
 import {
@@ -34,10 +35,36 @@ export default async function LojaHomePage() {
 
   const featuredList =
     featuredRes.products.length > 0 ? featuredRes.products : fallbackRes.products;
+  const isDemoMode = featuredList.some((p) => p.id.startsWith("demo-"));
 
   return (
     <>
       <HeroBanner banners={settings.hero_banners} />
+      <FlashDealsBar />
+
+      {isDemoMode && (
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "10px 16px",
+            borderRadius: "10px",
+            background: "rgba(37, 99, 235, 0.1)",
+            border: "1px solid rgba(59, 130, 246, 0.28)",
+            fontSize: "12px",
+            color: "#cbd5e1",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "8px",
+          }}
+        >
+          <span>Vitrine em modo demonstração visual — cadastre seus produtos reais para substituir automaticamente.</span>
+          <Link href="/admin/loja" style={{ color: "var(--store-accent)", fontWeight: 600, textDecoration: "none" }}>
+            Gerenciar no Painel ↗
+          </Link>
+        </div>
+      )}
 
       {/* Categorias Rápidas */}
       <section style={{ marginBottom: "36px" }}>

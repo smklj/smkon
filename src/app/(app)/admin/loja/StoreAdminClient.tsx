@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSlidingPill } from "@/components/ui/SlidingPill";
 import type { StoreOrderView, StoreProduct, StoreSettings } from "@/lib/store/types";
 
 function formatBRL(cents: number): string {
@@ -20,6 +21,10 @@ export function StoreAdminClient({
   initialSettings: StoreSettings;
 }) {
   const [activeTab, setActiveTab] = useState<TabType>("produtos");
+  const { containerRef: tabsRef, pillRef: tabsPillRef, sheenRef: tabsSheenRef } = useSlidingPill({
+    activeKey: activeTab,
+    orientation: "horizontal",
+  });
 
   // Products state
   const [products, setProducts] = useState<StoreProduct[]>([]);
@@ -240,39 +245,63 @@ export function StoreAdminClient({
 
   return (
     <div style={{ display: "grid", gap: "24px" }}>
-      {/* Abas */}
-      <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--line)", paddingBottom: "12px" }}>
+      {/* Abas com Sliding Pill */}
+      <div
+        ref={tabsRef}
+        style={{
+          position: "relative",
+          display: "inline-flex",
+          flexWrap: "wrap",
+          gap: "6px",
+          padding: "6px",
+          borderRadius: "12px",
+          background: "rgba(5, 9, 20, 0.72)",
+          border: "1px solid var(--line)",
+        }}
+      >
+        <div
+          ref={tabsPillRef}
+          className="sliding-pill"
+          style={{ borderRadius: "8px" }}
+          aria-hidden="true"
+        >
+          <div ref={tabsSheenRef} className="sliding-pill-sheen" />
+        </div>
         <button
           type="button"
+          data-sliding-key="produtos"
           onClick={() => setActiveTab("produtos")}
           className={`app-nav-item ${activeTab === "produtos" ? "active" : ""}`}
-          style={{ width: "auto", padding: "8px 18px", borderRadius: "8px" }}
+          style={{ width: "auto", padding: "8px 16px", borderRadius: "8px", position: "relative", zIndex: 2 }}
         >
-          🛍️ Produtos & Shopee ({products.length})
+          Produtos & Shopee ({products.length})
         </button>
         <button
           type="button"
+          data-sliding-key="pedidos"
           onClick={() => setActiveTab("pedidos")}
           className={`app-nav-item ${activeTab === "pedidos" ? "active" : ""}`}
-          style={{ width: "auto", padding: "8px 18px", borderRadius: "8px" }}
+          style={{ width: "auto", padding: "8px 16px", borderRadius: "8px", position: "relative", zIndex: 2 }}
         >
-          📦 Pedidos & Envios ({orders.length})
+          Pedidos & Envios ({orders.length})
         </button>
         <button
           type="button"
+          data-sliding-key="metricas"
           onClick={() => setActiveTab("metricas")}
           className={`app-nav-item ${activeTab === "metricas" ? "active" : ""}`}
-          style={{ width: "auto", padding: "8px 18px", borderRadius: "8px" }}
+          style={{ width: "auto", padding: "8px 16px", borderRadius: "8px", position: "relative", zIndex: 2 }}
         >
-          📈 Vendas & Métricas
+          Vendas & Métricas
         </button>
         <button
           type="button"
+          data-sliding-key="aparencia"
           onClick={() => setActiveTab("aparencia")}
           className={`app-nav-item ${activeTab === "aparencia" ? "active" : ""}`}
-          style={{ width: "auto", padding: "8px 18px", borderRadius: "8px" }}
+          style={{ width: "auto", padding: "8px 16px", borderRadius: "8px", position: "relative", zIndex: 2 }}
         >
-          ⚙️ Aparência & Integrações
+          Aparência & Integrações
         </button>
       </div>
 

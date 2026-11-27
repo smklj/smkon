@@ -266,7 +266,7 @@ export function CartDrawer() {
                         style={{
                           width: `${progressPct}%`,
                           height: "100%",
-                          background: "linear-gradient(90deg, #b8860b, #f3d37a)",
+                          background: "linear-gradient(90deg, #2563eb, #22d3ee, #10b981)",
                           transition: "width 0.35s ease",
                         }}
                       />
