@@ -41,7 +41,7 @@ export function getDefaultStoreSettings(organizationId: string = "default"): Sto
     ],
     announcement_bar: {
       enabled: true,
-      text: "⚡ Envio rápido para todo o Brasil | PIX com aprovação instantânea | Produtos testados e aprovados",
+      text: "Envio rápido para todo o Brasil  |  PIX com aprovação instantânea  |  Curadoria e garantia SMKON",
       link: "/loja/produtos",
     },
     categories_nav: [

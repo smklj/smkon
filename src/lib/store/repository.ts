@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { log } from "@/lib/observability/log";
 import { getDefaultStoreSettings } from "./defaults";
+import { DEMO_STORE_PRODUCTS } from "./demo-catalog";
 import type {
   StoreCouponInfo,
   StoreOrderView,
@@ -182,11 +183,66 @@ function mapProductRow(row: Record<string, unknown>): StoreProduct {
   };
 }
 
+function filterDemoProducts(options: ListStoreProductsOptions): { products: StoreProduct[]; total: number } {
+  let items = [...DEMO_STORE_PRODUCTS];
+
+  if (options.category) {
+    const cat = options.category.toLowerCase();
+    items = items.filter((p) => p.category.toLowerCase().includes(cat) || (p.subcategory || "").toLowerCase().includes(cat));
+  }
+  if (options.fulfillmentMode) {
+    items = items.filter((p) => p.fulfillment_mode === options.fulfillmentMode);
+  }
+  if (options.featured) {
+    items = items.filter((p) => p.is_featured);
+  }
+  if (options.bestseller) {
+    items = items.filter((p) => p.is_bestseller);
+  }
+  if (options.newArrival) {
+    items = items.filter((p) => p.is_new_arrival);
+  }
+  if (options.minPriceCents !== undefined) {
+    items = items.filter((p) => p.price_cents >= options.minPriceCents!);
+  }
+  if (options.maxPriceCents !== undefined) {
+    items = items.filter((p) => p.price_cents <= options.maxPriceCents!);
+  }
+  if (options.search) {
+    const q = options.search.toLowerCase();
+    items = items.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.short_description || "").toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q),
+    );
+  }
+
+  switch (options.sort) {
+    case "price_asc":
+      items.sort((a, b) => a.price_cents - b.price_cents);
+      break;
+    case "price_desc":
+      items.sort((a, b) => b.price_cents - a.price_cents);
+      break;
+    case "score":
+      items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      break;
+    default:
+      break;
+  }
+
+  const total = items.length;
+  const offset = options.offset || 0;
+  const limit = options.limit || 24;
+  return { products: items.slice(offset, offset + limit), total };
+}
+
 export async function listStoreProducts(
   options: ListStoreProductsOptions = {},
 ): Promise<{ products: StoreProduct[]; total: number }> {
   const supabase = createServiceClient();
-  if (!supabase) return { products: [], total: 0 };
+  if (!supabase) return filterDemoProducts(options);
 
   try {
     let query = supabase
@@ -254,17 +310,20 @@ export async function listStoreProducts(
     const { data, count, error } = await query;
     if (error) {
       log("error", "store.listStoreProducts", { error: error.message });
-      return { products: [], total: 0 };
+      return filterDemoProducts(options);
     }
 
     const rows = (data ?? []) as unknown as Record<string, unknown>[];
+    if (rows.length === 0) {
+      return filterDemoProducts(options);
+    }
     return {
       products: rows.map(mapProductRow),
       total: count ?? rows.length,
     };
   } catch (err) {
     log("error", "store.listStoreProducts.unhandled", { error: String(err) });
-    return { products: [], total: 0 };
+    return filterDemoProducts(options);
   }
 }
 
@@ -272,8 +331,15 @@ export async function getStoreProductBySlug(
   slug: string,
   organizationId?: string,
 ): Promise<{ product: StoreProduct | null; related: StoreProduct[] }> {
+  const demoMatch = DEMO_STORE_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
   const supabase = createServiceClient();
-  if (!supabase) return { product: null, related: [] };
+  if (!supabase) {
+    if (!demoMatch) return { product: null, related: [] };
+    return {
+      product: demoMatch,
+      related: DEMO_STORE_PRODUCTS.filter((p) => p.id !== demoMatch.id).slice(0, 4),
+    };
+  }
 
   try {
     let query = supabase
@@ -295,7 +361,15 @@ export async function getStoreProductBySlug(
     }
 
     const { data, error } = await query.maybeSingle();
-    if (error || !data) return { product: null, related: [] };
+    if (error || !data) {
+      if (demoMatch) {
+        return {
+          product: demoMatch,
+          related: DEMO_STORE_PRODUCTS.filter((p) => p.id !== demoMatch.id).slice(0, 4),
+        };
+      }
+      return { product: null, related: [] };
+    }
 
     const product = mapProductRow(data as Record<string, unknown>);
 
@@ -317,6 +391,12 @@ export async function getStoreProductBySlug(
     };
   } catch (err) {
     log("error", "store.getStoreProductBySlug", { error: String(err) });
+    if (demoMatch) {
+      return {
+        product: demoMatch,
+        related: DEMO_STORE_PRODUCTS.filter((p) => p.id !== demoMatch.id).slice(0, 4),
+      };
+    }
     return { product: null, related: [] };
   }
 }

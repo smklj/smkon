@@ -1,26 +1,27 @@
 import React from "react";
+import { IconCheck, IconShield, IconTruck, IconZap } from "./StoreIcons";
 
 export function TrustFeatures() {
   const features = [
     {
-      icon: "⚡",
+      icon: <IconZap size={20} />,
       title: "PIX Instantâneo",
-      desc: "Confirmação imediata e processamento no mesmo instante.",
+      desc: "Confirmação automática em segundos e liberação imediata.",
     },
     {
-      icon: "📦",
-      title: "Envio para todo Brasil",
-      desc: "Rastreio integrado Correios e Jadlog com seguro total.",
+      icon: <IconTruck size={20} />,
+      title: "Logística Rastrada",
+      desc: "Envio integrado Correios e transportadoras para todo o Brasil.",
     },
     {
-      icon: "⭐",
-      title: "Achados Verificados",
-      desc: "Produtos testados pela equipe e pelo mascote oficial SMKON.",
+      icon: <IconCheck size={20} />,
+      title: "Curadoria Verificada",
+      desc: "Produtos físicos, sistemas e ofertas avaliadas tecnicamente.",
     },
     {
-      icon: "🔒",
-      title: "Compra 100% Protegida",
-      desc: "Infraestrutura segura, RLS e privacidade de dados.",
+      icon: <IconShield size={20} />,
+      title: "Ambiente Blindado",
+      desc: "Criptografia SSL, proteção anti-fraude e respeito à LGPD.",
     },
   ];
 

@@ -4,13 +4,21 @@ import { getStoreSettings, listStoreProducts } from "@/lib/store/repository";
 import { HeroBanner } from "@/components/store/HeroBanner";
 import { ProductCard } from "@/components/store/ProductCard";
 import { TrustFeatures } from "@/components/store/TrustFeatures";
+import {
+  IconArrowUpRight,
+  IconBag,
+  IconCode,
+  IconCpu,
+  IconPackage,
+  IconStar,
+  IconZap,
+} from "@/components/store/StoreIcons";
 
-export const revalidate = 60; // ISR 1 minuto
+export const revalidate = 60;
 
 export default async function LojaHomePage() {
   const settings = await getStoreSettings();
 
-  // Busca produtos em paralelo
   const [featuredRes, bestsellersRes, newArrivalsRes, shopeeRes, digitalRes] = await Promise.all([
     listStoreProducts({ featured: true, limit: 8 }),
     listStoreProducts({ bestseller: true, limit: 8 }),
@@ -19,7 +27,6 @@ export default async function LojaHomePage() {
     listStoreProducts({ fulfillmentMode: "internal_digital", limit: 8 }),
   ]);
 
-  // Se o banco ainda não tiver produtos com flags específicas, busca os mais recentes
   const fallbackRes =
     featuredRes.products.length === 0
       ? await listStoreProducts({ limit: 8 })
@@ -34,23 +41,25 @@ export default async function LojaHomePage() {
 
       {/* Categorias Rápidas */}
       <section style={{ marginBottom: "36px" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "center" }}>
           {settings.categories_nav.map((cat) => (
             <Link
               key={cat.id}
               href={`/loja/produtos?categoria=${cat.slug}`}
               className="store-btn store-btn-secondary"
-              style={{ padding: "10px 18px", fontSize: "13px", borderRadius: "999px" }}
+              style={{ padding: "9px 16px", fontSize: "13px", borderRadius: "999px" }}
             >
               <span>{cat.name}</span>
               {cat.badge && (
                 <span
                   style={{
                     fontSize: "10px",
-                    background: "var(--store-primary)",
-                    color: "#fff",
+                    background: "rgba(212, 175, 55, 0.16)",
+                    color: "var(--store-accent)",
+                    border: "1px solid rgba(212, 175, 55, 0.32)",
                     padding: "2px 7px",
                     borderRadius: "999px",
+                    fontWeight: 700,
                   }}
                 >
                   {cat.badge}
@@ -64,18 +73,20 @@ export default async function LojaHomePage() {
       {/* Pilares Comerciais SMKON */}
       <section className="store-pillars-grid" aria-label="Canais da Loja SMKON">
         <Link href="/loja/produtos?tipo=fisico" className="store-pillar-card">
-          <span className="store-pillar-tag" style={{ color: "var(--store-accent)" }}>
-            📦 Loja Própria · Envio Brasil
+          <span className="store-pillar-tag" style={{ color: "var(--store-accent)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <IconPackage size={14} />
+            <span>Loja Própria · Envio Brasil</span>
           </span>
           <h2 className="store-pillar-title">Periféricos, Setup & Hardware</h2>
           <p className="store-pillar-desc">
-            Produtos selecionados com estoque real, cálculo de frete na hora e rastreio completo via transportadora.
+            Equipamentos selecionados com estoque real, cálculo de frete na hora e rastreio completo via transportadora.
           </p>
         </Link>
 
         <Link href="/loja/produtos?tipo=digital" className="store-pillar-card">
-          <span className="store-pillar-tag" style={{ color: "#c084fc" }}>
-            💻 Liberação Automática Pós-PIX
+          <span className="store-pillar-tag" style={{ color: "#e4e4e7", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <IconCpu size={14} />
+            <span>Liberação Automática Pós-PIX</span>
           </span>
           <h2 className="store-pillar-title">Infoprodutos, Sistemas & Planilhas</h2>
           <p className="store-pillar-desc">
@@ -84,8 +95,9 @@ export default async function LojaHomePage() {
         </Link>
 
         <Link href="/loja/produtos?tipo=shopee" className="store-pillar-card">
-          <span className="store-pillar-tag" style={{ color: "var(--store-shopee)" }}>
-            🛍️ Curadoria Oficial Shopee
+          <span className="store-pillar-tag" style={{ color: "#fdba74", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <IconBag size={14} />
+            <span>Curadoria Oficial Shopee</span>
           </span>
           <h2 className="store-pillar-title">Achados Verificados com Score</h2>
           <p className="store-pillar-desc">
@@ -94,8 +106,9 @@ export default async function LojaHomePage() {
         </Link>
 
         <Link href="/loja/orcamentos" className="store-pillar-card">
-          <span className="store-pillar-tag" style={{ color: "var(--store-accent)" }}>
-            🛠️ Engenharia de Software
+          <span className="store-pillar-tag" style={{ color: "var(--store-accent)", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <IconCode size={14} />
+            <span>Engenharia de Software</span>
           </span>
           <h2 className="store-pillar-title">Sites, APIs, Sistemas & Bots</h2>
           <p className="store-pillar-desc">
@@ -109,11 +122,12 @@ export default async function LojaHomePage() {
         <section className="store-section">
           <div className="store-section-header">
             <h2 className="store-section-title">
-              <span>⭐</span>
+              <span style={{ color: "var(--store-accent)", display: "inline-flex" }}><IconStar size={18} /></span>
               <span>Destaques Selecionados</span>
             </h2>
             <Link href="/loja/produtos?destaque=true" className="store-section-link">
-              Ver todos ↗
+              <span>Ver todos</span>
+              <IconArrowUpRight size={14} />
             </Link>
           </div>
           <div className="store-grid">
@@ -124,107 +138,41 @@ export default async function LojaHomePage() {
         </section>
       )}
 
-      {/* Achados da Shopee — Seção Dedicada */}
-      {shopeeRes.products.length > 0 && (
-        <section
-          className="store-section"
-          style={{
-            background: "linear-gradient(180deg, rgba(238, 77, 45, 0.08) 0%, transparent 100%)",
-            border: "1px solid rgba(238, 77, 45, 0.25)",
-            borderRadius: "16px",
-            padding: "28px",
-          }}
-        >
-          <div className="store-section-header" style={{ borderColor: "rgba(238, 77, 45, 0.2)" }}>
-            <div>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "var(--store-shopee)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Link Oficial Shopee Afiliado
-              </span>
-              <h2 className="store-section-title" style={{ marginTop: "4px" }}>
-                <span>🛍️</span>
-                <span>Top Achados da Shopee Verificados</span>
-              </h2>
-            </div>
-            <Link
-              href="/loja/produtos?tipo=shopee"
-              className="store-section-link"
-              style={{ color: "var(--store-shopee)" }}
-            >
-              Ver todos os achados ↗
-            </Link>
-          </div>
-
-          <div className="store-grid">
-            {shopeeRes.products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Mais Vendidos */}
-      {bestsellersRes.products.length > 0 && (
-        <section className="store-section">
-          <div className="store-section-header">
-            <h2 className="store-section-title">
-              <span>🔥</span>
-              <span>Mais Vendidos</span>
-            </h2>
-            <Link href="/loja/produtos?mais_vendidos=true" className="store-section-link">
-              Ver mais ↗
-            </Link>
-          </div>
-          <div className="store-grid">
-            {bestsellersRes.products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Infoprodutos & Soluções Digitais — Seção Dedicada */}
+      {/* Infoprodutos & Soluções Digitais */}
       {digitalRes.products.length > 0 && (
         <section
           className="store-section"
           style={{
-            background: "linear-gradient(180deg, rgba(124, 58, 237, 0.08) 0%, transparent 100%)",
-            border: "1px solid rgba(124, 58, 237, 0.25)",
+            background: "linear-gradient(180deg, rgba(212, 175, 55, 0.06) 0%, rgba(12, 13, 18, 0.9) 100%)",
+            border: "1px solid var(--store-border-strong)",
             borderRadius: "16px",
             padding: "28px",
           }}
         >
-          <div className="store-section-header" style={{ borderColor: "rgba(124, 58, 237, 0.2)" }}>
+          <div className="store-section-header">
             <div>
               <span
                 style={{
                   fontSize: "11px",
                   fontWeight: 700,
-                  color: "var(--store-secondary)",
+                  color: "var(--store-accent)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
                 }}
               >
-                Entrega Imediata após Pagamento
+                <IconZap size={12} />
+                <span>Entrega Imediata após Pagamento</span>
               </span>
-              <h2 className="store-section-title" style={{ marginTop: "4px" }}>
-                <span>💻</span>
-                <span>Infoprodutos, E-books & Sistemas</span>
+              <h2 className="store-section-title" style={{ marginTop: "6px" }}>
+                <span>Infoprodutos, Sistemas PDV & Planilhas</span>
               </h2>
             </div>
-            <Link
-              href="/loja/produtos?tipo=digital"
-              className="store-section-link"
-              style={{ color: "var(--store-secondary)" }}
-            >
-              Ver soluções digitais ↗
+            <Link href="/loja/produtos?tipo=digital" className="store-section-link">
+              <span>Ver soluções digitais</span>
+              <IconArrowUpRight size={14} />
             </Link>
           </div>
 
@@ -236,16 +184,82 @@ export default async function LojaHomePage() {
         </section>
       )}
 
+      {/* Mais Vendidos */}
+      {bestsellersRes.products.length > 0 && (
+        <section className="store-section">
+          <div className="store-section-header">
+            <h2 className="store-section-title">
+              <span>Mais Vendidos</span>
+            </h2>
+            <Link href="/loja/produtos?mais_vendidos=true" className="store-section-link">
+              <span>Ver mais</span>
+              <IconArrowUpRight size={14} />
+            </Link>
+          </div>
+          <div className="store-grid">
+            {bestsellersRes.products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Achados da Shopee */}
+      {shopeeRes.products.length > 0 && (
+        <section
+          className="store-section"
+          style={{
+            background: "linear-gradient(180deg, rgba(238, 77, 45, 0.06) 0%, transparent 100%)",
+            border: "1px solid rgba(238, 77, 45, 0.25)",
+            borderRadius: "16px",
+            padding: "28px",
+          }}
+        >
+          <div className="store-section-header" style={{ borderColor: "rgba(238, 77, 45, 0.2)" }}>
+            <div>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#fdba74",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Link Oficial Shopee Afiliado
+              </span>
+              <h2 className="store-section-title" style={{ marginTop: "4px" }}>
+                <span>Curadoria Shopee Verificada</span>
+              </h2>
+            </div>
+            <Link
+              href="/loja/produtos?tipo=shopee"
+              className="store-section-link"
+              style={{ color: "#fdba74" }}
+            >
+              <span>Ver todos os achados</span>
+              <IconArrowUpRight size={14} />
+            </Link>
+          </div>
+
+          <div className="store-grid">
+            {shopeeRes.products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Novidades */}
       {newArrivalsRes.products.length > 0 && (
         <section className="store-section">
           <div className="store-section-header">
             <h2 className="store-section-title">
-              <span>✨</span>
-              <span>Novidades na Loja</span>
+              <span>Lançamentos Recentes</span>
             </h2>
             <Link href="/loja/produtos?ordem=newest" className="store-section-link">
-              Ver lançamentos ↗
+              <span>Ver lançamentos</span>
+              <IconArrowUpRight size={14} />
             </Link>
           </div>
           <div className="store-grid">
@@ -259,7 +273,7 @@ export default async function LojaHomePage() {
       {/* Suporte & Rastreamento Rápido */}
       <section
         style={{
-          background: "linear-gradient(135deg, rgba(37, 99, 255, 0.14), rgba(17, 22, 31, 0.95))",
+          background: "linear-gradient(135deg, rgba(212, 175, 55, 0.09), rgba(12, 13, 18, 0.96))",
           border: "1px solid var(--store-border-strong)",
           borderRadius: "18px",
           padding: "28px",
@@ -273,21 +287,23 @@ export default async function LojaHomePage() {
       >
         <div style={{ maxWidth: "600px" }}>
           <span className="store-pillar-tag" style={{ color: "var(--store-accent)" }}>
-            Atendimento Inteligente & Pós-Venda
+            Atendimento & Pós-Venda
           </span>
           <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#fff", margin: "6px 0 8px" }}>
-            Precisa acompanhar um pedido ou tirar dúvidas antes de comprar?
+            Acompanhe seu pedido ou solicite um projeto sob medida
           </h2>
           <p style={{ fontSize: "13px", color: "var(--store-muted)", margin: 0, lineHeight: "1.6" }}>
-            Consulte seu código SMK em segundos ou clique no botão <strong>Suporte SMKON</strong> no canto inferior direito para falar com nosso assistente 24h.
+            Consulte o código SMK em segundos, baixe seus infoprodutos ou simule o orçamento de um site/API com nossa equipe.
           </p>
         </div>
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Link href="/loja/rastrear" className="store-btn store-btn-primary">
-            📦 Rastrear Pedido
+            <IconPackage size={15} />
+            <span>Rastrear Pedido</span>
           </Link>
-          <Link href="/loja/produtos" className="store-btn store-btn-secondary">
-            Explorar Catálogo
+          <Link href="/loja/orcamentos" className="store-btn store-btn-secondary">
+            <IconCode size={15} />
+            <span>Orçamento de Software</span>
           </Link>
         </div>
       </section>

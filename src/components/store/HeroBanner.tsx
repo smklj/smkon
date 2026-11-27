@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { StoreBanner } from "@/lib/store/types";
+import { IconArrowUpRight, IconBag, IconCpu } from "./StoreIcons";
 
 export function HeroBanner({ banners }: { banners: StoreBanner[] }) {
   const activeBanner = banners.find((b) => b.active) || banners[0];
@@ -23,13 +24,16 @@ export function HeroBanner({ banners }: { banners: StoreBanner[] }) {
 
           <div className="store-hero-actions">
             <Link href={activeBanner.cta_href || "/loja/produtos"} className="store-btn store-btn-primary">
-              {activeBanner.cta_text || "Explorar Produtos"} ↗
-            </Link>
-            <Link href="/loja/produtos?tipo=shopee" className="store-btn store-btn-shopee">
-              Achados Shopee 🛍️
+              <span>{activeBanner.cta_text || "Explorar Produtos"}</span>
+              <IconArrowUpRight size={15} />
             </Link>
             <Link href="/loja/produtos?tipo=digital" className="store-btn store-btn-secondary">
-              Soluções Digitais 💻
+              <IconCpu size={15} />
+              <span>Infoprodutos & Sistemas</span>
+            </Link>
+            <Link href="/loja/produtos?tipo=shopee" className="store-btn store-btn-secondary">
+              <IconBag size={15} />
+              <span>Achados Shopee</span>
             </Link>
           </div>
         </div>
@@ -41,7 +45,7 @@ export function HeroBanner({ banners }: { banners: StoreBanner[] }) {
             width={700}
             height={500}
             priority
-            style={{ objectFit: "contain", width: "100%", height: "auto" }}
+            style={{ objectFit: "cover", width: "100%", height: "100%" }}
           />
         </div>
       </div>

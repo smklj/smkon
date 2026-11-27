@@ -93,21 +93,21 @@ export default async function StoreProductsPage({ searchParams }: Props) {
             className={`store-btn ${tipo === "shopee" ? "store-btn-shopee" : "store-btn-secondary"}`}
             style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
           >
-            🛍️ Achados Shopee
+            Achados Shopee
           </Link>
           <Link
             href="/loja/produtos?tipo=digital"
             className={`store-btn ${tipo === "digital" ? "store-btn-primary" : "store-btn-secondary"}`}
             style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
           >
-            💻 Infoprodutos
+            Infoprodutos & Sistemas
           </Link>
           <Link
             href="/loja/produtos?tipo=fisico"
             className={`store-btn ${tipo === "fisico" ? "store-btn-primary" : "store-btn-secondary"}`}
             style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
           >
-            📦 Físicos
+            Produtos Físicos
           </Link>
         </div>
 

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { IconArrowUpRight, IconMessage } from "./StoreIcons";
 
 type BotMessage = {
   id: string;
@@ -141,8 +142,8 @@ export function StoreSupportBot({ storeName }: { storeName: string }) {
                 <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>
                   Suporte {storeName}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--store-success)" }}>
-                  ● Assistente online 24h
+                <div style={{ fontSize: "11px", color: "var(--store-accent)" }}>
+                  Atendimento online 24h
                 </div>
               </div>
             </div>
@@ -212,14 +213,18 @@ export function StoreSupportBot({ storeName }: { storeName: string }) {
                           fontSize: "11px",
                           fontWeight: 600,
                           color: "var(--store-accent)",
-                          background: "rgba(0, 240, 255, 0.08)",
-                          border: "1px solid rgba(0, 240, 255, 0.25)",
+                          background: "rgba(212, 175, 55, 0.1)",
+                          border: "1px solid rgba(212, 175, 55, 0.3)",
                           padding: "5px 10px",
                           borderRadius: "8px",
                           textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
                         }}
                       >
-                        {lk.label} ↗
+                        <span>{lk.label}</span>
+                        <IconArrowUpRight size={11} />
                       </Link>
                     ))}
                   </div>
@@ -308,7 +313,7 @@ export function StoreSupportBot({ storeName }: { storeName: string }) {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "8px",
           padding: "12px 18px",
           borderRadius: "999px",
           background: "linear-gradient(135deg, #d4af37 0%, #f3d37a 55%, #b8860b 100%)",
@@ -320,7 +325,7 @@ export function StoreSupportBot({ storeName }: { storeName: string }) {
           fontSize: "13px",
         }}
       >
-        <span>💬</span>
+        <IconMessage size={16} />
         <span>{isOpen ? "Fechar Suporte" : "Suporte SMKON"}</span>
       </button>
     </div>

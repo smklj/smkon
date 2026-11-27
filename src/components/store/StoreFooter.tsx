@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { StoreSettings } from "@/lib/store/types";
+import { IconArrowUpRight, IconPackage, IconShield, IconZap } from "./StoreIcons";
 
 export function StoreFooter({ settings }: { settings: StoreSettings }) {
   return (
@@ -13,25 +14,28 @@ export function StoreFooter({ settings }: { settings: StoreSettings }) {
             alt="SMKON"
             width={120}
             height={28}
-            style={{ height: 28, width: "auto", objectFit: "contain", marginBottom: "16px" }}
+            style={{ height: 26, width: "auto", objectFit: "contain", marginBottom: "16px" }}
           />
-          <p style={{ lineHeight: "1.6", color: "var(--store-muted)", fontSize: "13px" }}>
-            {settings.store_tagline || "Achados inteligentes. Escolhas melhores."} A loja oficial de tecnologia, periféricos testados, seleções Shopee e soluções digitais para o seu ecossistema.
+          <p style={{ lineHeight: "1.65", color: "var(--store-muted)", fontSize: "13px" }}>
+            {settings.store_tagline || "Achados inteligentes. Escolhas melhores."} Tecnologia, periféricos selecionados, infoprodutos digitais e engenharia de software em um único ecossistema.
           </p>
-          <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+          <div style={{ display: "flex", gap: "14px", marginTop: "16px", fontSize: "12px" }}>
             {settings.social_links.instagram && (
-              <a href={settings.social_links.instagram} target="_blank" rel="noopener noreferrer">
-                Instagram ↗
+              <a href={settings.social_links.instagram} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                <span>Instagram</span>
+                <IconArrowUpRight size={12} />
               </a>
             )}
             {settings.social_links.tiktok && (
-              <a href={settings.social_links.tiktok} target="_blank" rel="noopener noreferrer">
-                TikTok ↗
+              <a href={settings.social_links.tiktok} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                <span>TikTok</span>
+                <IconArrowUpRight size={12} />
               </a>
             )}
             {settings.social_links.youtube && (
-              <a href={settings.social_links.youtube} target="_blank" rel="noopener noreferrer">
-                YouTube ↗
+              <a href={settings.social_links.youtube} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                <span>YouTube</span>
+                <IconArrowUpRight size={12} />
               </a>
             )}
           </div>
@@ -40,11 +44,11 @@ export function StoreFooter({ settings }: { settings: StoreSettings }) {
         <div className="store-footer-col">
           <h5>Categorias</h5>
           <ul>
-            <li><Link href="/loja/produtos?categoria=achados">Achados da Shopee</Link></li>
-            <li><Link href="/loja/produtos?categoria=tecnologia">Tecnologia & Periféricos</Link></li>
-            <li><Link href="/loja/produtos?categoria=reviews">Reviews & Testados</Link></li>
-            <li><Link href="/loja/produtos?tipo=digital">Infoprodutos & E-books</Link></li>
-            <li><Link href="/loja/produtos">Todos os Produtos</Link></li>
+            <li><Link href="/loja/produtos?tipo=fisico">Hardware & Periféricos</Link></li>
+            <li><Link href="/loja/produtos?tipo=digital">Infoprodutos & Sistemas</Link></li>
+            <li><Link href="/loja/produtos?tipo=shopee">Achados da Shopee</Link></li>
+            <li><Link href="/loja/orcamentos">Sites, APIs & Orçamentos</Link></li>
+            <li><Link href="/loja/produtos">Catálogo Completo</Link></li>
           </ul>
         </div>
 
@@ -52,7 +56,7 @@ export function StoreFooter({ settings }: { settings: StoreSettings }) {
           <h5>Atendimento & Ajuda</h5>
           <ul>
             <li>
-              <span>Email: </span>
+              <span>E-mail: </span>
               <a href={`mailto:${settings.support_email || "suporte@smkon.com.br"}`}>
                 {settings.support_email || "suporte@smkon.com.br"}
               </a>
@@ -61,35 +65,29 @@ export function StoreFooter({ settings }: { settings: StoreSettings }) {
               <li>
                 <span>WhatsApp: </span>
                 <a href={`https://wa.me/${settings.support_whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                  Suporte Direto ↗
+                  Atendimento Direto
                 </a>
               </li>
             )}
             <li><Link href="/loja/rastrear">Rastrear Pedido</Link></li>
-            <li><Link href="/loja/orcamentos">Orçamento de Sites & APIs</Link></li>
-            <li><Link href="/loja/produtos?tipo=digital">Acessar Infoprodutos</Link></li>
-            <li><Link href="/admin">Painel Administrativo SMKON</Link></li>
+            <li><Link href="/painel">Painel Administrativo</Link></li>
           </ul>
         </div>
 
         <div className="store-footer-col">
-          <h5>Compra 100% Segura</h5>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "var(--store-accent)", fontSize: "16px" }}>🔒</span>
-              <span>Criptografia SSL de ponta a ponta</span>
+          <h5>Segurança & Pagamento</h5>
+          <div style={{ display: "flex", flexDirection: "column", gap: "11px", fontSize: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#d4d4d8" }}>
+              <span style={{ color: "var(--store-accent)" }}><IconShield size={15} /></span>
+              <span>Criptografia SSL 256-bit ponta a ponta</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "var(--store-success)", fontSize: "16px" }}>⚡</span>
-              <span>PIX Oficial com confirmação instantânea</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#d4d4d8" }}>
+              <span style={{ color: "var(--store-accent)" }}><IconZap size={15} /></span>
+              <span>PIX com confirmação em tempo real</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "var(--store-primary)", fontSize: "16px" }}>📦</span>
-              <span>Logística integrada Melhor Envio / Correios</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ color: "var(--store-warning)", fontSize: "16px" }}>🛡️</span>
-              <span>Garantia de satisfação SMKON</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#d4d4d8" }}>
+              <span style={{ color: "var(--store-accent)" }}><IconPackage size={15} /></span>
+              <span>Envio rastreado Correios & transportadoras</span>
             </div>
           </div>
         </div>
@@ -97,11 +95,11 @@ export function StoreFooter({ settings }: { settings: StoreSettings }) {
 
       <div className="store-footer-bottom">
         <div>
-          © {new Date().getFullYear()} SMKON Tecnologia e Comércio Ltda. Todos os direitos reservados.
+          © {new Date().getFullYear()} SMKON Tecnologia e Comércio. Todos os direitos reservados.
         </div>
         <div style={{ display: "flex", gap: "16px" }}>
           <span>Termos de Uso</span>
-          <span>Política de Privacidade (LGPD)</span>
+          <span>Privacidade (LGPD)</span>
           <span>Trocas e Devoluções</span>
         </div>
       </div>

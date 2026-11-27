@@ -391,25 +391,25 @@
   position: relative;
 }
 .store-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.55);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
 }
 .store-card-image-wrap {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: #0f141c;
+  background: #08090c;
   overflow: hidden;
 }
 .store-card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .store-card:hover .store-card-image {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 .store-badge {
   position: absolute;
@@ -417,8 +417,8 @@
   left: 10px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 3px 8px;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
   border-radius: 6px;
   text-transform: uppercase;
   z-index: 2;
@@ -428,27 +428,28 @@
   color: #fff;
 }
 .store-badge-digital {
-  background: var(--store-secondary);
+  background: rgba(17, 17, 22, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
 }
 .store-badge-featured {
-  background: var(--store-primary);
-  color: #fff;
+  background: linear-gradient(135deg, #d4af37, #f3d37a);
+  color: #050507;
 }
 .store-badge-score {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(8, 13, 18, 0.85);
-  border: 1px solid rgba(0, 240, 255, 0.3);
+  background: rgba(5, 5, 7, 0.86);
+  border: 1px solid rgba(212, 175, 55, 0.38);
   color: var(--store-accent);
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 7px;
+  padding: 3px 8px;
   border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   z-index: 2;
 }
 .store-card-body {
@@ -525,8 +526,8 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: rgba(37, 99, 255, 0.15);
-  border: 1px solid rgba(37, 99, 255, 0.3);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
   color: var(--store-accent);
   display: grid;
   place-items: center;
@@ -545,7 +546,7 @@
 
 /* Footer */
 .store-footer {
-  background: #05080c;
+  background: #030305;
   border-top: 1px solid var(--store-border);
   padding: 48px 20px 24px;
   color: var(--store-muted);
