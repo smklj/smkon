@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getStoreOrderByCode } from "@/lib/store/repository";
 import { OrderPixBox } from "./OrderPixBox";
 
@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function OrderPage({ params }: Props) {
   const { code } = await params;
+  if (code.toLowerCase() === "rastrear") {
+    redirect("/loja/rastrear");
+  }
   const order = await getStoreOrderByCode(code);
 
   if (!order) {

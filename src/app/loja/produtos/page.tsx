@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { listStoreProducts, getStoreSettings } from "@/lib/store/repository";
 import { ProductCard } from "@/components/store/ProductCard";
+import { CatalogSortSelect } from "@/components/store/CatalogSortSelect";
 
 export const metadata = {
   title: "Catálogo de Produtos | SMKON Loja Oficial",
@@ -110,24 +111,27 @@ export default async function StoreProductsPage({ searchParams }: Props) {
           </Link>
         </div>
 
-        {/* Categorias Pills */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {settings.categories_nav.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/loja/produtos?categoria=${cat.slug}`}
-              style={{
-                fontSize: "12px",
-                color: category === cat.slug ? "var(--store-accent)" : "var(--store-muted)",
-                textDecoration: "none",
-                padding: "4px 8px",
-                borderRadius: "6px",
-                background: category === cat.slug ? "rgba(0, 240, 255, 0.1)" : "transparent",
-              }}
-            >
-              {cat.name}
-            </Link>
-          ))}
+        {/* Categorias Pills + Ordenação */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {settings.categories_nav.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/loja/produtos?categoria=${cat.slug}`}
+                style={{
+                  fontSize: "12px",
+                  color: category === cat.slug ? "var(--store-accent)" : "var(--store-muted)",
+                  textDecoration: "none",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  background: category === cat.slug ? "rgba(0, 240, 255, 0.1)" : "transparent",
+                }}
+              >
+                {cat.name}
+              </Link>
+            ))}
+          </div>
+          <CatalogSortSelect currentSort={sort} />
         </div>
       </div>
 

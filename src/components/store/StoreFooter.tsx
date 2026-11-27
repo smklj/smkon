@@ -65,7 +65,8 @@ export function StoreFooter({ settings }: { settings: StoreSettings }) {
                 </a>
               </li>
             )}
-            <li><Link href="/loja/pedido/rastrear">Rastrear Pedido</Link></li>
+            <li><Link href="/loja/rastrear">Rastrear Pedido</Link></li>
+            <li><Link href="/loja/produtos?tipo=digital">Acessar Infoprodutos</Link></li>
             <li><Link href="/admin">Painel Administrativo SMKON</Link></li>
           </ul>
         </div>

@@ -61,6 +61,9 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
           </form>
 
           <div className="store-header-actions">
+            <Link href="/loja/rastrear" className="store-btn store-btn-secondary" style={{ padding: "8px 14px", fontSize: "13px" }}>
+              📦 Rastrear
+            </Link>
             <Link href="/loja/produtos" className="store-btn store-btn-secondary" style={{ padding: "8px 14px", fontSize: "13px" }}>
               Catálogo
             </Link>

@@ -22,6 +22,12 @@
 
 .store-body {
   background-color: var(--store-bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37, 99, 255, 0.16), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(0, 240, 255, 0.08), transparent),
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
   color: var(--store-text);
   min-height: 100vh;
   display: flex;
@@ -649,4 +655,85 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* Enterprise Pillars & Cards Enhancements */
+.store-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 44px;
+}
+.store-pillar-card {
+  position: relative;
+  background: linear-gradient(160deg, rgba(31, 39, 51, 0.72), rgba(17, 22, 31, 0.92));
+  border: 1px solid var(--store-border);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.store-pillar-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--store-accent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+.store-pillar-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.store-pillar-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+.store-pillar-desc {
+  font-size: 13px;
+  color: var(--store-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.store-badge-discount {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(34, 197, 94, 0.92);
+  color: #04130a;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.store-card-installments {
+  font-size: 11px;
+  color: var(--store-muted);
+  margin-top: -2px;
+}
+.store-card-meta-line {
+  font-size: 11px;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 720px) {
+  .store-header-container {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .store-search-form {
+    order: 3;
+    min-width: 100%;
+  }
+  .store-hero-content {
+    padding: 26px 20px;
+  }
 }

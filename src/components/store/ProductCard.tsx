@@ -18,6 +18,17 @@ export function ProductCard({ product }: { product: StoreProduct }) {
   const isShopee = product.fulfillment_mode === "external_affiliate";
   const isDigital = product.fulfillment_mode === "internal_digital";
   const imageUrl = product.image_urls[0] || "/brand/brand-identity-board.jpg";
+  const hasDiscount =
+    product.compare_at_price_cents !== null &&
+    product.compare_at_price_cents > product.price_cents;
+  const discountPct = hasDiscount
+    ? Math.round(
+        ((product.compare_at_price_cents! - product.price_cents) /
+          product.compare_at_price_cents!) *
+          100,
+      )
+    : 0;
+  const installmentCents = Math.round(product.price_cents / 12);
 
   return (
     <article className="store-card">
@@ -51,6 +62,10 @@ export function ProductCard({ product }: { product: StoreProduct }) {
           </span>
         )}
 
+        {discountPct > 0 && (
+          <span className="store-badge-discount">-{discountPct}%</span>
+        )}
+
         {product.score !== null && (
           <span className="store-badge-score" title="Score de confiabilidade e qualidade SMKON">
             ★ {product.score.toFixed(1)}
@@ -68,14 +83,32 @@ export function ProductCard({ product }: { product: StoreProduct }) {
         </h3>
 
         <div className="store-card-prices">
-          {product.compare_at_price_cents && product.compare_at_price_cents > product.price_cents && (
+          {hasDiscount && (
             <span className="store-compare-price">
-              {formatBRL(product.compare_at_price_cents)}
+              {formatBRL(product.compare_at_price_cents!)}
             </span>
           )}
           <span className="store-price">
             {formatBRL(product.price_cents)}
           </span>
+        </div>
+
+        {!isShopee && product.price_cents >= 2400 && (
+          <span className="store-card-installments">
+            ou até 12x de {formatBRL(installmentCents)} · PIX instantâneo
+          </span>
+        )}
+
+        <div className="store-card-meta-line">
+          {isDigital ? (
+            <span style={{ color: "#c4b5fd" }}>⚡ Entrega digital imediata</span>
+          ) : isShopee ? (
+            <span style={{ color: "#fdba74" }}>🔗 Compra segura na Shopee</span>
+          ) : product.track_inventory && product.stock_quantity <= 0 ? (
+            <span style={{ color: "#fca5a5" }}>Esgotado no momento</span>
+          ) : (
+            <span style={{ color: "#86efac" }}>✓ Envio rastreado Brasil</span>
+          )}
         </div>
 
         {isShopee ? (
