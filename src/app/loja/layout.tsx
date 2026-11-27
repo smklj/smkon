@@ -7,12 +7,13 @@ import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { CartDrawer } from "@/components/store/CartDrawer";
 import { StoreSupportBot } from "@/components/store/StoreSupportBot";
+import { StoreShell } from "@/components/store/StoreShell";
 import "./store.css";
 
 export const metadata: Metadata = {
-  title: "SMKON — Loja Oficial | Achados Inteligentes, Escolhas Melhores",
+  title: "SMKON — Loja Oficial | Tecnologia, Infoprodutos & Engenharia",
   description:
-    "Tecnologia, periféricos testados, achados da Shopee e soluções digitais selecionadas pela SMKON.",
+    "Tecnologia, periféricos testados, achados da Shopee, infoprodutos digitais e soluções sob medida pela SMKON.",
 };
 
 export default async function LojaLayout({
@@ -25,17 +26,21 @@ export default async function LojaLayout({
   return (
     <CartProvider>
       <WishlistProvider>
-        <div className="store-body">
-          <Suspense fallback={<div style={{ height: 108 }} />}>
-            <StoreHeader settings={settings} />
-          </Suspense>
-          <main className="store-container">
+        <Suspense fallback={<div style={{ minHeight: "100vh", background: "#050507" }} />}>
+          <StoreShell
+            settings={settings}
+            header={<StoreHeader settings={settings} />}
+            overlays={
+              <>
+                <CartDrawer />
+                <StoreSupportBot storeName={settings.store_name} />
+              </>
+            }
+            footer={<StoreFooter settings={settings} />}
+          >
             {children}
-          </main>
-          <CartDrawer />
-          <StoreSupportBot storeName={settings.store_name} />
-          <StoreFooter settings={settings} />
-        </div>
+          </StoreShell>
+        </Suspense>
       </WishlistProvider>
     </CartProvider>
   );

@@ -19,14 +19,6 @@ import {
   IconSearch,
 } from "./StoreIcons";
 
-const POPULAR_SEARCHES = [
-  "Teclado Mecânico",
-  "Sistema PDV",
-  "Headset ANC",
-  "Mouse Carbon",
-  "Planilhas E-commerce",
-];
-
 export function StoreHeader({ settings }: { settings: StoreSettings }) {
   const { itemCount, openCart } = useCart();
   const { favorites } = useWishlist();
@@ -92,31 +84,18 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
             <span className="store-logo-tagline">{settings.store_tagline}</span>
           </Link>
 
-          <div className="store-search-block">
-            <form onSubmit={handleSearch} className="store-search-form">
-              <input
-                type="text"
-                placeholder="Buscar produtos, marcas, infoprodutos ou códigos..."
-                className="store-search-input"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <button type="submit" className="store-search-btn" aria-label="Pesquisar">
-                <IconSearch size={15} />
-              </button>
-            </form>
-            <div className="store-search-tags">
-              {POPULAR_SEARCHES.map((term) => (
-                <Link
-                  key={term}
-                  href={`/loja/produtos?q=${encodeURIComponent(term)}`}
-                  className="store-search-tag"
-                >
-                  {term}
-                </Link>
-              ))}
-            </div>
-          </div>
+          <form onSubmit={handleSearch} className="store-search-form">
+            <input
+              type="text"
+              placeholder="Buscar hardware, infoprodutos, achados..."
+              className="store-search-input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button type="submit" className="store-search-btn" aria-label="Pesquisar">
+              <IconSearch size={15} />
+            </button>
+          </form>
 
           <div className="store-header-actions">
             <Link

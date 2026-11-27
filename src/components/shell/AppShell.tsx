@@ -38,15 +38,17 @@ export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, s
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
   const [compact, setCompact] = useState<boolean>(readInitialCompact);
+  const [optimisticArea, setOptimisticArea] = useState<string | null>(null);
 
-  // Fecha o menu móvel ao navegar (ajuste durante o render, sem efeito).
+  // Fecha o menu móvel ao navegar e limpa estado otimista quando a rota conclui.
   if (menuPath !== pathname) {
     setMenuPath(pathname);
     setMenuOpen(false);
+    setOptimisticArea(null);
   }
 
   const activeItem = NAV_ITEMS.find((item) => item.href && isActive(pathname, item.href));
-  const activeKey = activeItem?.area ?? null;
+  const activeKey = optimisticArea ?? activeItem?.area ?? null;
 
   const { containerRef, pillRef, sheenRef } = useSlidingPill({
     activeKey: `${activeKey ?? ""}-${compact ? "c" : "e"}`,
@@ -113,7 +115,11 @@ export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, s
             </div>
             <ul className="app-nav-list">
               {NAV_ITEMS.map((item) => {
-                const active = item.href ? isActive(pathname, item.href) : false;
+                const active = optimisticArea
+                  ? optimisticArea === item.area
+                  : item.href
+                  ? isActive(pathname, item.href)
+                  : false;
                 const slidingKey = `${item.area}-${compact ? "c" : "e"}`;
                 const content = (
                   <>
@@ -135,6 +141,7 @@ export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, s
                         href={item.href}
                         data-sliding-key={slidingKey}
                         data-tooltip={item.label}
+                        onClick={() => setOptimisticArea(item.area)}
                         className={active ? "app-nav-item active" : "app-nav-item"}
                         aria-current={active ? "page" : undefined}
                       >
