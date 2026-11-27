@@ -6,6 +6,7 @@ import { WishlistProvider } from "@/lib/store/wishlist-context";
 import { StoreHeader } from "@/components/store/StoreHeader";
 import { StoreFooter } from "@/components/store/StoreFooter";
 import { CartDrawer } from "@/components/store/CartDrawer";
+import { WishlistDrawer } from "@/components/store/WishlistDrawer";
 import { StoreSupportBot } from "@/components/store/StoreSupportBot";
 import { StoreShell } from "@/components/store/StoreShell";
 import "./store.css";
@@ -33,6 +34,7 @@ export default async function LojaLayout({
             overlays={
               <>
                 <CartDrawer />
+                <WishlistDrawer />
                 <StoreSupportBot storeName={settings.store_name} />
               </>
             }

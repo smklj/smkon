@@ -99,6 +99,7 @@
 
 .app-nav-track {
   position: relative;
+  user-select: none;
 }
 
 .app-nav-list {
@@ -129,6 +130,15 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
   overflow: hidden;
   will-change: transform, width, height, opacity;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.sliding-pill[data-pressing="true"] {
+  border-color: rgba(34, 211, 238, 0.78);
+  box-shadow:
+    0 6px 26px rgba(34, 211, 238, 0.34),
+    0 0 18px rgba(37, 99, 235, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .sliding-pill-sheen {
@@ -166,6 +176,8 @@
   font-weight: 500;
   text-align: left;
   position: relative;
+  user-select: none;
+  touch-action: pan-y;
   transition: color 0.18s ease, background-color 0.18s ease, transform 0.14s ease;
 }
 

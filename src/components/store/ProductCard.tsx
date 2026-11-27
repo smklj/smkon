@@ -27,7 +27,7 @@ function formatBRL(cents: number): string {
 
 export function ProductCard({ product }: { product: StoreProduct }) {
   const { addItem } = useCart();
-  const { isFavorite, toggleFavorite } = useWishlist();
+  const { isFavorite, toggleFavorite, trackView } = useWishlist();
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
   const isShopee = product.fulfillment_mode === "external_affiliate";
@@ -53,7 +53,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
     <>
       <article className="store-card">
         <div className="store-card-image-wrap">
-          <Link href={`/loja/produtos/${product.slug}`} tabIndex={-1}>
+          <Link href={`/loja/produtos/${product.slug}`} tabIndex={-1} onClick={() => trackView(product.id)}>
             <Image
               src={imageUrl}
               alt={product.name}
@@ -89,7 +89,10 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             </button>
             <button
               type="button"
-              onClick={() => setQuickViewOpen(true)}
+              onClick={() => {
+                trackView(product.id);
+                setQuickViewOpen(true);
+              }}
               className="store-float-btn"
               aria-label="Visualização rápida"
               title="Visualização rápida"

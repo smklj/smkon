@@ -3,6 +3,8 @@ import Link from "next/link";
 import { listStoreProducts, getStoreSettings } from "@/lib/store/repository";
 import { ProductCard } from "@/components/store/ProductCard";
 import { CatalogSortSelect } from "@/components/store/CatalogSortSelect";
+import { CatalogFilterBar } from "@/components/store/CatalogFilterBar";
+import { IconSearch } from "@/components/store/StoreIcons";
 
 export const metadata = {
   title: "Catálogo de Produtos | SMKON Loja Oficial",
@@ -64,7 +66,7 @@ export default async function StoreProductsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Barra de Filtros Rápidos */}
+      {/* Barra de Filtros Rápidos Deslizante */}
       <div
         style={{
           display: "flex",
@@ -74,42 +76,13 @@ export default async function StoreProductsPage({ searchParams }: Props) {
           gap: "16px",
           background: "var(--store-surface)",
           border: "1px solid var(--store-border)",
-          borderRadius: "12px",
-          padding: "14px 18px",
+          borderRadius: "14px",
+          padding: "10px 14px",
           marginBottom: "32px",
         }}
       >
-        {/* Tipos */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          <Link
-            href="/loja/produtos"
-            className={`store-btn ${!tipo ? "store-btn-primary" : "store-btn-secondary"}`}
-            style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
-          >
-            Todos
-          </Link>
-          <Link
-            href="/loja/produtos?tipo=shopee"
-            className={`store-btn ${tipo === "shopee" ? "store-btn-shopee" : "store-btn-secondary"}`}
-            style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
-          >
-            Achados Shopee
-          </Link>
-          <Link
-            href="/loja/produtos?tipo=digital"
-            className={`store-btn ${tipo === "digital" ? "store-btn-primary" : "store-btn-secondary"}`}
-            style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
-          >
-            Infoprodutos & Sistemas
-          </Link>
-          <Link
-            href="/loja/produtos?tipo=fisico"
-            className={`store-btn ${tipo === "fisico" ? "store-btn-primary" : "store-btn-secondary"}`}
-            style={{ padding: "6px 12px", fontSize: "12px", borderRadius: "999px" }}
-          >
-            Produtos Físicos
-          </Link>
-        </div>
+        {/* Tipos com Sliding Pill Arrastável */}
+        <CatalogFilterBar activeTipo={tipo} />
 
         {/* Categorias Pills + Ordenação */}
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
@@ -124,7 +97,7 @@ export default async function StoreProductsPage({ searchParams }: Props) {
                   textDecoration: "none",
                   padding: "4px 8px",
                   borderRadius: "6px",
-                  background: category === cat.slug ? "rgba(0, 240, 255, 0.1)" : "transparent",
+                  background: category === cat.slug ? "rgba(212, 175, 55, 0.14)" : "transparent",
                 }}
               >
                 {cat.name}
@@ -146,7 +119,9 @@ export default async function StoreProductsPage({ searchParams }: Props) {
             border: "1px solid var(--store-border)",
           }}
         >
-          <span style={{ fontSize: "44px" }}>🔍</span>
+          <div style={{ color: "var(--store-accent)", display: "inline-grid", placeItems: "center" }}>
+            <IconSearch size={34} />
+          </div>
           <h3 style={{ fontSize: "18px", color: "#fff", marginTop: "16px", marginBottom: "8px" }}>
             Nenhum produto encontrado
           </h3>

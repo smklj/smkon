@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { Toaster } from "@/components/ui/Toaster";
@@ -40,19 +40,29 @@ export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, s
   const [compact, setCompact] = useState<boolean>(readInitialCompact);
   const [optimisticArea, setOptimisticArea] = useState<string | null>(null);
 
+  const activeItem = NAV_ITEMS.find((item) => item.href && isActive(pathname, item.href));
+
   // Fecha o menu móvel ao navegar e limpa estado otimista quando a rota conclui.
   if (menuPath !== pathname) {
     setMenuPath(pathname);
     setMenuOpen(false);
-    setOptimisticArea(null);
+    if (!optimisticArea || activeItem?.area === optimisticArea) {
+      setOptimisticArea(null);
+    }
   }
 
-  const activeItem = NAV_ITEMS.find((item) => item.href && isActive(pathname, item.href));
+  useEffect(() => {
+    if (!optimisticArea || activeItem?.area === optimisticArea) return;
+    const t = window.setTimeout(() => setOptimisticArea(null), 1800);
+    return () => window.clearTimeout(t);
+  }, [optimisticArea, activeItem?.area]);
+
   const activeKey = optimisticArea ?? activeItem?.area ?? null;
 
   const { containerRef, pillRef, sheenRef } = useSlidingPill({
-    activeKey: `${activeKey ?? ""}-${compact ? "c" : "e"}`,
+    activeKey,
     orientation: "vertical",
+    onScrubKey: (scrubKey) => setOptimisticArea(scrubKey),
   });
 
   const toggleCompact = () => {
@@ -120,7 +130,6 @@ export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, s
                   : item.href
                   ? isActive(pathname, item.href)
                   : false;
-                const slidingKey = `${item.area}-${compact ? "c" : "e"}`;
                 const content = (
                   <>
                     <span className="app-nav-icon" style={{ "--accent": item.accent } as React.CSSProperties}>
@@ -139,7 +148,8 @@ export function AppShell({ children, userEmail, workspaces, activeWorkspaceId, s
                     {item.href ? (
                       <Link
                         href={item.href}
-                        data-sliding-key={slidingKey}
+                        draggable={false}
+                        data-sliding-key={item.area}
                         data-tooltip={item.label}
                         onClick={() => setOptimisticArea(item.area)}
                         className={active ? "app-nav-item active" : "app-nav-item"}

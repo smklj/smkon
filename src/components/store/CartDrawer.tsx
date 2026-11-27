@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/lib/store/cart-context";
+import { IconCart, IconCheck, IconClose, IconLock } from "./StoreIcons";
 
 function formatBRL(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", {
@@ -69,21 +70,25 @@ export function CartDrawer() {
           <button
             type="button"
             onClick={closeCart}
+            aria-label="Fechar carrinho"
             style={{
               background: "none",
               border: "none",
               color: "var(--store-muted)",
-              fontSize: "20px",
               cursor: "pointer",
+              display: "grid",
+              placeItems: "center",
             }}
           >
-            ✕
+            <IconClose size={18} />
           </button>
         </div>
 
         {items.length === 0 ? (
           <div style={{ flex: 1, display: "grid", placeContent: "center", textAlign: "center", padding: "40px" }}>
-            <span style={{ fontSize: "48px", marginBottom: "16px" }}>🛒</span>
+            <div style={{ color: "var(--store-accent)", margin: "0 auto 14px" }}>
+              <IconCart size={36} />
+            </div>
             <h3 style={{ fontSize: "16px", color: "#fff", marginBottom: "8px" }}>Seu carrinho está vazio</h3>
             <p style={{ fontSize: "13px", color: "var(--store-muted)", marginBottom: "20px" }}>
               Explore nossos produtos, periféricos e infoprodutos para começar.
@@ -251,8 +256,9 @@ export function CartDrawer() {
                   >
                     <div style={{ fontSize: "12px", color: "#f4f4f5", marginBottom: "6px", display: "flex", justifyContent: "space-between" }}>
                       {remainingCents === 0 ? (
-                        <span style={{ color: "var(--store-accent)", fontWeight: 700 }}>
-                          ✨ Você desbloqueou Frete Grátis!
+                        <span style={{ color: "var(--store-accent)", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                          <IconCheck size={13} />
+                          <span>Você desbloqueou Frete Grátis</span>
                         </span>
                       ) : (
                         <span>
@@ -319,7 +325,8 @@ export function CartDrawer() {
                 className="store-btn store-btn-primary"
                 style={{ width: "100%", padding: "14px", fontSize: "15px" }}
               >
-                Finalizar Compra 🔒
+                <IconLock size={15} />
+                <span>Finalizar Compra</span>
               </Link>
             </div>
           </>

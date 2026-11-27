@@ -21,9 +21,16 @@ export function StoreAdminClient({
   initialSettings: StoreSettings;
 }) {
   const [activeTab, setActiveTab] = useState<TabType>("produtos");
+  const handleAdminTabSelect = (key: string | null) => {
+    if (key === "produtos" || key === "pedidos" || key === "metricas" || key === "aparencia") {
+      setActiveTab(key);
+    }
+  };
   const { containerRef: tabsRef, pillRef: tabsPillRef, sheenRef: tabsSheenRef } = useSlidingPill({
     activeKey: activeTab,
     orientation: "horizontal",
+    onScrubKey: handleAdminTabSelect,
+    onCommitKey: handleAdminTabSelect,
   });
 
   // Products state

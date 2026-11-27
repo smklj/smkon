@@ -4,6 +4,7 @@ import { getStoreSettings, listStoreProducts } from "@/lib/store/repository";
 import { HeroBanner } from "@/components/store/HeroBanner";
 import { FlashDealsBar } from "@/components/store/FlashDealsBar";
 import { ProductCard } from "@/components/store/ProductCard";
+import { SmartDiscoveryShelf } from "@/components/store/SmartDiscoveryShelf";
 import {
   IconArrowUpRight,
   IconCheck,
@@ -25,10 +26,13 @@ export default async function LojaHomePage() {
     listStoreProducts({ fulfillmentMode: "external_affiliate", limit: 4 }),
   ]);
 
-  const isDemoMode =
-    physicalRes.products.some((p) => p.id.startsWith("demo-")) ||
-    digitalRes.products.some((p) => p.id.startsWith("demo-")) ||
-    shopeeRes.products.some((p) => p.id.startsWith("demo-"));
+  const allProducts = Array.from(
+    new Map(
+      [...physicalRes.products, ...digitalRes.products, ...shopeeRes.products].map((p) => [p.id, p]),
+    ).values(),
+  );
+
+  const isDemoMode = allProducts.some((p) => p.id.startsWith("demo-"));
 
   return (
     <>
@@ -79,79 +83,82 @@ export default async function LojaHomePage() {
         </div>
       )}
 
-      {/* 3. Ofertas do Dia + Produtos Físicos / Hardware */}
-      <section className="store-section">
-        <FlashDealsBar />
+      {/* 3. Barra Deslizante Inteligente + Vitrine Principal */}
+      <SmartDiscoveryShelf products={allProducts}>
+        {/* Ofertas do Dia + Produtos Físicos / Hardware */}
+        <section className="store-section">
+          <FlashDealsBar />
 
-        <div className="store-section-header">
-          <div>
-            <span className="store-section-kicker">Loja Própria · Envio Rastrado</span>
-            <h2 className="store-section-title">Hardware, Setup & Periféricos</h2>
-          </div>
-          <Link href="/loja/produtos?tipo=fisico" className="store-section-link">
-            <span>Ver todos</span>
-            <IconArrowUpRight size={14} />
-          </Link>
-        </div>
-
-        {physicalRes.products.length > 0 ? (
-          <div className="store-grid">
-            {physicalRes.products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: "var(--store-muted)", fontSize: "13px" }}>
-            Nenhum produto físico publicado no momento.
-          </p>
-        )}
-      </section>
-
-      {/* 4. Infoprodutos, Sistemas PDV & Soluções Digitais */}
-      {digitalRes.products.length > 0 && (
-        <section className="store-section store-section-panel">
           <div className="store-section-header">
             <div>
-              <span className="store-section-kicker">Liberação Automática Pós-Pagamento</span>
-              <h2 className="store-section-title">Infoprodutos, Sistemas PDV & Planilhas</h2>
+              <span className="store-section-kicker">Loja Própria · Envio Rastrado</span>
+              <h2 className="store-section-title">Hardware, Setup & Periféricos</h2>
             </div>
-            <Link href="/loja/produtos?tipo=digital" className="store-section-link">
-              <span>Ver soluções digitais</span>
+            <Link href="/loja/produtos?tipo=fisico" className="store-section-link">
+              <span>Ver todos</span>
               <IconArrowUpRight size={14} />
             </Link>
           </div>
 
-          <div className="store-grid">
-            {digitalRes.products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 5. Curadoria Oficial Shopee */}
-      {shopeeRes.products.length > 0 && (
-        <section className="store-section store-section-shopee">
-          <div className="store-section-header" style={{ borderColor: "rgba(238, 77, 45, 0.22)" }}>
-            <div>
-              <span className="store-section-kicker" style={{ color: "#fdba74" }}>
-                Compra Externa no Site Oficial Shopee
-              </span>
-              <h2 className="store-section-title">Achados Verificados</h2>
+          {physicalRes.products.length > 0 ? (
+            <div className="store-grid">
+              {physicalRes.products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </div>
-            <Link href="/loja/produtos?tipo=shopee" className="store-section-link" style={{ color: "#fdba74" }}>
-              <span>Ver todos na Shopee</span>
-              <IconArrowUpRight size={14} />
-            </Link>
-          </div>
-
-          <div className="store-grid">
-            {shopeeRes.products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          ) : (
+            <p style={{ color: "var(--store-muted)", fontSize: "13px" }}>
+              Nenhum produto físico publicado no momento.
+            </p>
+          )}
         </section>
-      )}
+
+        {/* Infoprodutos, Sistemas PDV & Soluções Digitais */}
+        {digitalRes.products.length > 0 && (
+          <section className="store-section store-section-panel">
+            <div className="store-section-header">
+              <div>
+                <span className="store-section-kicker">Liberação Automática Pós-Pagamento</span>
+                <h2 className="store-section-title">Infoprodutos, Sistemas PDV & Planilhas</h2>
+              </div>
+              <Link href="/loja/produtos?tipo=digital" className="store-section-link">
+                <span>Ver soluções digitais</span>
+                <IconArrowUpRight size={14} />
+              </Link>
+            </div>
+
+            <div className="store-grid">
+              {digitalRes.products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Curadoria Oficial Shopee */}
+        {shopeeRes.products.length > 0 && (
+          <section className="store-section store-section-shopee">
+            <div className="store-section-header" style={{ borderColor: "rgba(238, 77, 45, 0.22)" }}>
+              <div>
+                <span className="store-section-kicker" style={{ color: "#fdba74" }}>
+                  Compra Externa no Site Oficial Shopee
+                </span>
+                <h2 className="store-section-title">Achados Verificados</h2>
+              </div>
+              <Link href="/loja/produtos?tipo=shopee" className="store-section-link" style={{ color: "#fdba74" }}>
+                <span>Ver todos na Shopee</span>
+                <IconArrowUpRight size={14} />
+              </Link>
+            </div>
+
+            <div className="store-grid">
+              {shopeeRes.products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
+      </SmartDiscoveryShelf>
 
       {/* 6. Bloco Único de Engenharia de Software (Sites, APIs, Sistemas) */}
       <section className="store-engineering-cta">

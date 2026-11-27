@@ -117,7 +117,10 @@
   overflow-x: hidden;
   scrollbar-width: none;
 }
-.store-sidebar-track { position: relative; }
+.store-sidebar-track {
+  position: relative;
+  user-select: none;
+}
 .store-sidebar-list {
   list-style: none;
   margin: 0;
@@ -139,6 +142,12 @@
   border: 1px solid rgba(243, 211, 122, 0.55);
   box-shadow: 0 4px 20px rgba(212, 175, 55, 0.26);
   overflow: hidden;
+  will-change: transform, width, height, opacity;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.store-sliding-pill[data-pressing="true"] {
+  border-color: #f3d37a;
+  box-shadow: 0 6px 26px rgba(243, 211, 122, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 .store-sliding-pill::before {
   content: "";
@@ -168,7 +177,12 @@
   font-weight: 500;
   text-decoration: none;
   position: relative;
-  transition: color 0.18s ease, background-color 0.18s ease;
+  user-select: none;
+  touch-action: pan-y;
+  transition: color 0.18s ease, background-color 0.18s ease, transform 0.14s ease;
+}
+.store-sidebar-item:active {
+  transform: scale(0.98);
 }
 .store-shell:not(.sidebar-expanded) .store-sidebar-item {
   justify-content: center;
@@ -195,6 +209,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.store-shell:not(.sidebar-expanded) .store-sidebar-label {
+  display: none;
 }
 .store-shell:not(.sidebar-expanded) .store-sidebar-item[data-tooltip]:hover::after {
   content: attr(data-tooltip);
@@ -1334,4 +1351,192 @@
   .store-hero-content {
     padding: 26px 20px;
   }
+}
+
+/* ---------- Busca Inteligente & Dropdown Preditivo ---------- */
+.store-search-wrap {
+  flex: 1;
+  max-width: 520px;
+  position: relative;
+}
+.store-search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 70;
+  background: rgba(11, 12, 16, 0.98);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--store-border-strong);
+  border-radius: 14px;
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.72);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.store-search-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--store-muted);
+  padding: 4px 8px 2px;
+}
+.store-search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+.store-search-result:hover,
+.store-search-result.selected {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: rgba(212, 175, 55, 0.35);
+}
+.store-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 6px 6px;
+}
+.store-search-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--store-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e4e4e7;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.store-search-chip:hover {
+  border-color: var(--store-accent);
+  color: var(--store-accent);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+/* ---------- Barra Horizontal Deslizante (Home & Catálogo) ---------- */
+.store-pill-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 8px 12px;
+  background: rgba(11, 12, 16, 0.9);
+  border: 1px solid var(--store-border);
+  border-radius: 14px;
+}
+.store-pill-tabs-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+  padding: 2px;
+  user-select: none;
+}
+.store-pill-tabs-wrap::-webkit-scrollbar { display: none; }
+.store-pill-tabs-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 2;
+}
+.store-pill-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(243, 211, 122, 0.14) 100%);
+  border: 1px solid rgba(243, 211, 122, 0.65);
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.25);
+  overflow: hidden;
+  will-change: transform, width, height, opacity;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.store-pill-indicator[data-pressing="true"] {
+  border-color: #f3d37a;
+  box-shadow: 0 6px 24px rgba(243, 211, 122, 0.42);
+}
+.store-pill-indicator-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.28), rgba(243, 211, 122, 0.14));
+}
+.store-pill-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--store-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  touch-action: pan-y;
+  transition: color 0.18s ease, transform 0.14s ease;
+}
+.store-pill-tab:hover { color: #fff; }
+.store-pill-tab:active { transform: scale(0.975); }
+.store-pill-tab.active { color: var(--store-accent); font-weight: 700; }
+
+/* ---------- Faixa Compacta de Vistos Recentemente ---------- */
+.store-recent-strip {
+  margin-bottom: 28px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(18, 19, 25, 0.72);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+}
+.store-recent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.store-recent-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.store-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(5, 5, 7, 0.72);
+  border: 1px solid var(--store-border);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.store-recent-item:hover {
+  border-color: var(--store-border-strong);
+  transform: translateY(-1px);
 }

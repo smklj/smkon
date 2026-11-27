@@ -69,15 +69,24 @@ export function StoreShell({
 
   if (syncedRouteKey !== routeKey) {
     setSyncedRouteKey(routeKey);
-    setOptimisticKey(null);
+    if (!optimisticKey || routeKey === optimisticKey) {
+      setOptimisticKey(null);
+    }
   }
 
+  // Timeout de segurança para liberar estado otimista caso a navegação seja interrompida
+  useEffect(() => {
+    if (!optimisticKey || optimisticKey === routeKey) return;
+    const t = window.setTimeout(() => setOptimisticKey(null), 1800);
+    return () => window.clearTimeout(t);
+  }, [optimisticKey, routeKey]);
+
   const activeKey = optimisticKey ?? routeKey;
-  const slidingActiveKey = `${activeKey}-${expanded ? "e" : "c"}`;
 
   const { containerRef, pillRef, sheenRef } = useSlidingPill({
-    activeKey: slidingActiveKey,
+    activeKey,
     orientation: "vertical",
+    onScrubKey: (scrubKey) => setOptimisticKey(scrubKey),
   });
 
   const mainRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +107,7 @@ export function StoreShell({
       {/* Sidebar Inteligente Black & Gold com Sliding Pill GSAP */}
       <aside className="store-sidebar" aria-label="Navegação rápida da loja">
         <div className="store-sidebar-top">
-          <Link href="/" className="store-sidebar-brand" onClick={() => setOptimisticKey("home")}>
+          <Link href="/" draggable={false} className="store-sidebar-brand" onClick={() => setOptimisticKey("home")}>
             <Image
               src="/brand/smkon-icon-light.jpg"
               alt="SMKON"
@@ -133,19 +142,19 @@ export function StoreShell({
             <ul className="store-sidebar-list">
               {SIDEBAR_ITEMS.map((item) => {
                 const isItemActive = activeKey === item.key;
-                const keyWithMode = `${item.key}-${expanded ? "e" : "c"}`;
                 return (
                   <li key={item.key}>
                     <Link
                       href={item.href}
-                      data-sliding-key={keyWithMode}
+                      draggable={false}
+                      data-sliding-key={item.key}
                       data-tooltip={item.label}
                       onClick={() => setOptimisticKey(item.key)}
                       className={isItemActive ? "store-sidebar-item active" : "store-sidebar-item"}
                       aria-current={isItemActive ? "page" : undefined}
                     >
                       <span className="store-sidebar-icon">{item.icon}</span>
-                      {expanded && <span className="store-sidebar-label">{item.label}</span>}
+                      <span className="store-sidebar-label">{item.label}</span>
                     </Link>
                   </li>
                 );
@@ -157,12 +166,13 @@ export function StoreShell({
         <div className="store-sidebar-footer">
           <Link
             href="/painel"
+            draggable={false}
             data-tooltip="Painel Admin"
             className="store-sidebar-item"
             title="Painel Administrativo"
           >
             <span className="store-sidebar-icon"><IconShield size={16} /></span>
-            {expanded && <span className="store-sidebar-label">Painel Admin</span>}
+            <span className="store-sidebar-label">Painel Admin</span>
           </Link>
         </div>
       </aside>
@@ -184,6 +194,7 @@ export function StoreShell({
             <Link
               key={item.key}
               href={item.href}
+              draggable={false}
               onClick={() => setOptimisticKey(item.key)}
               className={active ? "store-mobile-dock-item active" : "store-mobile-dock-item"}
             >
