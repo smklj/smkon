@@ -1,21 +1,38 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Logo } from "@/components/brand/Logo";
 import type { StoreSettings } from "@/lib/store/types";
 import { IconArrowUpRight, IconPackage, IconShield, IconZap } from "./StoreIcons";
 
 export function StoreFooter({ settings }: { settings: StoreSettings }) {
+  const isDefaultLogo =
+    !settings.logo_url ||
+    settings.logo_url === "/brand/smkon-logo-horizontal-white.svg" ||
+    settings.logo_url === "/brand/smkon-logo-horizontal-gold.svg" ||
+    settings.logo_url === "/brand/smkon-icon-light.jpg";
+  const customLogoUrl = isDefaultLogo ? null : settings.logo_url;
+
   return (
     <footer className="store-footer">
       <div className="store-footer-container">
         <div className="store-footer-col" style={{ maxWidth: "340px" }}>
-          <Image
-            src={settings.logo_url || "/brand/smkon-logo-horizontal-white.svg"}
-            alt="SMKON"
-            width={120}
-            height={28}
-            style={{ height: 26, width: "auto", objectFit: "contain", marginBottom: "16px" }}
-          />
+          {customLogoUrl ? (
+            <Image
+              src={customLogoUrl}
+              alt={settings.store_name}
+              width={156}
+              height={36}
+              style={{ height: 34, width: "auto", objectFit: "contain", marginBottom: "16px" }}
+            />
+          ) : (
+            <Logo
+              variant="horizontal-gold"
+              gradientId="smkon-footer-official-gold"
+              className="store-footer-official-svg"
+              title={settings.store_name}
+            />
+          )}
           <p style={{ lineHeight: "1.65", color: "var(--store-muted)", fontSize: "13px" }}>
             {settings.store_tagline || "Achados inteligentes. Escolhas melhores."} Tecnologia, periféricos selecionados, infoprodutos digitais e engenharia de software em um único ecossistema.
           </p>

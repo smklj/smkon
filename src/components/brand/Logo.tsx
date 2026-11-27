@@ -4,7 +4,7 @@
  */
 
 type LogoProps = {
-  variant?: "symbol" | "symbol-gold" | "horizontal";
+  variant?: "symbol" | "symbol-gold" | "horizontal" | "horizontal-gold";
   className?: string;
   title?: string;
   gradientId?: string;
@@ -15,7 +15,7 @@ function Symbol({ fill = "currentColor", stroke = "currentColor" }: { fill?: str
     <g fill={fill} stroke={stroke}>
       <polygon points="226,45 662,45 606,95 226,95" stroke="none" />
       <path d="M232 70 A105 105 0 0 0 232 280 L385 280 A80 80 0 0 1 458 393" fill="none" strokeWidth="50" />
-      <path d="M80 735 L80 330 L350 610 L762 252" fill="none" strokeWidth="50" strokeMiterlimit="10" />
+      <path d="M80 735 L80 330 L350 610 L762 252" fill="none" strokeWidth="50" strokeLinejoin="miter" strokeMiterlimit="10" />
       <path d="M560 548 L770 728" fill="none" strokeWidth="50" />
     </g>
   );
@@ -37,7 +37,7 @@ export function Logo({
 }: LogoProps) {
   if (variant === "symbol-gold") {
     return (
-      <svg className={className} viewBox="0 0 840 760" role="img" aria-label={title}>
+      <svg className={className} viewBox="45 35 755 730" role="img" aria-label={title}>
         <title>{title}</title>
         <defs>
           <linearGradient id={gradientId} x1="8%" y1="5%" x2="92%" y2="95%">
@@ -57,6 +57,37 @@ export function Logo({
       <svg className={className} viewBox="0 0 840 760" role="img" aria-label={title}>
         <title>{title}</title>
         <Symbol />
+      </svg>
+    );
+  }
+
+  if (variant === "horizontal-gold") {
+    return (
+      <svg className={className} viewBox="10 18 1075 244" role="img" aria-label={title}>
+        <title>{title}</title>
+        <defs>
+          <linearGradient id={gradientId} x1="8%" y1="5%" x2="92%" y2="95%">
+            <stop offset="0%" stopColor="#FFF0B8" />
+            <stop offset="38%" stopColor="#F3D37A" />
+            <stop offset="72%" stopColor="#D4AF37" />
+            <stop offset="100%" stopColor="#9A7218" />
+          </linearGradient>
+        </defs>
+        <g transform="translate(0 12) scale(0.32)">
+          <Symbol fill={`url(#${gradientId})`} stroke={`url(#${gradientId})`} />
+        </g>
+        <g
+          transform="translate(315 76) scale(1.22)"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="10.5"
+          strokeLinejoin="miter"
+          strokeMiterlimit="10"
+        >
+          {WORDMARK.map((letter) => (
+            <path key={letter.x} transform={`translate(${letter.x} 0)`} d={letter.d} />
+          ))}
+        </g>
       </svg>
     );
   }

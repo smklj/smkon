@@ -205,19 +205,30 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
 
       <header className="store-header">
         <div className="store-header-container">
-          {/* Lockup Editorial Compacto (Monograma aparece no mobile onde a sidebar oculta) */}
-          <Link href="/" className="store-header-brand" aria-label={settings.store_name}>
-            <Logo variant="symbol-gold" gradientId="smkon-header-gold" className="store-header-mobile-mark" title={settings.store_name} />
-            <div className="store-header-wordmark-stack">
-              <div className="store-header-wordmark-row">
-                <span className="store-header-name">SMKON</span>
-                <span className="store-header-edition">OFICIAL</span>
-              </div>
-              <span className="store-header-sub">
-                <span className="store-header-dot" aria-hidden="true" />
-                <span>Curadoria &amp; Engenharia</span>
-              </span>
-            </div>
+          {/* Logo Oficial SMKON */}
+          <Link href="/" className="store-logo" aria-label={settings.store_name}>
+            {!settings.logo_url ||
+            settings.logo_url === "/brand/smkon-logo-horizontal-white.svg" ||
+            settings.logo_url === "/brand/smkon-logo-horizontal-gold.svg" ||
+            settings.logo_url === "/brand/smkon-icon-light.jpg" ? (
+              <Logo
+                variant="horizontal-gold"
+                gradientId="smkon-header-official-gold"
+                className="store-header-official-svg"
+                title={settings.store_name}
+              />
+            ) : (
+              <Image
+                src={settings.logo_url}
+                alt={settings.store_name}
+                width={156}
+                height={36}
+                style={{ height: 34, width: "auto", objectFit: "contain" }}
+              />
+            )}
+            {settings.store_tagline && (
+              <span className="store-logo-tagline">{settings.store_tagline}</span>
+            )}
           </Link>
 
           {/* Barra de Busca Arquitetural Estilo Command Bar */}
