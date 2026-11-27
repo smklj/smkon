@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import { useSlidingPill } from "@/components/ui/SlidingPill";
+import { Logo } from "@/components/brand/Logo";
 import type { StoreSettings } from "@/lib/store/types";
 import {
   IconBag,
@@ -107,19 +107,14 @@ export function StoreShell({
       {/* Sidebar Inteligente Black & Gold com Sliding Pill GSAP */}
       <aside className="store-sidebar" aria-label="Navegação rápida da loja">
         <div className="store-sidebar-top">
-          <Link href="/" draggable={false} className="store-sidebar-brand" onClick={() => setOptimisticKey("home")}>
-            <Image
-              src="/brand/smkon-icon-light.jpg"
-              alt="SMKON"
-              width={32}
-              height={32}
-              style={{ borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
-            />
-            {expanded && (
-              <span style={{ fontWeight: 800, fontSize: "14px", letterSpacing: "0.04em", color: "#fff" }}>
-                {settings.store_name}
-              </span>
-            )}
+          <Link
+            href="/"
+            draggable={false}
+            className="store-sidebar-brand"
+            aria-label={settings.store_name}
+            onClick={() => setOptimisticKey("home")}
+          >
+            <Logo variant="symbol-gold" gradientId="smkon-sidebar-gold" className="store-sidebar-monogram" title={settings.store_name} />
           </Link>
 
           <button

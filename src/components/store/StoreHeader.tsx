@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/store/cart-context";
 import { useWishlist } from "@/lib/store/wishlist-context";
+import { Logo } from "@/components/brand/Logo";
 import type { StoreProduct, StoreSettings } from "@/lib/store/types";
 import {
   IconArrowUpRight,
@@ -19,6 +20,15 @@ import {
 } from "./StoreIcons";
 
 const RECENT_SEARCHES_KEY = "smkon_recent_searches_v1";
+
+type SearchScope = "todos" | "fisico" | "digital" | "shopee";
+
+const SCOPE_OPTIONS: Array<{ key: SearchScope; label: string }> = [
+  { key: "todos", label: "Tudo" },
+  { key: "fisico", label: "Hardware" },
+  { key: "digital", label: "Digital" },
+  { key: "shopee", label: "Shopee" },
+];
 
 const QUICK_CATEGORIES = [
   { label: "Hardware & Setup", href: "/loja/produtos?tipo=fisico" },
@@ -35,9 +45,10 @@ function formatBRL(cents: number): string {
 }
 
 export function StoreHeader({ settings }: { settings: StoreSettings }) {
-  const { itemCount, openCart } = useCart();
+  const { itemCount, subtotalCents, openCart } = useCart();
   const { favorites, openWishlist, trackView } = useWishlist();
   const [searchTerm, setSearchTerm] = useState("");
+  const [scope, setScope] = useState<SearchScope>("todos");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [results, setResults] = useState<StoreProduct[]>([]);
   const [searching, setSearching] = useState(false);
@@ -45,6 +56,7 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -60,6 +72,20 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
       }
     }, 0);
     return () => window.clearTimeout(t);
+  }, []);
+
+  // Atalho global "/" para focar a barra de comando da loja
+  useEffect(() => {
+    const handleGlobalKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const activeTag = (document.activeElement as HTMLElement | null)?.tagName;
+      if (activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT") return;
+      e.preventDefault();
+      inputRef.current?.focus();
+      setDropdownOpen(true);
+    };
+    window.addEventListener("keydown", handleGlobalKey);
+    return () => window.removeEventListener("keydown", handleGlobalKey);
   }, []);
 
   useEffect(() => {
@@ -87,7 +113,8 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
     const debounce = window.setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/store/products?q=${encodeURIComponent(q)}&limite=5`);
+        const tipoParam = scope !== "todos" ? `&tipo=${scope}` : "";
+        const res = await fetch(`/api/store/products?q=${encodeURIComponent(q)}${tipoParam}&limite=5`);
         const data = await res.json();
         if (!cancelled && res.ok && Array.isArray(data.products)) {
           setResults(data.products);
@@ -98,13 +125,13 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
       } finally {
         if (!cancelled) setSearching(false);
       }
-    }, 200);
+    }, 180);
 
     return () => {
       cancelled = true;
       window.clearTimeout(debounce);
     };
-  }, [searchTerm]);
+  }, [searchTerm, scope]);
 
   const saveSearchTerm = (term: string) => {
     const clean = term.trim();
@@ -118,6 +145,14 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
     }
   };
 
+  const buildSearchHref = (query: string) => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (scope !== "todos") params.set("tipo", scope);
+    const qs = params.toString();
+    return qs ? `/loja/produtos?${qs}` : "/loja/produtos";
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setDropdownOpen(false);
@@ -129,10 +164,8 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
     }
     if (searchTerm.trim()) {
       saveSearchTerm(searchTerm);
-      router.push(`/loja/produtos?q=${encodeURIComponent(searchTerm.trim())}`);
-    } else {
-      router.push("/loja/produtos");
     }
+    router.push(buildSearchHref(searchTerm.trim()));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -140,6 +173,7 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
     if (e.key === "Escape") {
       setDropdownOpen(false);
       setSelectedIndex(-1);
+      inputRef.current?.blur();
     } else if (e.key === "ArrowDown" && results.length > 0) {
       e.preventDefault();
       setSelectedIndex((prev) => (prev + 1) % results.length);
@@ -171,25 +205,35 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
 
       <header className="store-header">
         <div className="store-header-container">
-          <Link href="/" className="store-logo">
-            <Image
-              src={settings.logo_url || "/brand/smkon-logo-horizontal-white.svg"}
-              alt="SMKON"
-              width={116}
-              height={28}
-              style={{ height: 26, width: "auto", objectFit: "contain" }}
-            />
-            <span className="store-logo-tagline">{settings.store_tagline}</span>
+          {/* Lockup Editorial Compacto (Monograma aparece no mobile onde a sidebar oculta) */}
+          <Link href="/" className="store-header-brand" aria-label={settings.store_name}>
+            <Logo variant="symbol-gold" gradientId="smkon-header-gold" className="store-header-mobile-mark" title={settings.store_name} />
+            <div className="store-header-wordmark-stack">
+              <div className="store-header-wordmark-row">
+                <span className="store-header-name">SMKON</span>
+                <span className="store-header-edition">OFICIAL</span>
+              </div>
+              <span className="store-header-sub">
+                <span className="store-header-dot" aria-hidden="true" />
+                <span>Curadoria &amp; Engenharia</span>
+              </span>
+            </div>
           </Link>
 
+          {/* Barra de Busca Arquitetural Estilo Command Bar */}
           <div ref={searchWrapRef} className="store-search-wrap">
-            <form onSubmit={handleSearch} className="store-search-form" style={{ maxWidth: "100%" }}>
+            <form onSubmit={handleSearch} className="store-cmd-search">
+              <span className="store-cmd-leading" aria-hidden="true">
+                <IconSearch size={15} />
+              </span>
+
               <input
+                ref={inputRef}
                 type="text"
                 role="combobox"
                 aria-controls="store-search-listbox"
-                placeholder="Buscar produtos, infoprodutos ou códigos..."
-                className="store-search-input"
+                placeholder="Buscar hardware, sistemas PDV, achados..."
+                className="store-cmd-input"
                 value={searchTerm}
                 onFocus={() => setDropdownOpen(true)}
                 onKeyDown={handleKeyDown}
@@ -200,38 +244,54 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
                 aria-expanded={dropdownOpen}
                 aria-autocomplete="list"
               />
-              {searchTerm && (
+
+              <div className="store-cmd-trailing">
+                {searchTerm ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setResults([]);
+                      inputRef.current?.focus();
+                    }}
+                    className="store-cmd-clear"
+                    aria-label="Limpar busca"
+                  >
+                    <IconClose size={13} />
+                  </button>
+                ) : (
+                  <kbd className="store-cmd-kbd" title="Pressione / para buscar">/</kbd>
+                )}
+
+                <span className="store-cmd-sep" aria-hidden="true" />
+
                 <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setResults([]);
-                  }}
-                  aria-label="Limpar busca"
-                  style={{
-                    position: "absolute",
-                    right: "44px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    color: "var(--store-muted)",
-                    cursor: "pointer",
-                    display: "grid",
-                    placeItems: "center",
-                    padding: "4px",
-                  }}
+                  type="submit"
+                  className={searchTerm.trim() ? "store-cmd-submit active" : "store-cmd-submit"}
+                  aria-label="Pesquisar no catálogo"
                 >
-                  <IconClose size={13} />
+                  <span className="store-hide-mobile">Buscar</span>
+                  <IconArrowUpRight size={13} />
                 </button>
-              )}
-              <button type="submit" className="store-search-btn" aria-label="Pesquisar">
-                <IconSearch size={15} />
-              </button>
+              </div>
             </form>
 
             {dropdownOpen && (
               <div id="store-search-listbox" className="store-search-dropdown" role="listbox" aria-label="Sugestões de busca">
+                {/* Escopo rápido dentro da busca */}
+                <div className="store-cmd-scopes">
+                  {SCOPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setScope(opt.key)}
+                      className={scope === opt.key ? "store-cmd-scope active" : "store-cmd-scope"}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
                 {!hasQuery ? (
                   <>
                     {recentSearches.length > 0 && (
@@ -245,7 +305,7 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
                               className="store-search-chip"
                               onClick={() => {
                                 setDropdownOpen(false);
-                                router.push(`/loja/produtos?q=${encodeURIComponent(term)}`);
+                                router.push(buildSearchHref(term));
                               }}
                             >
                               <IconHistory size={11} />
@@ -255,7 +315,7 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
                         </div>
                       </>
                     )}
-                    <div className="store-search-section-label">Explorar rápido</div>
+                    <div className="store-search-section-label">Acesso rápido</div>
                     <div className="store-search-chips">
                       {QUICK_CATEGORIES.map((cat) => (
                         <Link
@@ -315,7 +375,7 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
                       );
                     })}
                     <Link
-                      href={`/loja/produtos?q=${encodeURIComponent(searchTerm.trim())}`}
+                      href={buildSearchHref(searchTerm.trim())}
                       onClick={() => {
                         saveSearchTerm(searchTerm);
                         setDropdownOpen(false);
@@ -356,32 +416,36 @@ export function StoreHeader({ settings }: { settings: StoreSettings }) {
             )}
           </div>
 
+          {/* Cluster de Ações com Hierarquia Refinada */}
           <div className="store-header-actions">
-            <Link
-              href="/loja/rastrear"
-              className="store-btn store-btn-secondary store-hide-mobile"
-              style={{ padding: "8px 12px", fontSize: "12px" }}
-            >
+            <Link href="/loja/rastrear" className="store-action-ghost store-hide-mobile">
               <IconPackage size={14} />
               <span>Rastrear</span>
             </Link>
 
+            <span className="store-action-divider store-hide-mobile" aria-hidden="true" />
+
             <button
               type="button"
               onClick={openWishlist}
-              className="store-btn store-btn-secondary"
-              style={{ padding: "8px 12px", fontSize: "12px" }}
+              className="store-action-icon"
               title="Favoritos e vistos recentemente"
               aria-label="Abrir favoritos e histórico recente"
             >
-              <IconHeart size={14} filled={favorites.length > 0} />
-              {favorites.length > 0 && <span className="store-cart-badge">{favorites.length}</span>}
+              <IconHeart size={15} filled={favorites.length > 0} />
+              {favorites.length > 0 && <span className="store-action-dot">{favorites.length}</span>}
             </button>
 
-            <button onClick={openCart} className="store-cart-btn" aria-label="Abrir carrinho de compras">
+            <button onClick={openCart} className="store-action-cart" aria-label="Abrir carrinho de compras">
               <IconCart size={15} />
               <span>Carrinho</span>
-              {itemCount > 0 && <span className="store-cart-badge">{itemCount}</span>}
+              {itemCount > 0 ? (
+                <span className="store-action-cart-pill">
+                  {itemCount} · {formatBRL(subtotalCents)}
+                </span>
+              ) : (
+                <span className="store-action-cart-empty">0</span>
+              )}
             </button>
           </div>
         </div>

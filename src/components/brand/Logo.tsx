@@ -1,17 +1,18 @@
 /**
- * Logo oficial SMKON (identidade monocromática), desenhado em SVG com currentColor.
+ * Logo oficial SMKON, desenhado em SVG vetorial.
  * Geometria idêntica ao kit de marca em public/brand.
  */
 
 type LogoProps = {
-  variant?: "symbol" | "horizontal";
+  variant?: "symbol" | "symbol-gold" | "horizontal";
   className?: string;
   title?: string;
+  gradientId?: string;
 };
 
-function Symbol() {
+function Symbol({ fill = "currentColor", stroke = "currentColor" }: { fill?: string; stroke?: string }) {
   return (
-    <g fill="currentColor" stroke="currentColor">
+    <g fill={fill} stroke={stroke}>
       <polygon points="226,45 662,45 606,95 226,95" stroke="none" />
       <path d="M232 70 A105 105 0 0 0 232 280 L385 280 A80 80 0 0 1 458 393" fill="none" strokeWidth="50" />
       <path d="M80 735 L80 330 L350 610 L762 252" fill="none" strokeWidth="50" strokeMiterlimit="10" />
@@ -28,7 +29,29 @@ const WORDMARK = [
   { x: 542, d: "M4 100 L4 4 L80 96 L80 0" },
 ];
 
-export function Logo({ variant = "horizontal", className, title = "SMKON" }: LogoProps) {
+export function Logo({
+  variant = "horizontal",
+  className,
+  title = "SMKON",
+  gradientId = "smkonGoldGrad",
+}: LogoProps) {
+  if (variant === "symbol-gold") {
+    return (
+      <svg className={className} viewBox="0 0 840 760" role="img" aria-label={title}>
+        <title>{title}</title>
+        <defs>
+          <linearGradient id={gradientId} x1="8%" y1="5%" x2="92%" y2="95%">
+            <stop offset="0%" stopColor="#FFF0B8" />
+            <stop offset="38%" stopColor="#F3D37A" />
+            <stop offset="72%" stopColor="#D4AF37" />
+            <stop offset="100%" stopColor="#9A7218" />
+          </linearGradient>
+        </defs>
+        <Symbol fill={`url(#${gradientId})`} stroke={`url(#${gradientId})`} />
+      </svg>
+    );
+  }
+
   if (variant === "symbol") {
     return (
       <svg className={className} viewBox="0 0 840 760" role="img" aria-label={title}>
