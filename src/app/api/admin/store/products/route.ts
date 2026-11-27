@@ -129,6 +129,7 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    revalidatePath("/", "page");
     revalidatePath("/loja", "layout");
     revalidatePath("/loja/produtos", "page");
 
@@ -164,6 +165,7 @@ export async function PATCH(request: Request) {
 
     if (error) throw error;
 
+    revalidatePath("/", "page");
     revalidatePath("/loja", "layout");
     revalidatePath("/loja/produtos", "page");
 

@@ -18,7 +18,7 @@ export type NavItem = {
  * Atualize o status somente quando a funcionalidade estiver validada.
  */
 export const NAV_ITEMS: NavItem[] = [
-  { area: "01", label: "Visão geral", href: "/", icon: "overview", status: "available", accent: "#FFFFFF", summary: "Indicadores e fila de aprovação do workspace." },
+  { area: "01", label: "Visão geral", href: "/painel", icon: "overview", status: "available", accent: "#FFFFFF", summary: "Indicadores e fila de aprovação do workspace." },
   { area: "02", label: "Produtos", href: "/produtos", icon: "products", status: "building", accent: "#6EA8FE", summary: "Catálogo persistente com evidências verificadas e score explicável. Sem coleta automática ainda." },
   { area: "03", label: "Content Studio", href: "/studio", icon: "content", status: "available", accent: "#C084FC", summary: "Roteiros, versões, aprovação humana da versão exata e calendário em dry-run." },
   { area: "04", label: "Agentes de IA", href: "/agentes", icon: "agents", status: "building", accent: "#5EEAD4", summary: "Execuções Planner → Executor → Verifier com limites, allowlist e kill switch. Executor do servidor ainda não ativo." },

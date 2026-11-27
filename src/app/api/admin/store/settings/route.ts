@@ -36,6 +36,7 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     const updated = await saveStoreSettings(ctx.workspace.organizationId, body);
+    revalidatePath("/", "page");
     revalidatePath("/loja", "layout");
     revalidatePath("/loja", "page");
 

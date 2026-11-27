@@ -4,7 +4,7 @@ import { getSupabaseEnv } from "./env";
 import { log } from "@/lib/observability/log";
 import { CSP_HEADER, NONCE_HEADER, contentSecurityPolicy, generateNonce } from "@/lib/http/security-headers";
 
-const PUBLIC_PATHS = new Set(["/login", "/favicon.ico", "/robots.txt", "/icon.svg", "/apple-icon.png"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/favicon.ico", "/robots.txt", "/icon.svg", "/apple-icon.png"]);
 
 function isLojaSubdomain(host: string | null): boolean {
   if (!host) return false;
@@ -139,7 +139,7 @@ export async function updateSession(request: NextRequest) {
 
   if (isAuthenticated && pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/painel";
     url.search = "";
     return withCsp(NextResponse.redirect(url), csp);
   }
